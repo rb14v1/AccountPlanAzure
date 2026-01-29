@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from . import views
 from .views import (
     StrategicPartnershipViewSet, 
     CustomerProfileViewSet, 
@@ -12,6 +13,7 @@ from .views import (
     CriticalRiskViewSet
 )
 
+
 router = DefaultRouter()
 router.register(r'strategic-partnerships', StrategicPartnershipViewSet, basename='strategic-partnership')
 router.register(r'customer-profile', CustomerProfileViewSet, basename='customer-profile')
@@ -23,6 +25,14 @@ router.register(r'operational-excellence', OperationalExcellenceViewSet, basenam
 router.register(r'relationship-heatmap', RelationshipHeatmapViewSet, basename='relationship-heatmap')
 router.register(r'critical-risk', CriticalRiskViewSet, basename='critical-risk')
 
+
 urlpatterns = [
     path('', include(router.urls)),
+    path("upload/request", views.upload_request),
+    path("upload/complete", views.upload_complete),
+    path("ingest", views.ingest_file),
+    path("ingest/status", views.ingest_status),
+    path("chat", views.chat),
+    path("template/fill", views.fill_template),
+
 ]

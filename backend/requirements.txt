@@ -1,0 +1,38 @@
+djangorestframework
+django-cors-headers
+requests
+PyJWT
+
+pyodbc
+azure-identity
+azure-storage-blob
+azure-search-documents
+openai
+python-pptx
+
+
+python-docx
+pypdf
+
+# --- PDF ---
+pymupdf
+pytesseract
+Pillow
+
+# --- Word ---
+python-docx
+
+# --- Excel ---
+openpyxl
+xlrd==1.2.0
+
+# --- PowerPoint ---
+python-pptx
+
+# --- HTML ---
+beautifulsoup4
+lxml
+
+# --- Markdown ---
+markdown
+
