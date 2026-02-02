@@ -125,7 +125,7 @@ WSGI_APPLICATION = 'account_management.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'account_Management',
+        'NAME': 'accman',
         'USER': 'postgres',  # Change this to your PostgreSQL username
         'PASSWORD': '1234567890',  # Change this to your PostgreSQL password
         'HOST': 'localhost',
@@ -187,3 +187,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CORS_EXPOSE_HEADERS = [
+    'X-Template-Data',
+    'X-Template-Type',
+]

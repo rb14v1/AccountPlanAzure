@@ -4,18 +4,16 @@ import React, { useState } from "react";
 import { Box, TextField, Button, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
-import api from "../api/axios"; // ✅ FIXED: Use the configured axios instance
-// ✅ SPLIT IMPORTS: Values vs Types
+import api from "../api/axios";
 import { PRIMARY_TEAL } from "../components/constants";
 import type { Message } from "../components/constants";
 import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
 import PromptModal from "../components/PromptModal";
-// 1. ADDED IMPORT for Global Data
 import { useData } from "../context/DataContext";
 
+
 const RetrieveChatPage: React.FC = () => {
-  // 3. ADDED HOOK to get the setter function (Fixes ReferenceError crash)
   const { setGlobalData } = useData();
   const [input, setInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -75,56 +73,120 @@ const RetrieveChatPage: React.FC = () => {
 
     // --- CONNECT TO DJANGO BACKEND ---
     try {
-      // ✅ FIXED: Use the api instance instead of axios directly
       const response = await api.post("/chat", {
         user_id: "101",
         query: textToSend,
       });
 
-      // ✅ FIXED: Backend returns plain text, not JSON
-      const data = response.data;
-      console.log("Response from backend:", data);
-
-      // Check if response is plain text (TBD) or JSON
-      let parsedData;
-      if (typeof data === "string") {
-        // Plain text response (like "TBD")
-        parsedData = { text: data };
-      } else {
-        // JSON response
-        parsedData = data;
-      }
-
-      // --- SMART TRAFFIC CONTROLLER ---
-      // 1. Check for Account Team POD
-      if (parsedData.Sales_and_Delivery_Leads || parsedData.Account_Team_POD?.Sales_and_Delivery_Leads) {
-        console.log("Detected: Account Team POD Data");
-        const cleanData = parsedData.Account_Team_POD || parsedData;
-        setGlobalData((prev: any) => ({ ...prev, Account_Team_POD: cleanData }));
-
-      // 2. Check for Service Line Growth
-      } else if (parsedData.Service_Line_Growth_Actions) {
-        console.log("Detected: Service Line Growth Data");
-        setGlobalData((prev: any) => ({ ...prev, Service_Line_Growth_Actions: parsedData.Service_Line_Growth_Actions }));
-
-      // 3. Check for Strategic Partnerships
-      } else if (parsedData.template_type === "strategic_partnerships") {
-        console.log("Detected: Strategic Partnerships Data");
-        setGlobalData((prev: any) => ({ ...prev, Strategic_Partnerships: parsedData.data }));
+      // ✅ Check for template data in response headers
+      const templateDataHeader = response.headers['x-template-data'];
+      const templateTypeHeader = response.headers['x-template-type'];
       
-      } else {
-        // Fallback
-        console.log("Detected: Generic Data");
-        setGlobalData((prev: any) => ({ ...prev, ...parsedData }));
+      // Get the plain text answer for display
+      const textAnswer = response.data;
+      
+      console.log("📝 Text Answer:", textAnswer);
+      console.log("📋 Template Type:", templateTypeHeader);
+      console.log("📊 Template Data Header:", templateDataHeader ? "Present" : "Not present");
+
+      // If we have template data, parse and route it
+      if (templateDataHeader && templateTypeHeader) {
+        try {
+          const parsedData = JSON.parse(templateDataHeader);
+          console.log("✅ Parsed Template Data:", parsedData);
+          
+          // --- SMART TRAFFIC CONTROLLER ---
+          // Route data based on template_type
+          
+          if (parsedData.template_type === "growth_strategy") {
+            console.log("✅ Detected: Growth Strategy Data");
+            console.log("📊 Growth Strategy Content:", parsedData.data);
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              growth_strategy: parsedData.data 
+            }));
+            
+          } else if (parsedData.template_type === "strategic_partnerships") {
+            console.log("✅ Detected: Strategic Partnerships Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Strategic_Partnerships: parsedData.data 
+            }));
+            
+          } else if (parsedData.template_type === "account_team_pod") {
+            console.log("✅ Detected: Account Team POD Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Account_Team_POD: parsedData.data 
+            }));
+            
+          } else if (parsedData.template_type === "service_line_growth") {
+            console.log("✅ Detected: Service Line Growth Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Service_Line_Growth_Actions: parsedData.data 
+            }));
+            
+          } else if (parsedData.template_type === "operational_excellence") {
+            console.log("✅ Detected: Operational Excellence Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Operational_Excellence_Strategy: parsedData.data 
+            }));
+
+          } else if (parsedData.template_type === "customer_profile") {
+            console.log("✅ Detected: Customer Profile Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              customer_and_version_1: parsedData.data 
+            }));
+
+          } else if (parsedData.template_type === "investment_plan") {
+            console.log("✅ Detected: Investment Plan Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Investment_Plan: parsedData.data 
+            }));
+
+          } else if (parsedData.template_type === "critical_risk") {
+            console.log("✅ Detected: Critical Risk Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Critical_Risk_Tracking: parsedData.data 
+            }));
+
+          } else if (parsedData.template_type === "relationship_heatmap") {
+            console.log("✅ Detected: Relationship Heatmap Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              relationship_heatmap: parsedData.data 
+            }));
+
+          } else if (parsedData.template_type === "implementation_plan") {
+            console.log("✅ Detected: Implementation Plan Data");
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              Implementation_Plan: parsedData.data 
+            }));
+
+          } else {
+            // Generic fallback for unknown template types
+            console.log(`ℹ️ Generic template data: ${parsedData.template_type}`);
+            setGlobalData((prev: any) => ({ 
+              ...prev, 
+              [parsedData.template_type]: parsedData.data 
+            }));
+          }
+          
+        } catch (parseError) {
+          console.error("❌ Error parsing template data:", parseError);
+        }
       }
 
-      // Convert to readable string for the chat
-      const aiReply = typeof data === "string" ? data : JSON.stringify(parsedData, null, 2);
-
-      // --- UI UPDATE (Show AI Message) ---
+      // --- UI UPDATE (Show AI Message with PLAIN TEXT) ---
       const botResponse: Message = {
         id: Date.now() + 1,
-        text: aiReply,
+        text: textAnswer,  // ✅ Display plain text, not JSON
         sender: "bot",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
@@ -134,7 +196,6 @@ const RetrieveChatPage: React.FC = () => {
     } catch (error: any) {
       console.error("Connection Error:", error);
       
-      // ✅ FIXED: Better error message
       let errorText = "❌ Could not connect to backend. ";
       if (error.response) {
         errorText += `Server error: ${error.response.status}`;

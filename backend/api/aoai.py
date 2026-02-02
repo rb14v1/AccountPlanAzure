@@ -1,23 +1,165 @@
 # backend/api/aoai.py
+
 from __future__ import annotations
 
 import json
 import os
 from typing import Any, Dict, List
-
 from openai import AzureOpenAI
+import re
+
+def parse_yaml_like_text_to_json(text_response: str, template_type: str = None) -> dict:
+    """
+    Universal parser: Converts YAML-like text OR JSON to structured JSON for ANY template
+    
+    Handles both formats:
+    1. YAML-like:
+        field_name:
+        - Point 1
+        - Point 2
+    
+    2. JSON:
+        {"field_name": "value"}
+    """
+    result = {"data": {}}
+    
+    # ✅ FIRST: Try to parse as JSON (if LLM returns JSON directly)
+    text_stripped = text_response.strip()
+    if text_stripped.startswith('{') and text_stripped.endswith('}'):
+        try:
+            parsed_json = json.loads(text_stripped)
+            print("✅ Detected JSON format in LLM response")
+            
+            # If it's already properly structured
+            if "template_type" in parsed_json and "data" in parsed_json:
+                return parsed_json
+            
+            # Otherwise, wrap it
+            result["data"] = parsed_json
+            if template_type:
+                result["template_type"] = template_type
+            return result
+            
+        except json.JSONDecodeError:
+            print("⚠️ Failed to parse as JSON, trying YAML-like format")
+    
+    # Auto-detect template type if not provided
+    if not template_type:
+        type_patterns = {
+            "growth_strategy": ["growth_aspiration", "key_vectors_for_driving_growth"],
+            "strategic_partnerships": ["partner_name", "internal_poc"],
+            "operational_excellence": ["current_gp_percent", "gp_ambition"],
+            "account_team_pod": ["Sales_and_Delivery_Leads", "Functional_POCs"],
+            "service_line_growth": ["cloud_transformation", "data", "ai"],
+            "customer_profile": ["customer_name", "csat", "headquarter_location"],
+        }
+        
+        text_lower = text_response.lower()
+        for t_type, keywords in type_patterns.items():
+            if any(kw.lower() in text_lower for kw in keywords):
+                template_type = t_type
+                break
+        
+        if not template_type:
+            template_type = "generic"
+    
+    result["template_type"] = template_type
+    
+    # Pattern 1: Extract fields with bullet points (list format)
+    list_pattern = r"(\w+(?:_\w+)*):\s*\n((?:- .+\n?)+)"
+    list_matches = re.finditer(list_pattern, text_response, re.MULTILINE)
+    
+    for match in list_matches:
+        field_name = match.group(1)
+        bullets_text = match.group(2)
+        bullets = re.findall(r"- (.+)", bullets_text)
+        result["data"][field_name] = [bullet.strip() for bullet in bullets]
+    
+    # Pattern 2: Extract simple key-value pairs
+    kv_pattern = r"(\w+(?:_\w+)*):\s*([^\n]+)(?:\n|$)"
+    kv_matches = re.finditer(kv_pattern, text_response, re.MULTILINE)
+    
+    for match in kv_matches:
+        field_name = match.group(1)
+        value = match.group(2).strip()
+        
+        # Skip if already processed as list
+        if field_name not in result["data"]:
+            # Check if it's a number
+            try:
+                if "." in value:
+                    result["data"][field_name] = float(value)
+                else:
+                    result["data"][field_name] = int(value)
+            except ValueError:
+                result["data"][field_name] = value
+    
+    return result
+
+
+def detect_template_type_from_query(query: str) -> str:
+    """
+    Auto-detect which template the user is asking about
+    """
+    query_lower = query.lower()
+    
+    template_keywords = {
+        "growth_strategy": [
+            "growth strategy", "growth aspiration", "key vectors",
+            "driving growth", "improve quality", "sustainability",
+            "inorganic opportunities"
+        ],
+        "strategic_partnerships": [
+            "strategic partnership", "partner", "sell with revenue",
+            "key engagement", "support needed"
+        ],
+        "account_team_pod": [
+            "account team", "pod", "sales lead", "delivery lead",
+            "functional poc", "team structure"
+        ],
+        "service_line_growth": [
+            "service line", "cloud transformation", "data modernization",
+            "ai capabilities", "managed services"
+        ],
+        "operational_excellence": [
+            "operational excellence", "margin", "gp percent",
+            "commercial transformation", "priority levers"
+        ],
+        "customer_profile": [
+            "customer profile", "customer perception", "csat",
+            "headquarter location", "current work"
+        ],
+        "investment_plan": [
+            "investment plan", "investment value", "investment priority"
+        ],
+        "critical_risk": [
+            "critical risk", "risk tracking", "mitigation plan"
+        ],
+        "relationship_heatmap": [
+            "relationship heatmap", "stakeholder", "relationship strength"
+        ],
+        "implementation_plan": [
+            "implementation plan", "action plan", "timeline"
+        ]
+    }
+    
+    for template_type, keywords in template_keywords.items():
+        if any(keyword in query_lower for keyword in keywords):
+            return template_type
+    
+    return None
 
 
 def _client() -> AzureOpenAI:
-    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()  # https://<resource>.openai.azure.com
+    endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
     api_key = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
     api_version = os.getenv("AZURE_OPENAI_API_VERSION", "2024-06-01").strip()
-
+    
     if not endpoint:
         raise RuntimeError("AZURE_OPENAI_ENDPOINT missing")
     if not api_key:
         raise RuntimeError("AZURE_OPENAI_API_KEY missing")
-
+    
     return AzureOpenAI(
         azure_endpoint=endpoint,
         api_key=api_key,
@@ -26,51 +168,50 @@ def _client() -> AzureOpenAI:
 
 
 def embed(text: str) -> List[float]:
-    """
-    Azure OpenAI embeddings.
-    IMPORTANT: In Azure, 'model' = DEPLOYMENT NAME (not the base model id).
-    """
+    """Azure OpenAI embeddings."""
     deployment = os.getenv("AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT", "").strip()
     if not deployment:
         deployment = os.getenv("AZURE_OPENAI_EMBED_DEPLOYMENT", "").strip()
     if not deployment:
         deployment = "text-embedding-3-small"
-
+    
     text = (text or "").strip()
     if not text:
         raise RuntimeError("embed() received empty text")
-
+    
     client = _client()
     resp = client.embeddings.create(
         model=deployment,
         input=text,
     )
+    
     vec = resp.data[0].embedding
     return [float(x) for x in vec]
 
 
 def answer_only_from_context(query: str, context_text: str) -> str:
     """
-    Returns ONLY the answer text. If answer not explicitly present in context -> "TBD".
+    Returns ONLY the answer text (plain text, not JSON).
+    If answer not explicitly present in context -> "TBD".
     """
     deployment = os.getenv("AZURE_OPENAI_CHAT_DEPLOYMENT", "").strip()
     if not deployment:
         deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
     if not deployment:
         raise RuntimeError("AZURE_OPENAI_CHAT_DEPLOYMENT (or AZURE_OPENAI_DEPLOYMENT) missing")
-
+    
     query = (query or "").strip()
     context_text = (context_text or "").strip()
-
+    
     system = (
         "You are a RAG assistant.\n"
         "Use ONLY the provided CONTEXT.\n"
         "Return ONLY the final answer as plain text (no JSON, no markdown, no citations).\n"
         "If the answer is not explicitly present in the CONTEXT, return exactly: TBD"
     )
-
+    
     user = f"QUESTION:\n{query}\n\nCONTEXT:\n{context_text}\n\nReturn only the answer."
-
+    
     client = _client()
     resp = client.chat.completions.create(
         model=deployment,
@@ -80,7 +221,7 @@ def answer_only_from_context(query: str, context_text: str) -> str:
         ],
         temperature=0.0,
     )
-
+    
     return (resp.choices[0].message.content or "").strip()
 
 
@@ -95,30 +236,19 @@ def fill_template_json_only(template: Dict[str, Any], context_text: str) -> Dict
         deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT", "").strip()
     if not deployment:
         raise RuntimeError("AZURE_OPENAI_CHAT_DEPLOYMENT (or AZURE_OPENAI_DEPLOYMENT) missing")
-
-    # system = (
-    #     "You are a strict JSON generator.\n"
-    #     "Return ONLY valid JSON. No markdown. No comments. No extra keys.\n"
-    #     "Fill the template strictly from the CONTEXT.\n"
-    #     "If a value is not explicitly present in CONTEXT, put the string 'TBD' (inside the array).\n"
-    #     "Keep EXACT same schema and keys.\n"
-    #     "Do NOT add citations, explanations, or any extra fields."
-    # )
-    SYSTEM_PROMPT = ("""
-You are a JSON generator.
-
-Rules:
-- Respond ONLY with valid JSON.
-- No markdown.
-- No explanations.
-- No citations.
-- No extra keys.
-- If value not found, return "TBD".
-
-Follow exactly the schema provided by user.
-""")
-
-
+    
+    system = (
+        "You are a JSON generator.\n"
+        "Rules:\n"
+        "- Respond ONLY with valid JSON.\n"
+        "- No markdown.\n"
+        "- No explanations.\n"
+        "- No citations.\n"
+        "- No extra keys.\n"
+        "- If value not found, return \"TBD\".\n"
+        "Follow exactly the schema provided by user."
+    )
+    
     user = (
         "TEMPLATE:\n"
         f"{json.dumps(template, ensure_ascii=False)}\n\n"
@@ -126,7 +256,7 @@ Follow exactly the schema provided by user.
         f"{context_text}\n\n"
         "Return ONLY the filled JSON."
     )
-
+    
     client = _client()
     resp = client.chat.completions.create(
         model=deployment,
@@ -136,14 +266,13 @@ Follow exactly the schema provided by user.
         ],
         temperature=0.0,
     )
-
+    
     raw = (resp.choices[0].message.content or "").strip()
-
     try:
         out = json.loads(raw)
     except Exception:
         raise RuntimeError(f"Model did not return valid JSON. Raw:\n{raw}")
-
+    
     return out
 
 
@@ -155,17 +284,15 @@ def enforce_tbd(template: Dict[str, Any], filled: Dict[str, Any]) -> Dict[str, A
     template_type = template.get("template_type")
     data = template.get("data", {}) or {}
     filled_data = (filled or {}).get("data") or {}
-
+    
     out: Dict[str, Any] = {"template_type": template_type, "data": {}}
-
+    
     for key in data.keys():
         val = filled_data.get(key)
-
         if not isinstance(val, list):
             out["data"][key] = ["TBD"]
             continue
-
         cleaned = [str(x).strip() for x in val if str(x).strip()]
         out["data"][key] = cleaned if cleaned else ["TBD"]
-
+    
     return out
