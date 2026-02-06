@@ -1,18 +1,143 @@
 # backend/api/azure_sql.py
+from __future__ import annotations
 
 import os
+import struct
+from typing import Any, Dict, List
+
 import pyodbc
-from typing import Optional, List, Dict, Any
+
+# ============================================================
+# Helpers
+# ============================================================
+
+def _env(key: str, default: str = "") -> str:
+    return (os.getenv(key, default) or default).strip()
 
 
-def _env(name: str, default: str = "") -> str:
-    return os.getenv(name, default)
+def _rows_to_dicts(cur) -> List[Dict[str, Any]]:
+    if not cur.description:
+        return []
+    cols = [c[0] for c in cur.description]
+    out: List[Dict[str, Any]] = []
+    for row in cur.fetchall():
+        out.append({cols[i]: row[i] for i in range(len(cols))})
+    return out
 
 
-def conn() -> pyodbc.Connection:
+# ============================================================
+# OPTION B: FABRIC WAREHOUSE (AAD TOKEN / MFA)
+# ============================================================
+
+SQL_COPT_SS_ACCESS_TOKEN = 1256
+FABRIC_SCOPE = "https://database.windows.net/.default"
+
+
+def fabric_conn() -> pyodbc.Connection:
     """
-    Creates a connection to Azure SQL using username/password auth.
-    Requires ODBC Driver 18 for SQL Server.
+    Connect to Microsoft Fabric Warehouse using AAD token (MFA).
+    Works best for local dev because it opens a browser login.
+    Requires: pip install azure-identity
+    """
+    from azure.identity import InteractiveBrowserCredential
+
+    driver = _env("FABRIC_SQL_DRIVER", "ODBC Driver 18 for SQL Server")
+    server = _env("FABRIC_SQL_SERVER")
+    db = _env("FABRIC_SQL_DB")
+
+    if not server or not db:
+        raise RuntimeError("Missing FABRIC_SQL_SERVER / FABRIC_SQL_DB in .env")
+
+    conn_str = (
+        f"Driver={{{driver}}};"
+        f"Server={server};"
+        f"Database={db};"
+        "Encrypt=yes;"
+        "TrustServerCertificate=no;"
+        "Connection Timeout=30;"
+    )
+
+    cred = InteractiveBrowserCredential()
+    token = cred.get_token(FABRIC_SCOPE).token
+
+    token_bytes = token.encode("utf-16-le")
+    token_struct = struct.pack("<I", len(token_bytes)) + token_bytes
+
+    return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+
+
+def fetch_fabric_bundle(account_name: str, top_n: int = 50) -> Dict[str, Any]:
+    """
+    Pull a minimal 'bundle' of data from Fabric views for a given Account_Name.
+
+    Robust rules:
+    - Never reference Quarter in SQL (some views may not have it).
+    - Try ORDER BY Year DESC first.
+    - If Year doesn't exist, fallback to TOP * without ORDER BY.
+    - If one view fails, log and return [] for that view (do not crash).
+    """
+    account_name = (account_name or "").strip()
+    if not account_name:
+        raise ValueError("account_name required")
+
+    def safe_fetch(cur, view_name: str) -> List[Dict[str, Any]]:
+        # 1) Try Year-based ordering (best effort)
+        try:
+            sql = f"""
+                SELECT TOP ({top_n}) *
+                FROM {view_name}
+                WHERE Account_Name = ?
+                ORDER BY Year DESC
+            """
+            cur.execute(sql, account_name)
+            return _rows_to_dicts(cur)
+        except Exception as e1:
+            # 2) Fallback: no ORDER BY (handles views without Year)
+            try:
+                sql = f"SELECT TOP ({top_n}) * FROM {view_name} WHERE Account_Name = ?"
+                cur.execute(sql, account_name)
+                return _rows_to_dicts(cur)
+            except Exception as e2:
+                print(f"⚠️ Fabric view query failed for {view_name}: {e2}")
+                return []
+
+    with fabric_conn() as c:
+        cur = c.cursor()
+
+        plan_rows = safe_fetch(cur, "dbo.Account_Plan_View_Updated")
+        account_plan = plan_rows[0] if plan_rows else {}
+
+        unified_metrics = safe_fetch(cur, "dbo.Account_Unified_Metrics_View")
+        csat = safe_fetch(cur, "dbo.CSAT_View_Account")
+        forecast = safe_fetch(cur, "dbo.Forecast_View")
+        revenue_employee_margin = safe_fetch(cur, "dbo.Revenue_Employee_Margin_View")
+        revenue_kantata = safe_fetch(cur, "dbo.Revenue_View_Kantata")
+        tcv_crm = safe_fetch(cur, "dbo.TCV_View_CRM")
+        targets = safe_fetch(cur, "dbo.Targets_View_Account")
+
+    return {
+        "account_name": account_name,
+        "account_plan": account_plan,
+        "unified_metrics": unified_metrics,
+        "csat": csat,
+        "forecast": forecast,
+        "revenue_employee_margin": revenue_employee_margin,
+        "revenue_kantata": revenue_kantata,
+        "tcv_crm": tcv_crm,
+        "targets": targets,
+    }
+
+
+# ============================================================
+# OPTION A: SQL AUTH (username/password) - OPTIONAL
+# Keep if you want to connect to non-Fabric SQL Server later.
+# ============================================================
+
+def sql_auth_conn() -> pyodbc.Connection:
+    """
+    Connect using SQL username/password.
+    Uses env vars:
+      AZURE_SQL_SERVER, AZURE_SQL_DB, AZURE_SQL_USER, AZURE_SQL_PASSWORD
     """
     driver = _env("AZURE_SQL_DRIVER", "ODBC Driver 18 for SQL Server")
     server = _env("AZURE_SQL_SERVER")
@@ -21,153 +146,27 @@ def conn() -> pyodbc.Connection:
     pwd = _env("AZURE_SQL_PASSWORD")
 
     if not server or not db or not user or not pwd:
-        raise RuntimeError("Azure SQL env vars missing. Set AZURE_SQL_SERVER/DB/USER/PASSWORD.")
+        raise RuntimeError("Missing AZURE_SQL_* env vars for sql_auth_conn")
 
-    cs = (
-        f"DRIVER={{{driver}}};"
-        f"SERVER={server};"
-        f"DATABASE={db};"
+    conn_str = (
+        f"Driver={{{driver}}};"
+        f"Server={server};"
+        f"Database={db};"
         f"UID={user};"
         f"PWD={pwd};"
         "Encrypt=yes;"
         "TrustServerCertificate=no;"
         "Connection Timeout=30;"
     )
-    return pyodbc.connect(cs)
+    return pyodbc.connect(conn_str)
 
 
-# -------------------------
-# Optional: Create tables
-# -------------------------
-
-def ensure_tables() -> None:
+def ping_fabric() -> Dict[str, Any]:
     """
-    Creates required tables if they don't exist.
-    Call once at startup or before first insert.
+    Quick sanity check to ensure Fabric connection works.
     """
-    with conn() as c:
+    with fabric_conn() as c:
         cur = c.cursor()
-
-        # uploaded_files table
-        cur.execute("""
-        IF OBJECT_ID('uploaded_files', 'U') IS NULL
-        BEGIN
-            CREATE TABLE uploaded_files (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                user_id NVARCHAR(128) NOT NULL,
-                filename NVARCHAR(260) NOT NULL,
-                blob_path NVARCHAR(400) NOT NULL,
-                blob_url NVARCHAR(600) NOT NULL,
-                size BIGINT NULL,
-                created_at DATETIME2 DEFAULT SYSUTCDATETIME()
-            );
-        END
-        """)
-
-        # generated_decks table (stores latest deck pointer)
-        cur.execute("""
-        IF OBJECT_ID('generated_decks', 'U') IS NULL
-        BEGIN
-            CREATE TABLE generated_decks (
-                id INT IDENTITY(1,1) PRIMARY KEY,
-                user_id NVARCHAR(128) NOT NULL,
-                template_id NVARCHAR(120) NOT NULL,
-                blob_path NVARCHAR(400) NOT NULL,
-                updated_at DATETIME2 DEFAULT SYSUTCDATETIME(),
-                CONSTRAINT uq_user_template UNIQUE (user_id, template_id)
-            );
-        END
-        """)
-
-        c.commit()
-
-
-# -------------------------
-# Uploaded files metadata
-# -------------------------
-
-def insert_uploaded_file(
-    user_id: str,
-    filename: str,
-    blob_path: str,
-    blob_url: str,
-    size: Optional[int] = None,
-) -> None:
-    ensure_tables()
-    with conn() as c:
-        cur = c.cursor()
-        cur.execute("""
-            INSERT INTO uploaded_files (user_id, filename, blob_path, blob_url, size)
-            VALUES (?, ?, ?, ?, ?)
-        """, user_id, filename, blob_path, blob_url, size)
-        c.commit()
-
-
-def list_uploaded_files(user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
-    ensure_tables()
-    with conn() as c:
-        cur = c.cursor()
-        cur.execute("""
-            SELECT TOP (?) filename, blob_path, blob_url, size, created_at
-            FROM uploaded_files
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-        """, limit, user_id)
-        rows = cur.fetchall()
-
-    return [
-        {
-            "filename": r[0],
-            "blob_path": r[1],
-            "blob_url": r[2],
-            "size": r[3],
-            "created_at": r[4].isoformat() if r[4] else None,
-        }
-        for r in rows
-    ]
-
-
-# -------------------------
-# Latest deck pointer
-# -------------------------
-
-def upsert_latest_deck(user_id: str, template_id: str, blob_path: str) -> None:
-    """
-    Stores/updates the 'latest generated PPT' path for a user+template.
-    """
-    ensure_tables()
-    with conn() as c:
-        cur = c.cursor()
-        cur.execute("""
-        IF EXISTS (SELECT 1 FROM generated_decks WHERE user_id=? AND template_id=?)
-            UPDATE generated_decks
-            SET blob_path=?, updated_at=SYSUTCDATETIME()
-            WHERE user_id=? AND template_id=?
-        ELSE
-            INSERT INTO generated_decks (user_id, template_id, blob_path)
-            VALUES (?, ?, ?)
-        """, user_id, template_id, blob_path, user_id, template_id, user_id, template_id, blob_path)
-        c.commit()
-
-
-def get_latest_deck(user_id: str, template_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Returns latest deck pointer for a user+template, or None.
-    """
-    ensure_tables()
-    with conn() as c:
-        cur = c.cursor()
-        cur.execute("""
-            SELECT blob_path, updated_at
-            FROM generated_decks
-            WHERE user_id=? AND template_id=?
-        """, user_id, template_id)
+        cur.execute("SELECT 1 AS ok")
         row = cur.fetchone()
-
-    if not row:
-        return None
-
-    return {
-        "blob_path": row[0],
-        "updated_at": row[1].isoformat() if row[1] else None,
-    }
+        return {"ok": int(row[0]) if row else 0}

@@ -160,3 +160,9 @@ def search_chunks(
         )
 
     return out
+
+def fallback_topk() -> int:
+    try:
+        return int(os.getenv("AZURE_SEARCH_FALLBACK_TOPK", "12"))
+    except Exception:
+        return 12

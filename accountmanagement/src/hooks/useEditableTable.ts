@@ -5,7 +5,7 @@ export function useEditableTable<T>(initialData: T) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftData, setDraftData] = useState<T>(initialData);
 
-  const startEdit = () => {
+  const startEdit = (savedData: any) => {
     setDraftData(initialData);
     setIsEditing(true);
   };

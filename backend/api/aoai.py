@@ -278,21 +278,37 @@ def fill_template_json_only(template: Dict[str, Any], context_text: str) -> Dict
 
 def enforce_tbd(template: Dict[str, Any], filled: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Ensures exact schema and that each field is a non-empty list.
-    If empty/missing -> ['TBD'].
+    Ensures the output matches the TEMPLATE schema exactly.
+
+    Behavior is schema-driven:
+    - If schema value is a list (e.g., []), output must be a non-empty list of strings; empty/missing => ["TBD"].
+    - If schema value is a dict, recurse.
+    - If schema value is a string (e.g., ""), output must be a string; empty/missing => "TBD".
+
+    This supports both "list templates" and "table templates" like Account Dashboard.
     """
-    template_type = template.get("template_type")
-    data = template.get("data", {}) or {}
+    template_type = (template or {}).get("template_type")
+    schema_data = (template or {}).get("data", {}) or {}
     filled_data = (filled or {}).get("data") or {}
-    
-    out: Dict[str, Any] = {"template_type": template_type, "data": {}}
-    
-    for key in data.keys():
-        val = filled_data.get(key)
-        if not isinstance(val, list):
-            out["data"][key] = ["TBD"]
-            continue
-        cleaned = [str(x).strip() for x in val if str(x).strip()]
-        out["data"][key] = cleaned if cleaned else ["TBD"]
-    
-    return out
+
+    def _coerce(schema_node: Any, filled_node: Any) -> Any:
+        if isinstance(schema_node, list):
+            if not isinstance(filled_node, list):
+                return ["TBD"]
+            cleaned = [str(x).strip() for x in filled_node if str(x).strip()]
+            return cleaned if cleaned else ["TBD"]
+
+        if isinstance(schema_node, dict):
+            out: Dict[str, Any] = {}
+            if not isinstance(filled_node, dict):
+                filled_node = {}
+            for k, child_schema in schema_node.items():
+                out[k] = _coerce(child_schema, filled_node.get(k))
+            return out
+
+        if filled_node is None:
+            return "TBD"
+        s = str(filled_node).strip()
+        return s if s else "TBD"
+
+    return {"template_type": template_type, "data": _coerce(schema_data, filled_data)}

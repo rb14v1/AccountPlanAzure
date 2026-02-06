@@ -10,6 +10,7 @@ from azure.storage.blob import BlobClient
 from .storage import build_upload_path, create_upload_sas
 from .search import run_indexer, get_indexer_status, search_chunks
 from .aoai import answer_only_from_context, fill_template_json_only, enforce_tbd, parse_yaml_like_text_to_json, detect_template_type_from_query
+from .template_schemas import get_template_schema
 
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -40,6 +41,9 @@ from .serializers import (
     RelationshipHeatmapSerializer,
     CriticalRiskSerializer,
 )
+from .azure_sql import fetch_fabric_bundle
+from django.http import JsonResponse, HttpResponse
+import json
 
 
 def _env(name: str, default: str = "") -> str:
@@ -176,6 +180,46 @@ def ingest_status(request):
     return JsonResponse(get_indexer_status())
 
 
+######################################################################
+def _bundle_to_context_text(bundle: dict) -> str:
+    parts = []
+    ap = bundle.get("account_plan") or {}
+    if ap:
+        keep = [
+            "Account_Name", "Account_Sector", "Account_Vertical", "Account_Type",
+            "Pain_Points", "Strengths", "Weakness", "Threats",
+            "Opportunities", "Cross_Sell_Opportunities", "Products_Or_Services",
+            "Key_Business_IT_Priorities", "IT_Road_Map", "Business_Metrics",
+            "History_With_Version_1", "Priority_For_Growing_Account",
+            "Account_Manager", "Account_Director", "Delivery_Lead"
+        ]
+        ap_filtered = {k: ap.get(k) for k in keep if ap.get(k) not in (None, "", [], {})}
+        parts.append("SQL_ACCOUNT_PLAN_VIEW:\n" + json.dumps(ap_filtered, ensure_ascii=False))
+
+    for key in ["unified_metrics", "csat", "forecast", "revenue_employee_margin",
+                "revenue_kantata", "tcv_crm", "targets"]:
+        rows = bundle.get(key) or []
+        if rows:
+            parts.append(f"SQL_{key.upper()} (sample):\n" + json.dumps(rows[:20], ensure_ascii=False))
+
+    return "\n\n".join(parts).strip()
+
+
+def _sql_is_sufficient(bundle: dict, sql_text: str) -> bool:
+    min_chars = int(os.getenv("SQL_FIRST_MIN_CHARS", "800"))
+    min_tables = int(os.getenv("SQL_FIRST_MIN_TABLES", "2"))
+
+    tables_with_data = sum(
+        1 for k in ["unified_metrics", "csat", "forecast", "revenue_employee_margin",
+                    "revenue_kantata", "tcv_crm", "targets"]
+        if (bundle.get(k) or [])
+    )
+
+    # Pass if: enough text AND (account_plan exists OR enough tables have rows)
+    return (len(sql_text) >= min_chars) and (bundle.get("account_plan") or tables_with_data >= min_tables)
+#################################################################################
+
+
 # ----------------------------
 # RAG Chat endpoint
 # ----------------------------
@@ -183,109 +227,117 @@ def ingest_status(request):
 def chat(request):
     """
     POST /api/chat
-    Returns: Plain text for chatbot display
-    Side effect: Saves structured JSON to database for templates
+    Plain text output for chat UI.
+
+    Retrieval order:
+      1) Fabric bundle (if account name present)
+      2) Azure Search chunks fallback
+      3) AOAI answer from combined context
     """
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
-    
-    # Parse request body
-    try:
-        body = json.loads(request.body.decode('utf-8')) if request.body else {}
-    except Exception:
-        body = {}
-    
-    user_id = str(body.get("user_id") or "").strip() or str(request.headers.get("X-User-Id") or "").strip()
-    query = str(body.get("query") or body.get("prompt") or "").strip()
-    top_k = int(body.get("top_k") or 6)
-    
+
+    body = _json_body(request)
+    user_id = _get_user_id(request, body)
+
+    raw_query = str(body.get("query") or body.get("prompt") or "").strip()
+    top_k = int(body.get("top_k") or int(os.getenv("AZURE_SEARCH_FALLBACK_TOPK", "12")))
+
     if not user_id:
         return JsonResponse({"error": "user_id required"}, status=400)
-    if not query:
+    if not raw_query:
         return JsonResponse({"error": "query required"}, status=400)
-    
-    # Auto-detect template type
-    detected_template = detect_template_type_from_query(query)
-    print(f"🔍 Query: {query}")
-    print(f"📋 Detected Template: {detected_template}")
-    
-    # Retrieve context
-    chunks = search_chunks(user_id=user_id, query=query, top_k=top_k)
-    context_text = "\n".join(
-        c.get("chunk_text", "").strip()
-        for c in chunks if c.get("chunk_text", "").strip()
-    ).strip()
-    
+
+    # -----------------------------
+    # Extract account name from prompt (optional)
+    # Supported formats:
+    #   "NatWest: what is the revenue trend?"
+    #   "NatWest - what is the revenue trend?"
+    # Or frontend can send company_name explicitly.
+    # -----------------------------
+    import re
+
+    company_name = str(body.get("company_name") or body.get("account_name") or "").strip()
+    question = raw_query
+
+    # 1) If user uses: Company="..." | Question="..."
+    if not company_name:
+        m = re.search(r'Company\s*=\s*"([^"]+)"', raw_query, re.IGNORECASE)
+        if m:
+            company_name = m.group(1).strip()
+
+        m2 = re.search(r'Question\s*=\s*"([^"]+)"', raw_query, re.IGNORECASE)
+        if m2:
+            question = m2.group(1).strip()
+        else:
+            # If no Question="...", take text after first |
+            if "|" in raw_query:
+                question = raw_query.split("|", 1)[1].strip()
+
+    # 2) Fallback: "NatWest Group: ...."
+    if not company_name:
+        if ":" in raw_query:
+            left, right = raw_query.split(":", 1)  # IMPORTANT: only first colon
+            if left.strip() and right.strip():
+                company_name = left.strip()
+                question = right.strip()
+
+
+    # -----------------------------
+    # 1) Fabric context (best effort)
+    # -----------------------------
+    fabric_text = ""
+    fabric_ok = False
+
+    def bundle_to_text(bundle: dict) -> str:
+        # Keep this readable (LLM-friendly), not too huge
+        parts = []
+        ap = bundle.get("account_plan") or {}
+        if ap:
+            parts.append("FABRIC_ACCOUNT_PLAN:\n" + json.dumps(ap, ensure_ascii=False, default=str))
+
+        for k in ["targets", "tcv_crm", "revenue_kantata", "forecast", "csat", "unified_metrics", "revenue_employee_margin"]:
+            rows = bundle.get(k) or []
+            if rows:
+                parts.append(f"FABRIC_{k.upper()} (top 30):\n" + json.dumps(rows[:30], ensure_ascii=False, default=str))
+
+        return "\n\n".join(parts).strip()
+
+    try:
+        if company_name:
+            bundle = fetch_fabric_bundle(company_name, top_n=50)
+            fabric_text = bundle_to_text(bundle)
+
+            # Simple sufficiency check
+            fabric_ok = len(fabric_text) >= int(os.getenv("SQL_FIRST_MIN_CHARS", "800"))
+            print(f"🧩 Fabric chars={len(fabric_text)} fabric_ok={fabric_ok} company={company_name}")
+    except Exception as e:
+        print(f"⚠️ Fabric fetch failed, fallback to Azure Search. Error: {e}")
+        fabric_ok = False
+
+    # -----------------------------
+    # 2) Azure Search fallback
+    # -----------------------------
+    search_text = ""
+    if not fabric_ok:
+        chunks = search_chunks(user_id=user_id, query=raw_query, top_k=top_k)
+        search_text = "\n".join(
+            (c.get("chunk_text") or "").strip()
+            for c in chunks
+            if (c.get("chunk_text") or "").strip()
+        ).strip()
+        print(f"🔎 Search chars={len(search_text)} top_k={top_k}")
+
+    # -----------------------------
+    # 3) Final context → AOAI answer
+    # -----------------------------
+    context_text = "\n\n".join([t for t in [fabric_text, search_text] if t]).strip()
     if not context_text:
-        return HttpResponse("TBD - No relevant information found in uploaded documents.", content_type="text/plain")
-    
-    # Get plain text answer from LLM
-    answer = answer_only_from_context(query=query, context_text=context_text)
-    print(f"📝 LLM Answer (first 200 chars):\n{answer[:200]}...")
-    
-    # If template detected, parse to JSON and SAVE TO DATABASE
-    if detected_template:
-        try:
-            json_response = parse_yaml_like_text_to_json(answer, template_type=detected_template)
-            print(f"✅ Parsed to JSON for template: {detected_template}")
-            print(f"📊 JSON Data: {json.dumps(json_response, indent=2)[:500]}...")
-            
-            # ✅ SAVE TO DATABASE BASED ON TEMPLATE TYPE
-            if detected_template == "growth_strategy":
-                strategy, created = GrowthStrategy.objects.get_or_create(
-                    id=1,
-                    defaults=json_response['data']
-                )
-                
-                if not created:
-                    for key, value in json_response['data'].items():
-                        setattr(strategy, key, value)
-                    strategy.save()
-                
-                print(f"💾 Saved Growth Strategy to database (ID: {strategy.id})")
-            
-            elif detected_template == "customer_profile":
-                profile, created = CustomerProfile.objects.get_or_create(
-                    id=1,
-                    defaults=json_response['data']
-                )
-                
-                if not created:
-                    for key, value in json_response['data'].items():
-                        setattr(profile, key, value)
-                    profile.save()
-                
-                print(f"💾 Saved Customer Profile to database (ID: {profile.id})")
-            
-            elif detected_template == "account_team_pod":
-                pod, created = AccountTeamPOD.objects.get_or_create(
-                    id=1,
-                    defaults=json_response['data']
-                )
-                
-                if not created:
-                    for key, value in json_response['data'].items():
-                        setattr(pod, key, value)
-                    pod.save()
-                
-                print(f"💾 Saved Account Team POD to database")
-            
-            # Send headers for frontend (backup method)
-            response = HttpResponse(answer, content_type="text/plain")
-            response['X-Template-Data'] = json.dumps(json_response)
-            response['X-Template-Type'] = detected_template
-            response['Access-Control-Expose-Headers'] = 'X-Template-Data, X-Template-Type'
-            
-            return response
-            
-        except Exception as e:
-            print(f"❌ Error processing template: {e}")
-            import traceback
-            traceback.print_exc()
-            return HttpResponse(answer or "TBD", content_type="text/plain")
-    
-    # Return plain text for non-template queries
+        return HttpResponse("TBD - No relevant information found in Fabric or uploaded documents.", content_type="text/plain")
+
+    answer = answer_only_from_context(query=question, context_text=context_text)
     return HttpResponse(answer or "TBD", content_type="text/plain")
+
 
 
 # ----------------------------
@@ -293,41 +345,188 @@ def chat(request):
 # ----------------------------
 @csrf_exempt
 def fill_template(request):
-    """
-    POST /api/template/fill
-    Returns ONLY JSON in your schema with TBD fallback
-    """
     if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
-    
+
     body = _json_body(request)
     user_id = _get_user_id(request, body)
-    template_type = str(body.get("template_type") or "").strip()
-    template_data = body.get("data")
-    
+
+    template_name = str(body.get("template_name") or confirmed_template_type or "").strip().lower()
+    company_name  = str(body.get("company_name") or "").strip()
+
     if not user_id:
         return JsonResponse({"error": "user_id required"}, status=400)
-    if not template_type or not isinstance(template_data, dict):
-        return JsonResponse({"error": "template_type and data required"}, status=400)
-    
-    extra_query = str(body.get("query") or "").strip()
-    retrieval_query = f"{template_type}. {extra_query}".strip() if extra_query else template_type
-    
-    chunks = search_chunks(user_id=user_id, query=retrieval_query, top_k=10)
+    if not template_name or not company_name:
+        return JsonResponse({"error": "template_name and company_name required"}, status=400)
+
+    # ✅ schema skeleton
+    try:
+        from .template_schemas import get_template_schema
+        schema = get_template_schema(template_name)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+    # =========================================================
+    # ✅ SQL-FIRST RETRIEVAL (with Azure Search fallback)
+    # =========================================================
+    import os
+    import json
+    from .azure_sql import fetch_account_bundle
+
+    def _bundle_to_context_text(bundle: dict) -> str:
+        parts = []
+
+        ap = bundle.get("account_plan") or {}
+        if ap:
+            keep = [
+                "Account_Name", "Account_Sector", "Account_Vertical", "Account_Type",
+                "Pain_Points", "Strengths", "Weakness", "Threats",
+                "Opportunities", "Cross_Sell_Opportunities", "Products_Or_Services",
+                "Key_Business_IT_Priorities", "IT_Road_Map", "Business_Metrics",
+                "History_With_Version_1", "Priority_For_Growing_Account",
+            ]
+            ap_filtered = {
+                k: ap.get(k)
+                for k in keep
+                if k in ap and ap.get(k) not in (None, "")
+            }
+            parts.append(
+                "ACCOUNT_PLAN_VIEW:\n"
+                + json.dumps(ap_filtered, ensure_ascii=False)
+            )
+
+        for key in [
+            "unified_metrics",
+            "csat",
+            "forecast",
+            "revenue_employee_margin",
+            "revenue_kantata",
+            "tcv_crm",
+            "targets",
+        ]:
+            rows = bundle.get(key) or []
+            if rows:
+                parts.append(
+                    f"{key.upper()} (sample):\n"
+                    + json.dumps(rows[:20], ensure_ascii=False)
+                )
+
+        return "\n\n".join(parts).strip()
+
+    min_chars  = int(os.getenv("SQL_FIRST_MIN_CHARS", "800"))
+    min_tables = int(os.getenv("SQL_FIRST_MIN_TABLES", "2"))
+
+    sql_context_text = ""
+    sql_ok = False
+
+    try:
+        bundle = fetch_account_bundle(company_name)
+        sql_context_text = _bundle_to_context_text(bundle)
+
+        tables_with_data = sum(
+            1
+            for k in [
+                "unified_metrics",
+                "csat",
+                "forecast",
+                "revenue_employee_margin",
+                "revenue_kantata",
+                "tcv_crm",
+                "targets",
+            ]
+            if (bundle.get(k) or [])
+        )
+
+        if (
+            len(sql_context_text) >= min_chars
+            and (bundle.get("account_plan") or tables_with_data >= min_tables)
+        ):
+            sql_ok = True
+
+    except Exception as e:
+        print(f"⚠️ SQL fetch failed, will fallback to Azure Search. Error: {e}")
+
+    # ✅ Azure Search fallback
+    search_context_text = ""
+    if not sql_ok:
+        retrieval_query = f"{company_name} {template_name}"
+        chunks = search_chunks(
+            user_id=user_id,
+            query=retrieval_query,
+            top_k=int(os.getenv("AZURE_SEARCH_FALLBACK_TOPK", "12")),
+        )
+        search_context_text = "\n\n".join(
+            [
+                (c.get("chunk_text") or "").strip()
+                for c in chunks
+                if (c.get("chunk_text") or "").strip()
+            ]
+        ).strip()
+
     context_text = "\n\n".join(
-        [(c.get("chunk_text") or "").strip() for c in chunks if (c.get("chunk_text") or "").strip()]
+        [t for t in [sql_context_text, search_context_text] if t]
     ).strip()
-    
-    template = {"template_type": template_type, "data": template_data}
-    
+
+    # =========================================================
+
+    # no context → return TBD-filled skeleton
     if not context_text:
-        return JsonResponse(enforce_tbd(template, {"template_type": template_type, "data": {}}),
-                          json_dumps_params={"ensure_ascii": False})
-    
-    filled = fill_template_json_only(template=template, context_text=context_text)
-    final = enforce_tbd(template=template, filled=filled)
-    
-    return JsonResponse(final, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse(
+            enforce_tbd(schema, {"template_type": schema["template_type"], "data": {}}),
+            json_dumps_params={"ensure_ascii": False},
+        )
+
+    # ✅ ask LLM to fill EXACT schema
+    filled = fill_template_json_only(
+        template=schema,
+        context_text=context_text,
+    )
+
+    # ✅ normalize for Service_Line_Penetration (merge rows by id)
+    if schema.get("template_type") == "Service_Line_Penetration":
+        filled["template_type"] = "Service_Line_Penetration"
+
+        base = schema["data"]
+        out = filled.get("data") or {}
+        if not isinstance(out, dict):
+            out = {}
+
+        base_rows = {r["id"]: r for r in base.get("tableRows", [])}
+        got_rows = out.get("tableRows")
+
+        if isinstance(got_rows, dict):
+            merged = []
+            for _id, row in base_rows.items():
+                patch = got_rows.get(_id, {})
+                patch = patch if isinstance(patch, dict) else {}
+                merged.append({**row, **patch})
+            out["tableRows"] = merged
+
+        elif isinstance(got_rows, list):
+            patch_map = {
+                str(r.get("id")): r
+                for r in got_rows
+                if isinstance(r, dict) and r.get("id")
+            }
+            merged = []
+            for _id, row in base_rows.items():
+                merged.append({**row, **patch_map.get(_id, {})})
+            out["tableRows"] = merged
+
+        else:
+            out["tableRows"] = base.get("tableRows", [])
+
+        if not out.get("tableRows"):
+            out["tableRows"] = base.get("tableRows", [])
+
+        out["xxValues"] = out.get("xxValues") or base.get("xxValues", [])
+        out["insights"] = out.get("insights") or base.get("insights", "")
+
+        filled["data"] = out
+
+    # final safety: fill missing values with TBD/XX
+    safe = enforce_tbd(schema, filled)
+    return JsonResponse(safe, json_dumps_params={"ensure_ascii": False})
 
 
 # ----------------------------

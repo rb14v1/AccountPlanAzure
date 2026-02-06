@@ -1,1 +1,5 @@
 venv/
+myenv/
+.env
+migrations/
+__pycache__/

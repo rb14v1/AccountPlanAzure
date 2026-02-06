@@ -12,6 +12,17 @@ import ChatArea from "../components/ChatArea";
 import PromptModal from "../components/PromptModal";
 import { useData } from "../context/DataContext";
 
+const ALLOWED_TEMPLATES = [
+  "growth_strategy",
+  "strategic_partnerships",
+  "account_team_pod",
+  "service_line_growth",
+  "operational_excellence",
+  "service_line_penetration",
+  "customer_profile",
+  "investment_plan",
+  "account_dashboard",
+] as const;
 
 const RetrieveChatPage: React.FC = () => {
   const { setGlobalData } = useData();
@@ -28,6 +39,18 @@ const RetrieveChatPage: React.FC = () => {
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
+
+  // --- helpers ---
+  const toDisplayText = (val: any): string => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === "string") return val;
+    // axios may parse JSON automatically → object/array
+    try {
+      return JSON.stringify(val, null, 2);
+    } catch {
+      return String(val);
+    }
+  };
 
   // --- Handlers ---
   const handleNewChat = () => {
@@ -59,11 +82,14 @@ const RetrieveChatPage: React.FC = () => {
 
     // --- UI UPDATE (Show User Message) ---
     const newUserMsg: Message = {
-      id: Date.now(),
+      id: crypto.randomUUID(),
       text: textToSend,
       sender: "user",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      attachment: fileName
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      attachment: fileName,
     };
 
     setMessages((prev) => [...prev, newUserMsg]);
@@ -71,145 +97,120 @@ const RetrieveChatPage: React.FC = () => {
     setSelectedFile(null);
     setIsTyping(true);
 
-    // --- CONNECT TO DJANGO BACKEND ---
     try {
+      // ✅ If user types: "<template_name> <company_name>"
+      const parts = textToSend.trim().split(/\s+/);
+      const maybeTemplate = parts[0] || "";
+      const companyName = parts.slice(1).join(" ").trim();
+
+      if ((ALLOWED_TEMPLATES as readonly string[]).includes(maybeTemplate) && companyName) {
+        const fillRes = await api.post("/template/fill", {
+          user_id: "101",
+          template_name: maybeTemplate,
+          company_name: companyName,
+        });
+
+        const parsedData = fillRes.data;
+
+        if (parsedData?.template_type) {
+          setGlobalData((prev: any) => ({
+            ...prev,
+            [parsedData.template_type]: parsedData.data,
+          }));
+        }
+
+        const assistantMsg: Message = {
+          id: crypto.randomUUID(),
+          text: `✅ Filled template "${maybeTemplate}" for "${companyName}".`,
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+        setIsTyping(false);
+        return;
+      }
+
+      // --- Normal Chat ---
       const response = await api.post("/chat", {
         user_id: "101",
         query: textToSend,
       });
 
-      // ✅ Check for template data in response headers
-      const templateDataHeader = response.headers['x-template-data'];
-      const templateTypeHeader = response.headers['x-template-type'];
-      
-      // Get the plain text answer for display
-      const textAnswer = response.data;
-      
-      console.log("📝 Text Answer:", textAnswer);
-      console.log("📋 Template Type:", templateTypeHeader);
-      console.log("📊 Template Data Header:", templateDataHeader ? "Present" : "Not present");
+      // IMPORTANT: response.data can be STRING or OBJECT
+      const respData = response.data;
 
-      // If we have template data, parse and route it
+      // If backend returns template JSON directly:
+      // { template_type: "...", data: {...} }
+      if (respData && typeof respData === "object" && respData.template_type && respData.data) {
+        setGlobalData((prev: any) => ({
+          ...prev,
+          [respData.template_type]: respData.data,
+        }));
+
+        const botResponse: Message = {
+          id: crypto.randomUUID(),
+          text: `✅ Generated data for "${respData.template_type}". Click Data to view it.`,
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
+
+        setMessages((prev) => [...prev, botResponse]);
+        return;
+      }
+
+      // Existing header based logic (keep, but safe)
+      const templateDataHeader = response.headers["x-template-data"];
+      const templateTypeHeader = response.headers["x-template-type"];
+
       if (templateDataHeader && templateTypeHeader) {
         try {
-          const parsedData = JSON.parse(templateDataHeader);
-          console.log("✅ Parsed Template Data:", parsedData);
-          
-          // --- SMART TRAFFIC CONTROLLER ---
-          // Route data based on template_type
-          
-          if (parsedData.template_type === "growth_strategy") {
-            console.log("✅ Detected: Growth Strategy Data");
-            console.log("📊 Growth Strategy Content:", parsedData.data);
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              growth_strategy: parsedData.data 
-            }));
-            
-          } else if (parsedData.template_type === "strategic_partnerships") {
-            console.log("✅ Detected: Strategic Partnerships Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Strategic_Partnerships: parsedData.data 
-            }));
-            
-          } else if (parsedData.template_type === "account_team_pod") {
-            console.log("✅ Detected: Account Team POD Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Account_Team_POD: parsedData.data 
-            }));
-            
-          } else if (parsedData.template_type === "service_line_growth") {
-            console.log("✅ Detected: Service Line Growth Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Service_Line_Growth_Actions: parsedData.data 
-            }));
-            
-          } else if (parsedData.template_type === "operational_excellence") {
-            console.log("✅ Detected: Operational Excellence Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Operational_Excellence_Strategy: parsedData.data 
-            }));
-
-          } else if (parsedData.template_type === "customer_profile") {
-            console.log("✅ Detected: Customer Profile Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              customer_and_version_1: parsedData.data 
-            }));
-
-          } else if (parsedData.template_type === "investment_plan") {
-            console.log("✅ Detected: Investment Plan Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Investment_Plan: parsedData.data 
-            }));
-
-          } else if (parsedData.template_type === "critical_risk") {
-            console.log("✅ Detected: Critical Risk Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Critical_Risk_Tracking: parsedData.data 
-            }));
-
-          } else if (parsedData.template_type === "relationship_heatmap") {
-            console.log("✅ Detected: Relationship Heatmap Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              relationship_heatmap: parsedData.data 
-            }));
-
-          } else if (parsedData.template_type === "implementation_plan") {
-            console.log("✅ Detected: Implementation Plan Data");
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              Implementation_Plan: parsedData.data 
-            }));
-
-          } else {
-            // Generic fallback for unknown template types
-            console.log(`ℹ️ Generic template data: ${parsedData.template_type}`);
-            setGlobalData((prev: any) => ({ 
-              ...prev, 
-              [parsedData.template_type]: parsedData.data 
-            }));
-          }
-          
-        } catch (parseError) {
-          console.error("❌ Error parsing template data:", parseError);
+          const parsedHeader = JSON.parse(templateDataHeader);
+          setGlobalData((prev: any) => ({
+            ...prev,
+            [parsedHeader.template_type]: parsedHeader.data,
+          }));
+        } catch (err) {
+          console.error("❌ Template parse error:", err);
         }
       }
 
-      // --- UI UPDATE (Show AI Message with PLAIN TEXT) ---
       const botResponse: Message = {
-        id: Date.now() + 1,
-        text: textAnswer,  // ✅ Display plain text, not JSON
+        id: crypto.randomUUID(),
+        text: toDisplayText(respData), // ✅ ALWAYS STRING
         sender: "bot",
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
 
       setMessages((prev) => [...prev, botResponse]);
-
     } catch (error: any) {
-      console.error("Connection Error:", error);
-      
       let errorText = "❌ Could not connect to backend. ";
+
       if (error.response) {
-        errorText += `Server error: ${error.response.status}`;
+        // also try to show backend body
+        const body = error.response?.data;
+        errorText += `Server error: ${error.response.status}. `;
+        if (body) errorText += `\n${toDisplayText(body).slice(0, 1200)}`;
       } else if (error.request) {
-        errorText += "No response from server. Check if backend is running on http://127.0.0.1:8000";
+        errorText += "No response from server. Check if backend is running.";
       } else {
         errorText += error.message;
       }
 
       const errorMsg: Message = {
-        id: Date.now() + 1,
+        id: crypto.randomUUID(),
         text: errorText,
         sender: "bot",
-        timestamp: new Date().toLocaleTimeString()
+        timestamp: new Date().toLocaleTimeString(),
       };
 
       setMessages((prev) => [...prev, errorMsg]);
@@ -231,7 +232,7 @@ const RetrieveChatPage: React.FC = () => {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f5f5" }}>
-      <Header 
+      <Header
         onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         onNewChat={handleNewChat}
       />
@@ -240,7 +241,6 @@ const RetrieveChatPage: React.FC = () => {
         <Sidebar open={isSidebarOpen} />
 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-          {/* Top Right Button */}
           <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
             <Button
               variant="contained"
