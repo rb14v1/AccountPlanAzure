@@ -90,6 +90,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    "x-user-id",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -125,7 +126,7 @@ WSGI_APPLICATION = 'account_management.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'account_Management',
+        'NAME': 'accman',
         'USER': 'postgres',  # Change this to your PostgreSQL username
         'PASSWORD': '12345678',  # Change this to your PostgreSQL password
         'HOST': 'localhost',

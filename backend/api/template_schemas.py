@@ -226,6 +226,24 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "opportunities": [""],
         },
     },
+    # ---------------------------------------------------------
+    # Relationship Heatmap
+    # ---------------------------------------------------------
+    "relationship_heatmap": {
+        "template_type": "relationship_heatmap",
+        "data": {
+            "stakeholder_list": [
+                {
+                    "client_stakeholder": "",
+                    "role": "",
+                    "reports_to": "",
+                    "level": "",
+                    "client_relationship": "",
+                    "engagement_plan_next_action": "",
+                }
+            ]
+        },
+    },
 
     # ---------------------------------------------------------
     # Tech Spend View

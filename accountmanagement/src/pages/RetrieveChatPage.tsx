@@ -80,6 +80,8 @@ const RetrieveChatPage: React.FC = () => {
 
     const fileName = selectedFile ? selectedFile.name : undefined;
 
+    
+
     // --- UI UPDATE (Show User Message) ---
     const newUserMsg: Message = {
       id: crypto.randomUUID(),
@@ -143,27 +145,30 @@ const RetrieveChatPage: React.FC = () => {
       // IMPORTANT: response.data can be STRING or OBJECT
       const respData = response.data;
 
-      // If backend returns template JSON directly:
-      // { template_type: "...", data: {...} }
-      if (respData && typeof respData === "object" && respData.template_type && respData.data) {
-        setGlobalData((prev: any) => ({
-          ...prev,
-          [respData.template_type]: respData.data,
-        }));
+        // ✅ NEW: backend returns { message, payload }
+        if (respData && typeof respData === "object" && respData.message) {
+          const messageText = String(respData.message || "");
 
-        const botResponse: Message = {
-          id: crypto.randomUUID(),
-          text: `✅ Generated data for "${respData.template_type}". Click Data to view it.`,
-          sender: "bot",
-          timestamp: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        };
+          const payload = respData.payload;
+          if (payload?.template_type && payload?.data) {
+            setGlobalData((prev: any) => ({
+              ...prev,
+              [payload.template_type]: payload.data,
+            }));
+          }
 
-        setMessages((prev) => [...prev, botResponse]);
-        return;
-      }
+          const botResponse: Message = {
+            id: crypto.randomUUID(),
+            text: messageText,
+            sender: "bot",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
+
+          setMessages((prev) => [...prev, botResponse]);
+          setIsTyping(false);
+          return;
+        }
+
 
       // Existing header based logic (keep, but safe)
       const templateDataHeader = response.headers["x-template-data"];
