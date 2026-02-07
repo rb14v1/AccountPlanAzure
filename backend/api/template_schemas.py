@@ -117,12 +117,13 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "growth_strategy": {
         "template_type": "growth_strategy",
         "data": {
-            "growth_aspiration": [""],
-            "key_vectors_for_driving_growth": [""],
-            "improve_quality_sustainability_revenues": [""],
-            "potential_inorganic_opportunities": [""],
+            "growth_aspiration": "string",
+            "growth_vectors": ["string"],
+            "revenue_quality_sustainability": "string",
+            "inorganic_opportunities": "string",
         },
     },
+
 
     # ---------------------------------------------------------
     # Customer Profile

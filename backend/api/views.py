@@ -242,9 +242,6 @@ def _sql_is_sufficient(bundle: dict, sql_text: str) -> bool:
 #################################################################################
 
 
-# ----------------------------
-# RAG Chat endpoint
-# ----------------------------
 @csrf_exempt
 def chat(request):
     """
@@ -368,6 +365,47 @@ def chat(request):
     # ✅ Detect template intent
     template_type = detect_template_type_from_query(question)
 
+    # =========================================================
+    # ✅ ADDITION: Growth Strategy normalization (NEW)
+    # =========================================================
+    # backend/api/views.py
+
+    def _normalize_growth_strategy_payload(obj: dict) -> dict:
+        """
+        Ensures STRICT shape matching GrowthStrategy.tsx fieldNames.
+        """
+        if not isinstance(obj, dict):
+            obj = {}
+
+        data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        if not isinstance(data, dict):
+            data = {}
+
+        def to_list(val):
+            if isinstance(val, list):
+                return [str(x).strip() for x in val if x]
+            if val is not None and str(val).strip():
+                # Split long strings by newline or semicolon into bullet points
+                return [p.strip() for p in str(val).replace("\n", ";").split(";") if p.strip()]
+            return ["TBD"]
+
+        # ✅ Map LLM keys (growth_vectors) to React keys (key_vectors_for_driving_growth)
+        return {
+            "template_type": "growth_strategy",
+            "data": {
+                "growth_aspiration": to_list(data.get("growth_aspiration")),
+                "key_vectors_for_driving_growth": to_list(
+                    data.get("growth_vectors") or data.get("key_vectors_for_driving_growth")
+                ),
+                "improve_quality_sustainability_revenues": to_list(
+                    data.get("revenue_quality_sustainability") or data.get("improve_quality_sustainability_revenues")
+                ),
+                "potential_inorganic_opportunities": to_list(
+                    data.get("inorganic_opportunities") or data.get("potential_inorganic_opportunities")
+                ),
+            },
+        }
+
     if template_type == "relationship_heatmap":
         schema = get_template_schema("relationship_heatmap")
 
@@ -437,7 +475,6 @@ def chat(request):
                 "data": {"stakeholder_list": normalized_rows},
             }
 
-
         # ✅ THIS LINE WAS MISSING BEFORE (the real fix)
         safe = _normalize_relationship_heatmap_payload(safe)
 
@@ -449,9 +486,43 @@ def chat(request):
 
         return JsonResponse({"message": message, "payload": safe}, json_dumps_params={"ensure_ascii": False})
 
+    # =========================================================
+    # ✅ ADDITION: Growth Strategy template branch (NEW)
+    # =========================================================
+    if template_type == "growth_strategy":
+        schema = get_template_schema("growth_strategy")
+
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        safe = enforce_tbd(schema, filled)
+
+        # ✅ normalize
+        safe = _normalize_growth_strategy_payload(safe)
+
+        # ✅ save JSON to DB
+        _save_payload(user_id=user_id, company_name=company_name, template_type="growth_strategy", payload=safe)
+
+        # ✅ human readable chat message
+        d = safe.get("data") or {}
+        gv = d.get("growth_vectors") or []
+        if isinstance(gv, list):
+            gv_text = "\n".join([f"- {x}" for x in gv])
+        else:
+            gv_text = str(gv)
+
+        message = (
+            "Growth Strategy:\n"
+            f"• Growth aspiration: {d.get('growth_aspiration', 'TBD')}\n"
+            f"• Growth vectors:\n{gv_text}\n"
+            f"• Revenue quality & sustainability: {d.get('revenue_quality_sustainability', 'TBD')}\n"
+            f"• Inorganic opportunities: {d.get('inorganic_opportunities', 'TBD')}"
+        )
+
+        return JsonResponse({"message": message, "payload": safe}, json_dumps_params={"ensure_ascii": False})
+
     # Normal Q&A
     answer = answer_only_from_context(query=question, context_text=context_text)
     return JsonResponse({"message": answer or "TBD", "payload": None}, json_dumps_params={"ensure_ascii": False})
+
 
 
 # ----------------------------
@@ -748,3 +819,44 @@ def relationship_heatmap_save(request):
 
     _save_payload(user_id=user_id, company_name=company, template_type=template_type, payload=payload)
     return JsonResponse({"success": True, "payload": payload}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def growth_strategy_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    # Pull latest growth_strategy record for this user
+    obj = TemplatePayload.objects.filter(user_id=user_id, template_type="growth_strategy").order_by('-updated_at').first()
+    
+    if not obj:
+        return JsonResponse({}, status=200) # Component handles empty state
+    
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def growth_strategy_save(request):
+    """
+    Saves the user edits from the Growth Strategy template.
+    """
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+    
+    body = _json_body(request)
+    # Use fallback 101 if user_id is missing
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+    
+    # ✅ The frontend sends editable.draftData which is already { growth_aspiration: [...], ... }
+    # Wrap it in the standard payload structure
+    payload = {
+        "template_type": "growth_strategy",
+        "data": body.get("data") or {}
+    }
+    
+    saved_obj = _save_payload(user_id=user_id, company_name=company, template_type="growth_strategy", payload=payload)
+    
+    # Return result.payload.data as expected by React's performSave/handleManualSave
+    return JsonResponse({
+        "success": True, 
+        "payload": {
+            "data": saved_obj.payload.get("data", {})
+        }
+    }, json_dumps_params={"ensure_ascii": False})
