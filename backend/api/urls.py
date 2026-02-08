@@ -20,4 +20,12 @@ urlpatterns = [
     # ✅ Growth Strategy
     path("growth-strategy/", views.growth_strategy_get),
     path("growth-strategy/save/", views.growth_strategy_save),
+
+    path("customer-profile/", views.customer_profile_get),
+    path("customer-profile/save_profile/", views.customer_profile_save),
+
+    path("service-line-growth/", views.service_line_growth_get),
+    
+    # ✅ Matches fetch(`${API_BASE_URL}/service-line-growth/save_growth/`)
+    path("service-line-growth/save_growth/", views.service_line_growth_save),
 ]

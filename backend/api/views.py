@@ -370,6 +370,81 @@ def chat(request):
     # =========================================================
     # backend/api/views.py
 
+    def _normalize_customer_profile_payload(obj: dict) -> dict:
+        # If the LLM didn't wrap it in "data", use the whole object
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        if not isinstance(raw_data, dict):
+            raw_data = {}
+
+        def to_list(val):
+            if isinstance(val, list):
+                return [str(x).strip() for x in val if x]
+            if isinstance(val, str) and val.strip():
+                # Splits by newline or semicolon if it's a single long string
+                return [p.strip() for p in val.replace("\n", ";").split(";") if p.strip()]
+            return ["TBD"]
+
+        return {
+            "template_type": "customer_profile",
+            "data": {
+                "customer_name": raw_data.get("customer_name") or raw_data.get("customer") or "TBD",
+                "headquarter_location": raw_data.get("headquarter_location") or raw_data.get("headquarter") or "TBD",
+                "csat": str(raw_data.get("csat") or "TBD"),
+                "version_1_vertical": raw_data.get("version_1_vertical") or raw_data.get("Version 1 Vertical") or "TBD",
+                "current_work": to_list(raw_data.get("current_work")),
+                "service_lines": to_list(raw_data.get("service_lines")),
+                "customer_perception": to_list(raw_data.get("customer_perception")),
+            }
+        }
+    
+    # views.py
+
+    # backend/api/views.py
+
+    # backend/api/views.py
+
+    # backend/api/views.py
+
+    # backend/api/views.py
+
+    def _normalize_service_line_growth_payload(obj: dict) -> dict:
+        # 1. Extract the raw list from the AI's response
+        data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        raw_list = data.get("growth_actions_list") if isinstance(data, list) else []
+        
+        # 2. Key mapping to match your Frontend KEY_MAP exactly
+        # We use lowercase keys here to match any AI capitalization
+        mapping = {
+            "cloud transformation": "Cloud_Transformation",
+            "data": "Data",
+            "ai": "AI",
+            "srg managed services": "SRG_Managed_Services",
+            "ea": "EA",
+            "strategy, design and change": "Strategy_Design_and_Change",
+            "strategy design and change": "Strategy_Design_and_Change",
+            "sam & licensing": "SAM_and_Licensing",
+            "sam and licensing": "SAM_and_Licensing"
+        }
+
+        final_data = {}
+        for item in raw_list:
+            # ✅ Normalize the input string to lowercase for a guaranteed match
+            area = str(item.get("development_area") or "").lower().strip()
+            key = mapping.get(area)
+            
+            if key:
+                # Map AI fields to the exact keys expected by the React table
+                final_data[key] = {
+                    "Objective": item.get("objective") or "TBD",
+                    "Target_Buying_Centres": item.get("target_buying_centres") or "TBD",
+                    "Current_Status": item.get("current_status") or "TBD",
+                    "Next_Action_and_Responsible_Person": item.get("next_action_responsible_person") or "TBD"
+                }
+        
+        # 3. Return the standard structure
+        return {"template_type": "service_line_growth_actions", "data": final_data}
+
+
     def _normalize_growth_strategy_payload(obj: dict) -> dict:
         """
         Ensures STRICT shape matching GrowthStrategy.tsx fieldNames.
@@ -518,6 +593,46 @@ def chat(request):
         )
 
         return JsonResponse({"message": message, "payload": safe}, json_dumps_params={"ensure_ascii": False})
+    
+    # Inside chat(request) in views.py
+    if template_type == "customer_profile":
+        schema = get_template_schema("customer_profile")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        safe = _normalize_customer_profile_payload(filled)
+
+        # Save to DB
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="customer_profile", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Profile updated", "payload": safe}) 
+    
+    # Inside chat(request) in views.py
+    # Inside chat(request) in views.py
+    if template_type == "service_line_growth_actions":
+        schema = get_template_schema("service_line_growth_actions")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        
+        # ✅ Transform AI list into Keyed Object for Frontend
+        safe = _normalize_service_line_growth_payload(filled)
+
+        # ✅ Ensure company_name is NOT empty
+        final_company = company_name if company_name else "NatWest Group"
+
+        _save_payload(
+            user_id=user_id, 
+            company_name=final_company, 
+            template_type="service_line_growth_actions", 
+            payload=safe
+        )
+        
+        # ✅ FIX: This return prevents the "ValueError: returned None" crash
+        return JsonResponse({
+            "message": f"I've updated the Service Line Growth Actions for {final_company}.", 
+            "payload": safe
+        }, json_dumps_params={"ensure_ascii": False})
 
     # Normal Q&A
     answer = answer_only_from_context(query=question, context_text=context_text)
@@ -860,3 +975,84 @@ def growth_strategy_save(request):
             "data": saved_obj.payload.get("data", {})
         }
     }, json_dumps_params={"ensure_ascii": False})
+
+# backend/api/views.py
+
+@csrf_exempt
+def customer_profile_get(request):
+    """Fetches latest saved customer profile for the user."""
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="customer_profile"
+    ).order_by('-updated_at').first()
+    
+    if not obj:
+        # Return empty structure matching the frontend's expected keys
+        return JsonResponse({}, status=200)
+    
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def customer_profile_save(request):
+    """Saves manual edits or auto-saves from the chatbot."""
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+    
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("customer_name") or "").strip() # Use customer_name for company key
+    
+    # Wrap data in the standard payload format
+    payload = {
+        "template_type": "customer_profile",
+        "data": body # The body is already the dictionary of fields
+    }
+    
+    saved_obj = _save_payload(
+        user_id=user_id, 
+        company_name=company, 
+        template_type="customer_profile", 
+        payload=payload
+    )
+    
+    return JsonResponse({
+        "success": True, 
+        "data": saved_obj.payload.get("data", {})
+    }, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def service_line_growth_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="service_line_growth_actions"
+    ).order_by('-updated_at').first()
+    
+    return JsonResponse(obj.payload.get("data", {}) if obj else {}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def service_line_growth_save(request):
+    if request.method != "POST": 
+        return JsonResponse({"error": "POST only"}, status=405)
+    
+    body = _json_body(request)
+    # Ensure we get the user_id and company_name from the body
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "NatWest Group").strip()
+    
+    # The frontend 'editable.draftData' is already formatted as the keyed object
+    payload = {
+        "template_type": "service_line_growth_actions",
+        "data": body 
+    }
+    
+    saved_obj = _save_payload(
+        user_id=user_id, 
+        company_name=company, 
+        template_type="service_line_growth_actions", 
+        payload=payload
+    )
+    
+    return JsonResponse({"success": True, "data": saved_obj.payload.get("data")})

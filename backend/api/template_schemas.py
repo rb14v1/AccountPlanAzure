@@ -131,12 +131,13 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "customer_profile": {
         "template_type": "customer_profile",
         "data": {
-            "client_overview": [""],
-            "products_and_services": [""],
-            "key_stakeholders": [""],
-            "org_structure": [""],
-            "geographies": [""],
-            "key_competitors": [""],
+            "customer_name": "",
+            "headquarter_location": "",
+            "csat": "",
+            "version_1_vertical": "",
+            "current_work": [""],
+            "service_lines": [""],
+            "customer_perception": [""],
         },
     },
 
@@ -245,6 +246,26 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             ]
         },
     },
+    # ---------------------------------------------------------
+    # Service Line Growth Actions
+    # ---------------------------------------------------------
+
+    "service_line_growth_actions": {  # ✅ Consistent Keyword
+        "template_type": "service_line_growth_actions",
+        "data": {
+            "growth_actions_list": [
+                {
+                    "development_area": "", 
+                    "objective": "", 
+                    "target_buying_centres": "", 
+                    "current_status": "", 
+                    "next_action_responsible_person": ""
+                }
+            ]
+        },
+    },
+
+    
 
     # ---------------------------------------------------------
     # Tech Spend View
