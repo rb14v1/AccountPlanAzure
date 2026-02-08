@@ -117,11 +117,17 @@ def detect_template_type_from_query(query: str) -> str:
             "account team", "pod", "sales lead", "delivery lead",
             "functional poc", "team structure"
         ],
-        "service_line_growth": [
-            "service line", "cloud transformation", "data modernization",
-            "ai capabilities", "managed services"
-        ],
-        "operational_excellence": [
+        "service_line_growth_actions": [
+    "service line", 
+    "growth actions",       # ✅ CATCH-ALL: Matches "Create Service Line Growth Actions"
+    "growth plan",          # ✅ GENERIC: Matches "Create a growth plan"
+    "cloud transformation", 
+    "data modernization",
+    "ai capabilities", 
+    "managed services",
+    "srg"                   # ✅ ACRONYM: Matches "SRG Managed Services"
+],
+        "operational_excellence_strategy": [
             "operational excellence", "margin", "gp percent",
             "commercial transformation", "priority levers"
         ],

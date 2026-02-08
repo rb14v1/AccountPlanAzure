@@ -397,52 +397,80 @@ def chat(request):
             }
         }
     
-    # views.py
+    
+    def _normalize_operational_excellence_payload(obj: dict) -> dict:
+        """
+        Ensures the LLM output matches exactly what OperationalExcellencePage.tsx expects.
+        Fixes strings-instead-of-lists and missing keys.
+        """
+        # 1. Handle if LLM forgot the "data" wrapper or double-wrapped it
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        if not isinstance(raw_data, dict):
+            raw_data = {}
 
-    # backend/api/views.py
+        # 2. Helper to force data into a List of Strings
+        def to_list(val):
+            if isinstance(val, list):
+                # Filter out empty strings and ensure everything is a string
+                return [str(x).strip() for x in val if x]
+            if isinstance(val, str) and val.strip():
+                # If LLM returned a bulleted string, try to split it
+                if "\n" in val:
+                    return [x.strip() for x in val.split("\n") if x.strip()]
+                return [val.strip()]
+            # Default fallback
+            return ["TBD"]
 
-    # backend/api/views.py
-
-    # backend/api/views.py
-
-    # backend/api/views.py
-
-    def _normalize_service_line_growth_payload(obj: dict) -> dict:
-        # 1. Extract the raw list from the AI's response
-        data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
-        raw_list = data.get("growth_actions_list") if isinstance(data, list) else []
-        
-        # 2. Key mapping to match your Frontend KEY_MAP exactly
-        # We use lowercase keys here to match any AI capitalization
-        mapping = {
-            "cloud transformation": "Cloud_Transformation",
-            "data": "Data",
-            "ai": "AI",
-            "srg managed services": "SRG_Managed_Services",
-            "ea": "EA",
-            "strategy, design and change": "Strategy_Design_and_Change",
-            "strategy design and change": "Strategy_Design_and_Change",
-            "sam & licensing": "SAM_and_Licensing",
-            "sam and licensing": "SAM_and_Licensing"
+        # 3. Return the Safe Structure
+        return {
+            "template_type": "operational_excellence_strategy",
+            "data": {
+                "current_gp_percentage": str(raw_data.get("current_gp_percentage") or "TBD"),
+                "gp_percentage_ambition": str(raw_data.get("gp_percentage_ambition") or "TBD"),
+                
+                # These two MUST be lists for the frontend .map() to work
+                "priority_levers_to_drive_margin_uplift": to_list(raw_data.get("priority_levers_to_drive_margin_uplift")),
+                "plan_for_commercial_model_transformation": to_list(raw_data.get("plan_for_commercial_model_transformation"))
+            }
         }
 
-        final_data = {}
-        for item in raw_list:
-            # ✅ Normalize the input string to lowercase for a guaranteed match
-            area = str(item.get("development_area") or "").lower().strip()
-            key = mapping.get(area)
+    def _normalize_service_line_growth_payload(obj: dict) -> dict:
+        """
+        Ensures all 7 required service line keys exist, even if LLM missed one.
+        """
+        REQUIRED_KEYS = [
+            "Cloud_Transformation", "Data", "AI", "SRG_Managed_Services",
+            "EA", "Strategy_Design_and_Change", "SAM_and_Licensing"
+        ]
+        DEFAULT_ROW = {
+            "Objective": "TBD", 
+            "Target_Buying_Centres": "TBD", 
+            "Current_Status": "TBD", 
+            "Next_Action_and_Responsible_Person": "TBD"
+        }
+
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        if not isinstance(raw_data, dict):
+            raw_data = {}
+
+        clean_data = {}
+        for key in REQUIRED_KEYS:
+            # Get the row from LLM or use default
+            row = raw_data.get(key)
+            if not isinstance(row, dict):
+                row = DEFAULT_ROW.copy()
             
-            if key:
-                # Map AI fields to the exact keys expected by the React table
-                final_data[key] = {
-                    "Objective": item.get("objective") or "TBD",
-                    "Target_Buying_Centres": item.get("target_buying_centres") or "TBD",
-                    "Current_Status": item.get("current_status") or "TBD",
-                    "Next_Action_and_Responsible_Person": item.get("next_action_responsible_person") or "TBD"
-                }
-        
-        # 3. Return the standard structure
-        return {"template_type": "service_line_growth_actions", "data": final_data}
+            # Ensure all fields inside the row exist
+            clean_row = {}
+            for field in ["Objective", "Target_Buying_Centres", "Current_Status", "Next_Action_and_Responsible_Person"]:
+                clean_row[field] = str(row.get(field) or "TBD")
+            
+            clean_data[key] = clean_row
+
+        return {
+            "template_type": "service_line_growth_actions",
+            "data": clean_data
+        }
 
 
     def _normalize_growth_strategy_payload(obj: dict) -> dict:
@@ -480,6 +508,33 @@ def chat(request):
                 ),
             },
         }
+    
+    # ... inside def chat(request): ...
+
+    # =========================================================
+    # OPERATIONAL EXCELLENCE STRATEGY
+    # =========================================================
+    if template_type == "operational_excellence_strategy":
+        # 1. Get Schema
+        schema = get_template_schema("operational_excellence_strategy")
+        
+        # 2. Fill Template (Raw LLM Output)
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+
+        # 3. Normalize (Clean the data so it doesn't crash the frontend)
+        #    Make sure you added the helper function I gave you earlier!
+        safe = _normalize_operational_excellence_payload(filled)
+
+        # 4. Save to DB
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="operational_excellence_strategy", 
+            payload=safe
+        )
+        
+        return JsonResponse({"message": "Profile updated", "payload": safe})
+
 
     if template_type == "relationship_heatmap":
         schema = get_template_schema("relationship_heatmap")
@@ -559,7 +614,7 @@ def chat(request):
         # ✅ show human-readable in chat
         message = _humanize_relationship_heatmap(safe)
 
-        return JsonResponse({"message": message, "payload": safe}, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse({"message": "Profile updated", "payload": safe})
 
     # =========================================================
     # ✅ ADDITION: Growth Strategy template branch (NEW)
@@ -592,7 +647,7 @@ def chat(request):
             f"• Inorganic opportunities: {d.get('inorganic_opportunities', 'TBD')}"
         )
 
-        return JsonResponse({"message": message, "payload": safe}, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse({"message": "Profile updated", "payload": safe})
     
     # Inside chat(request) in views.py
     if template_type == "customer_profile":
@@ -618,21 +673,14 @@ def chat(request):
         # ✅ Transform AI list into Keyed Object for Frontend
         safe = _normalize_service_line_growth_payload(filled)
 
-        # ✅ Ensure company_name is NOT empty
-        final_company = company_name if company_name else "NatWest Group"
-
         _save_payload(
             user_id=user_id, 
-            company_name=final_company, 
+            company_name=company_name, 
             template_type="service_line_growth_actions", 
             payload=safe
         )
         
-        # ✅ FIX: This return prevents the "ValueError: returned None" crash
-        return JsonResponse({
-            "message": f"I've updated the Service Line Growth Actions for {final_company}.", 
-            "payload": safe
-        }, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse({"message": "Profile updated", "payload": safe})
 
     # Normal Q&A
     answer = answer_only_from_context(query=question, context_text=context_text)
@@ -1024,35 +1072,79 @@ def customer_profile_save(request):
 
 @csrf_exempt
 def service_line_growth_get(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "GET only"}, status=405)
+
     user_id = str(request.GET.get("user_id") or "101").strip()
+
     obj = TemplatePayload.objects.filter(
         user_id=user_id, 
         template_type="service_line_growth_actions"
     ).order_by('-updated_at').first()
-    
-    return JsonResponse(obj.payload.get("data", {}) if obj else {}, json_dumps_params={"ensure_ascii": False})
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
 
 @csrf_exempt
 def service_line_growth_save(request):
-    if request.method != "POST": 
+    if request.method != "POST":
         return JsonResponse({"error": "POST only"}, status=405)
-    
+
     body = _json_body(request)
-    # Ensure we get the user_id and company_name from the body
     user_id = str(body.get("user_id") or "101").strip()
-    company = str(body.get("company_name") or "NatWest Group").strip()
-    
-    # The frontend 'editable.draftData' is already formatted as the keyed object
+    company = str(body.get("company_name") or "").strip()
+
     payload = {
         "template_type": "service_line_growth_actions",
-        "data": body 
+        "data": body # Frontend sends the object directly
     }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="service_line_growth_actions", payload=payload)
     
-    saved_obj = _save_payload(
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+
+# 2. ADD THE GET ENDPOINT (At the bottom of the file)
+# ---------------------------------------------------------
+@csrf_exempt
+def operational_excellence_get(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "GET only"}, status=405)
+
+    user_id = str(request.GET.get("user_id") or "101").strip()
+
+    obj = TemplatePayload.objects.filter(
         user_id=user_id, 
-        company_name=company, 
-        template_type="service_line_growth_actions", 
-        payload=payload
-    )
+        template_type="operational_excellence_strategy"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+
+    # Return the 'data' block directly to the frontend
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+
+# 3. ADD THE SAVE ENDPOINT (At the bottom of the file)
+# ---------------------------------------------------------
+@csrf_exempt
+def operational_excellence_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    # Wrap the frontend data into the standard payload structure
+    payload = {
+        "template_type": "operational_excellence_strategy",
+        "data": body # Frontend sends the data object directly
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="operational_excellence_strategy", payload=payload)
     
-    return JsonResponse({"success": True, "data": saved_obj.payload.get("data")})
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})

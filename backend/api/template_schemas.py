@@ -246,25 +246,47 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             ]
         },
     },
+    
     # ---------------------------------------------------------
     # Service Line Growth Actions
     # ---------------------------------------------------------
-
-    "service_line_growth_actions": {  # ✅ Consistent Keyword
+    "service_line_growth_actions": { 
         "template_type": "service_line_growth_actions",
         "data": {
-            "growth_actions_list": [
-                {
-                    "development_area": "", 
-                    "objective": "", 
-                    "target_buying_centres": "", 
-                    "current_status": "", 
-                    "next_action_responsible_person": ""
-                }
-            ]
+            # ✅ THESE KEYS MATCH YOUR FRONTEND KEY_MAP EXACTLY
+            "Cloud_Transformation": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "Data": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "AI": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "SRG_Managed_Services": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "EA": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "Strategy_Design_and_Change": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
+            "SAM_and_Licensing": {
+                "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": ""
+            },
         },
     },
 
+    "operational_excellence_strategy": {
+        "template_type": "operational_excellence_strategy",
+        "data": {
+            "current_gp_percentage": "",
+            "gp_percentage_ambition": "",
+            "priority_levers_to_drive_margin_uplift": [""],
+            "plan_for_commercial_model_transformation": [""]
+        },
+    },
     
 
     # ---------------------------------------------------------
