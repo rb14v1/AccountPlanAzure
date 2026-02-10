@@ -287,7 +287,118 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "plan_for_commercial_model_transformation": [""]
         },
     },
-    
+    # ---------------------------------------------------------
+    # Talent Excellence Overview
+    # ---------------------------------------------------------
+    "talent_excellence_overview": {
+        "template_type": "talent_excellence_overview",
+        "data": {
+            "overviewRows": [
+                {
+                    "id": 1,
+                    "metric": "",
+                    "target": "",
+                    "q1": "", "q1Status": "",
+                    "q2": "", "q2Status": "",
+                    "q3": "", "q3Status": "",
+                    "q4": "", "q4Status": ""
+                }
+            ],
+            "demandRows": [
+                {
+                    "id": 1,
+                    "metric": "",
+                    "target": "",
+                    "q1": "", "q1Status": "",
+                    "q2": "", "q2Status": "",
+                    "q3": "", "q3Status": "",
+                    "q4": "", "q4Status": ""
+                }
+            ],
+            "insights": ""
+        }
+    },
+
+    "innovation_strategy": {
+        "template_type": "innovation_strategy",
+        "data": {
+            "current_outlook_on_ai": "",
+            "top_motivations_for_genai": "",
+            "top_genai_projects": "",
+            "other_innovation_projects": "",
+            "high_value_use_cases": ""
+        },
+    },
+
+    "investment_plan": {
+        "template_type": "investment_plan",
+        "data": {
+            "investments": [
+                {
+                    "investment_number": 1,
+                    "investment_type": "Billing investment",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Approved",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 2,
+                    "investment_type": "Buffers",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Delayed",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 3,
+                    "investment_type": "Innovation",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "At Risk",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 4,
+                    "investment_type": "Free resources",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "On-track",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 5,
+                    "investment_type": "Marketing investments / relationship building",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Approved",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 6,
+                    "investment_type": "Travel investments",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Delayed",
+                    "remarks": ""
+                }
+            ],
+            "total_investment_value": "XX"
+        },
+    },
+     
     "account_performance_annual_plan": {
         "template_type": "account_performance_annual_plan",
         "data": {
@@ -322,10 +433,31 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "tech_spend_view": {
         "template_type": "tech_spend_view",
         "data": {
-            "current_tech_spend": [""],
-            "spend_breakdown": [""],
-            "key_vendors": [""],
-            "opportunities_to_optimize": [""],
+            "rows": [
+                # We expect 6 rows for Business Units (BU1 - BU6)
+                {"id": 1, "name": "BU1", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 2, "name": "BU2", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 3, "name": "BU3", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 4, "name": "BU4", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 5, "name": "BU5", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 6, "name": "BU6", "desc": "", "size": "", "growth": "", "spend": "", "priorities": "", "presence": "", "incumbent": ""}
+            ],
+            "geoRevenue": [
+                {"l": "Americas", "v": "", "h": "75%"},
+                {"l": "EMEA", "v": "", "h": "60%"},
+                {"l": "APAC", "v": "", "h": "20%"},
+                {"l": "Others", "v": "", "h": "15%"}
+            ],
+            "geoTalent": [
+                {"geo": "Americas", "val": ""},
+                {"geo": "EMEA", "val": ""},
+                {"geo": "APAC", "val": ""}
+            ],
+            "geoPriorities": [
+                {"geo": "Americas", "val": ""},
+                {"geo": "EMEA", "val": ""},
+                {"geo": "APAC", "val": ""}
+            ]
         },
     },
 }

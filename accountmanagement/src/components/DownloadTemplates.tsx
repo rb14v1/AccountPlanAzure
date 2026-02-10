@@ -126,10 +126,14 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
           (canvas.height * usableWidth) / canvas.width;
 
         // 🚨 If section doesn't fit → move to next page
-        if (cursorY + imgHeight > pageHeight - marginBottom) {
+        if (
+          cursorY !== marginTop &&
+          cursorY + imgHeight > pageHeight - marginBottom
+        ) {
           pdf.addPage();
           cursorY = marginTop;
         }
+
 
         pdf.addImage(
           imgData,
@@ -176,18 +180,18 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
     }
   };
 
-  const downloadAllTemplates = () => {
-    const els = Array.from(
-      document.querySelectorAll(".template-section")
-    ) as HTMLElement[];
-    console.log("Templates found:", els.length);
+  // const downloadAllTemplates = () => {
+  //   const els = Array.from(
+  //     document.querySelectorAll(".template-section")
+  //   ) as HTMLElement[];
+  //   console.log("Templates found:", els.length);
 
-    if (els.length) {
-      generatePDF(els, "Full_Account_Report.pdf");
-    } else {
-      alert("No templates found for full download");
-    }
-  };
+  //   if (els.length) {
+  //     generatePDF(els, "Full_Account_Report.pdf");
+  //   } else {
+  //     alert("No templates found for full download");
+  //   }
+  // };
 
   return (
     <>

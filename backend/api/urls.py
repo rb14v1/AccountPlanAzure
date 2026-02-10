@@ -38,4 +38,14 @@ urlpatterns = [
 
     path("service-line-growth/", views.service_line_growth_get),   
     path("service-line-growth/save_growth/", views.service_line_growth_save),
+
+    path("investment-plan/", views.investment_plan_get),
+    path("investment-plan/save_plan/", views.investment_plan_save),
+
+    path("talent-excellence/", views.talent_excellence_get),
+    path("talent-excellence/save/", views.talent_excellence_save),
+
+    path("innovation-strategy/", views.innovation_strategy_get),
+    path("innovation-strategy/save/", views.innovation_strategy_save),
+ 
 ]
