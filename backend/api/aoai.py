@@ -204,8 +204,17 @@ def detect_template_type_from_query(query: str) -> str:
             "relationship heatmap", "stakeholder", "relationship strength"
         ],
         "implementation_plan": [
-            "implementation plan", "action plan", "timeline"
-        ]
+            # 1. ✅ MASTER TRIGGER
+            "implementation_plan",
+           
+            # 2. Keywords
+            "implementation plan",
+            "action plan",
+            "growth plan actions",
+            "timeline for growth",
+            "investment needed"
+        ],
+ 
     }
     
     for template_type, keywords in template_keywords.items():

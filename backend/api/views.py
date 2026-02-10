@@ -744,6 +744,35 @@ def chat(request):
                 "total_investment_value": str(raw_data.get("total_investment_value") or "XX")
             }
         }
+    
+    def _normalize_implementation_plan_payload(obj: dict) -> dict:
+        """
+        Ensures the Implementation Plan has the correct list structure.
+        """
+        raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+        # Get rows or create defaults
+        rows = raw.get("actions") or []
+        if not isinstance(rows, list):
+            rows = []
+        # Ensure at least 3 empty rows if none exist
+        while len(rows) < 3:
+            rows.append({})
+    
+        clean_rows = []
+        for r in rows:
+            clean_rows.append({
+                "action": str(r.get("action") or ""),
+                "timeline": str(r.get("timeline") or ""),
+                "owner": str(r.get("owner") or ""),
+                "status": str(r.get("status") or "To be initiated"),
+                "investment_needed": str(r.get("investment_needed") or ""),
+                "impact": str(r.get("impact") or "")
+            })
+    
+        return {
+            "template_type": "implementation_plan",
+            "data": { "actions": clean_rows }
+        }
 
     def _normalize_tech_spend_payload(obj: dict) -> dict:
         """
@@ -933,6 +962,21 @@ def chat(request):
         )
 
         return JsonResponse({"message": "Profile updated", "payload": safe})
+    
+    if template_type == "implementation_plan":
+        schema = get_template_schema("implementation_plan")
+        # 1. Generate
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        # 2. Normalize
+        safe = _normalize_implementation_plan_payload(filled)
+        # 3. Save
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="implementation_plan", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Implementation Plan generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
 
     if template_type == "innovation_strategy":
         schema = get_template_schema("innovation_strategy")
@@ -1688,4 +1732,34 @@ def talent_excellence_save(request):
         payload=payload
     )
 
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def implementation_plan_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="implementation_plan"
+    ).order_by('-updated_at').first()
+ 
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+ 
+@csrf_exempt
+def implementation_plan_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+ 
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+ 
+    # Frontend sends { "actions": [...] }
+    payload = {
+        "template_type": "implementation_plan",
+        "data": body 
+    }
+ 
+    _save_payload(user_id=user_id, company_name=company, template_type="implementation_plan", payload=payload)
     return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})

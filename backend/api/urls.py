@@ -47,5 +47,8 @@ urlpatterns = [
 
     path("innovation-strategy/", views.innovation_strategy_get),
     path("innovation-strategy/save/", views.innovation_strategy_save),
+
+    path("implementation-plan/", views.implementation_plan_get),
+    path("implementation-plan/save/", views.implementation_plan_save),
  
 ]
