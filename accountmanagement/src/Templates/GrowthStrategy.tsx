@@ -325,10 +325,10 @@ const GrowthStrategy: React.FC = () => {
         </Box>
 
         <Box id="template-to-download" className="template-section">
-          <Typography variant="h4" sx={{ fontWeight: 700, color: TEAL_COLOR, mb: 3 }}>Growth Strategy</Typography>
+          <Typography variant="h4" className="pdf-section" sx={{ fontWeight: 700, color: TEAL_COLOR, mb: 3 }}>Growth Strategy</Typography>
 
           {strategyData.map((section) => (
-            <SectionContainer key={section.id} elevation={0}>
+            <SectionContainer key={section.id} elevation={0} className="pdf-section">
               <QuestionHeader>{section.question}</QuestionHeader>
               <AnswerBody>
                 <Box component="ul" sx={{ m: 0, pl: 3, listStyleType: "disc" }}>

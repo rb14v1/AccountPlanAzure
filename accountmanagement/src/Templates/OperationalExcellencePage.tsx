@@ -176,12 +176,12 @@ export default function OperationalExcellencePage() {
 
         {/* --- TEMPLATE CONTENT --- */}
         <Box id="template-to-download">
-          <Typography variant="h4" sx={{ color: "#008080", fontWeight: 700, mb: 3 }}>
+          <Typography variant="h4" className="pdf-section" sx={{ color: "#008080", fontWeight: 700, mb: 3 }}>
             Operational Excellence Strategy
           </Typography>
 
           {/* 1. GP Metrics Row */}
-          <Box sx={{ display: "flex", gap: 3, mb: 3 }}>
+          <Box className="pdf-section" sx={{ display: "flex", gap: 3, mb: 3 }}>
             <Box sx={{ flex: 1 }}>
               <SectionHeader>Current GP %</SectionHeader>
               <SectionBody>
@@ -213,7 +213,7 @@ export default function OperationalExcellencePage() {
           </Box>
 
           {/* 2. Priority Levers (List) */}
-          <Box sx={{ mb: 3 }}>
+          <Box className="pdf-section" sx={{ mb: 3 }}>
             <SectionHeader>Priority Levers to Drive Margin Uplift</SectionHeader>
             <SectionBody>
               {isEditing ? (
@@ -236,7 +236,7 @@ export default function OperationalExcellencePage() {
           </Box>
 
           {/* 3. Commercial Transformation (List) */}
-          <Box sx={{ mb: 3 }}>
+          <Box className="pdf-section" sx={{ mb: 3 }}>
             <SectionHeader>Plan for Commercial Model Transformation</SectionHeader>
             <SectionBody>
               {isEditing ? (

@@ -248,10 +248,10 @@ export default function CustomerProfile() {
         </Box>
 
         <Box id="template-to-download">
-          <Typography variant="h4" fontWeight={700} color="teal" mb={2}>Customer & Version 1</Typography>
+          <Typography variant="h4" className="pdf-section" fontWeight={700} color="teal" mb={2}>Customer & Version 1</Typography>
 
           {/* TOP INFO GRID */}
-          <Box sx={{ border: "1px solid #0b2b2e", mb: 3 }}>
+          <Box sx={{className:"pdf-section", border: "1px solid #0b2b2e", mb: 3 }}>
             <InfoRow
               labelLeft="Customer" valueLeft={editable.draftData.customer_name || ""}
               labelRight="Headquarter" valueRight={editable.draftData.headquarter_location || ""}
@@ -269,26 +269,30 @@ export default function CustomerProfile() {
           </Box>
 
           {/* LIST SECTIONS */}
+          <Box className="pdf-section">
           <EditableSection
             title="What work are we currently doing with the customer?"
             items={editable.draftData.current_work || []}
             isEditing={editable.isEditing}
             onChange={(items) => editable.updateDraft({ ...editable.draftData, current_work: items })}
           />
-
+          </Box>
+          <Box className="pdf-section">
           <EditableSection
             title="What Service Lines are we currently working with the customer on?"
             items={editable.draftData.service_lines || []}
             isEditing={editable.isEditing}
             onChange={(items) => editable.updateDraft({ ...editable.draftData, service_lines: items })}
           />
-
+          </Box>
+          <Box className="pdf-section">
           <EditableSection
             title="What is the customer's current perception of Version 1?"
             items={editable.draftData.customer_perception || []}
             isEditing={editable.isEditing}
             onChange={(items) => editable.updateDraft({ ...editable.draftData, customer_perception: items })}
           />
+          </Box>
         </Box>
       </Box>
     </Box>

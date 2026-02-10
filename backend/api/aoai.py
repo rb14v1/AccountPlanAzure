@@ -118,15 +118,9 @@ def detect_template_type_from_query(query: str) -> str:
             "functional poc", "team structure"
         ],
         "service_line_growth_actions": [
-    "service line", 
-    "growth actions",       # ✅ CATCH-ALL: Matches "Create Service Line Growth Actions"
-    "growth plan",          # ✅ GENERIC: Matches "Create a growth plan"
-    "cloud transformation", 
-    "data modernization",
-    "ai capabilities", 
-    "managed services",
-    "srg"                   # ✅ ACRONYM: Matches "SRG Managed Services"
-],
+            "service line", "growth actions", "growth plan", "cloud transformation", 
+            "data modernization", "ai capabilities", "managed services", "srg"                   
+        ],
         "operational_excellence_strategy": [
             "operational excellence", "margin", "gp percent",
             "commercial transformation", "priority levers"
@@ -134,6 +128,60 @@ def detect_template_type_from_query(query: str) -> str:
         "customer_profile": [
             "customer profile", "customer perception", "csat",
             "headquarter location", "current work"
+        ],
+        "account_performance_annual_plan": [
+            # 1. ✅ THE CRITICAL FIX: Matches your JSON prompt exactly
+            "account_performance_annual_plan", 
+            
+            # 2. Natural Language Triggers
+            "account performance", 
+            "annual plan", 
+            "account plan", 
+            
+            # 3. Specific Row Headers (From your Prompt)
+            "revenue budget",
+            "revenue actuals",
+            "tcv won",
+            "win rate",
+            "book to bill",
+            "gross margin",
+            "revenue / fte",
+            "cost / fte",
+            
+            # 4. Fallbacks
+            "financial targets", 
+            "delivery metrics", 
+            "talent metrics",
+            "utilization", 
+            "attrition"
+        ],
+        "tech_spend_view": [
+            # 1. ✅ MASTER TRIGGER (Matches JSON ID)
+            "tech_spend_view",
+
+            # 2. Natural Language
+            "tech spend", 
+            "spend breakdown", 
+            "technology spend",
+            "business unit view",
+            "geography view",
+            
+            # 3. Specific Headers
+            "client's revenue breakdown",
+            "talent split", 
+            "incumbent",
+            "client presence"
+        ],
+        "innovation_strategy": [
+            # 1. ✅ MASTER TRIGGER
+            "innovation_strategy",
+            
+            # 2. Keywords
+            "innovation excellence",
+            "client's ai strategy",
+            "genai strategy",
+            "adoption journey",
+            "outlook on ai"
         ],
         "investment_plan": [
             "investment plan", "investment value", "investment priority"

@@ -80,8 +80,8 @@ export default function RelationshipHeatmap() {
     "";
 
   const backendRows = Array.isArray(globalData?.relationship_heatmap)
-  ? globalData.relationship_heatmap
-  : [];
+    ? globalData.relationship_heatmap
+    : [];
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -108,6 +108,26 @@ export default function RelationshipHeatmap() {
   }
 
   const editable = useEditableTable(initialRows);
+  const tableConfig = {
+    headers,
+    rows: editable.draftData.map(row => [
+      row.stakeholder_number,
+      row.client_stakeholder,
+      row.role,
+      row.reports_to,
+      row.level,
+      row.client_relationship,
+      row.engagement_plan_next_action,
+    ]),
+    rowStyle: (row) => {
+      const rel = String(row[5]).toLowerCase();
+      if (rel.includes("promoter")) return { fillColor: [144, 201, 120] };
+      if (rel.includes("neutral")) return { fillColor: [217, 164, 65] };
+      if (rel.includes("detractor")) return { fillColor: [224, 102, 102] };
+      return {};
+    },
+  };
+
 
   useEffect(() => {
     if (backendRows && backendRows.length > 0 && !editable.isEditing) {
@@ -289,7 +309,7 @@ export default function RelationshipHeatmap() {
       if (response.ok && result.success) {
         const savedRows = result?.payload?.data?.stakeholder_list || result?.data || [];
         setGlobalData((prev: any) => ({ ...prev, relationship_heatmap: savedRows }));
-        editable.saveEdit(() => {});
+        editable.saveEdit(() => { });
         setSnackbar({ open: true, message: "✅ Relationship Heatmap saved", severity: "success" });
         dataLoadedFromDB.current = true;
       } else {
@@ -327,7 +347,7 @@ export default function RelationshipHeatmap() {
 
       <Box sx={{ maxWidth: 1800, mx: "auto", px: 4, py: 2 }}>
         <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 2 }}>
-          <DownloadTemplates templateName={TEMPLATE_NAME} />
+          <DownloadTemplates templateName={TEMPLATE_NAME} tableConfig={tableConfig} />
           {!editable.isEditing ? (
             <Button
               variant="outlined"

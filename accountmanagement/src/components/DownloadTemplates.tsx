@@ -14,12 +14,24 @@ import LayersIcon from "@mui/icons-material/Layers";
 
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface DownloadTemplatesProps {
   templateName: string;
+
+  tableConfig?: {
+    headers: string[];
+    rows: any[][];
+    rowStyle?: (row: any[], rowIndex: number) => {
+      fillColor?: [number, number, number];
+    };
+  };
 }
 
-const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({ templateName }) => {
+const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
+  templateName,
+  tableConfig,
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -31,37 +43,104 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({ templateName }) =
 
   const handleClose = () => setAnchorEl(null);
 
-  // ---------- PDF CORE ----------
-  const generatePDF = async (elements: HTMLElement[], fileName: string) => {
+  // ---------- GENERIC TABLE PDF (ROW-BY-ROW, NO CUTTING) ----------
+  const generateTablePDF = (
+    headers: string[],
+    rows: any[][],
+    fileName: string
+  ) => {
     try {
       setLoading(true);
-      const pdf = new jsPDF("p", "mm", "a4");
 
-      for (let i = 0; i < elements.length; i++) {
-        const canvas = await html2canvas(elements[i], { scale: 2 });
+      const pdf = new jsPDF("l", "mm", "a4");
+
+      pdf.setFontSize(14);
+      pdf.text(templateName.replace(/_/g, " "), 14, 15);
+
+      autoTable(pdf, {
+        startY: 22,
+        head: [headers],
+        body: rows,
+        headStyles: {
+          fillColor: [11, 30, 38],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        margin: { left: 10, right: 10 },
+        pageBreak: "auto",
+        showHead: "everyPage", // 🔥 fixes row cutting
+        didParseCell: (data) => {
+          if (
+            tableConfig?.rowStyle &&
+            data.section === "body"
+          ) {
+            const style = tableConfig.rowStyle(
+              tableConfig.rows[data.row.index],
+              data.row.index
+            );
+
+            if (style?.fillColor) {
+              data.cell.styles.fillColor = style.fillColor;
+            }
+          }
+        },
+
+      });
+
+      pdf.save(fileName);
+    } catch (err) {
+      console.error(err);
+      alert("Unable to download table PDF. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---------- SECTION / CARD PDF (IMAGE-BASED) ----------
+  const generatePDF = async (sections: HTMLElement[], fileName: string) => {
+    try {
+      setLoading(true);
+
+      const pdf = new jsPDF("l", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const marginX = 15;
+      const marginTop = 15;
+      const marginBottom = 20;
+
+      const usableWidth = pageWidth - marginX * 2;
+
+      let cursorY = marginTop;
+
+      for (let i = 0; i < sections.length; i++) {
+        const canvas = await html2canvas(sections[i], {
+          scale: 2,
+          useCORS: true,
+        });
+
         const imgData = canvas.toDataURL("image/png");
 
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
+        const imgHeight =
+          (canvas.height * usableWidth) / canvas.width;
 
-        const marginX = 12; // left & right margin
-        const marginY = 12; // top & bottom margin
-
-        const imgWidth = pageWidth - marginX * 2;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-        let positionY = marginY;
-
-        if (i !== 0) pdf.addPage();
+        // 🚨 If section doesn't fit → move to next page
+        if (cursorY + imgHeight > pageHeight - marginBottom) {
+          pdf.addPage();
+          cursorY = marginTop;
+        }
 
         pdf.addImage(
           imgData,
           "PNG",
           marginX,
-          positionY,
-          imgWidth,
+          cursorY,
+          usableWidth,
           imgHeight
         );
+
+        cursorY += imgHeight + 6; // spacing between sections
       }
 
       pdf.save(fileName);
@@ -73,9 +152,28 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({ templateName }) =
     }
   };
 
+  // ---------- DOWNLOAD HANDLER ----------
   const downloadCurrentTemplate = () => {
-    const el = document.getElementById("template-to-download");
-    if (el) generatePDF([el], `${templateName}.pdf`);
+    // 🔥 TABLE MODE (generic, row-by-row)
+    if (tableConfig) {
+      generateTablePDF(
+        tableConfig.headers,
+        tableConfig.rows,
+        `${templateName}.pdf`
+      );
+      return;
+    }
+
+    // 🔁 DEFAULT MODE (sections / cards)
+    const sections = Array.from(
+      document.querySelectorAll("#template-to-download .pdf-section")
+    ) as HTMLElement[];
+
+    if (sections.length) {
+      generatePDF(sections, `${templateName}.pdf`);
+    } else {
+      alert("No printable sections found");
+    }
   };
 
   const downloadAllTemplates = () => {
@@ -129,7 +227,7 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({ templateName }) =
           <ListItemText primary="This Template (PDF)" />
         </MenuItem>
 
-        <MenuItem
+        {/* <MenuItem
           onClick={() => {
             handleClose();
             downloadAllTemplates();
@@ -140,7 +238,7 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({ templateName }) =
             <LayersIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Full Account Report (PDF)" />
-        </MenuItem>
+        </MenuItem> */}
       </Menu>
     </>
   );

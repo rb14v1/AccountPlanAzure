@@ -27,8 +27,15 @@ urlpatterns = [
     path("operational-excellence/", views.operational_excellence_get),
     path("operational-excellence/save/", views.operational_excellence_save),
 
-    path("service-line-growth/", views.service_line_growth_get),
-    
-    # ✅ Matches fetch(`${API_BASE_URL}/service-line-growth/save_growth/`)
+    path("account-performance/", views.account_performance_get),
+    path("account-performance/save/", views.account_performance_save),
+
+    path("tech-spend/", views.tech_spend_get),
+    path("tech-spend/save/", views.tech_spend_save),
+
+    path("innovation-strategy/", views.innovation_strategy_get),
+    path("innovation-strategy/save/", views.innovation_strategy_save),
+
+    path("service-line-growth/", views.service_line_growth_get),   
     path("service-line-growth/save_growth/", views.service_line_growth_save),
 ]

@@ -52,6 +52,7 @@ import ServiceLinePenetration from "../Templates/ServiceLinePenetration";
 import PlannedActionGenAI from "../Templates/PlannedActionGenAI";
 import MarginImprovementPlan from "../Templates/MarginImprovementPlan";
 import TalentExcellenceOverview from "../Templates/TalentExcellenceOverview";
+import AccountPerformanceAnnualPlan from "../Templates/AccountPerformanceAnnualPlan";
 
 import profileIcon from "../assets/profileIcon.png";
 
@@ -97,11 +98,7 @@ export default function MainLayout() {
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
     { id: "talent-excellence", label: "Talent Excellence", icon: "bi-people-fill" },
- 
- 
- 
- 
- 
+    { id: "account-performance", label: "Account Performance", icon: "bi-speedometer" },
   ];
 
   const renderPage = () => {
@@ -130,13 +127,7 @@ export default function MainLayout() {
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;
       case "talent-excellence": return <TalentExcellenceOverview />;
- 
- 
- 
- 
- 
- 
-
+      case "account-performance": return <AccountPerformanceAnnualPlan />;
       default: return <AccountTeamPod />;
     }
   };

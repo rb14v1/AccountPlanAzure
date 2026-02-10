@@ -397,6 +397,27 @@ def chat(request):
             }
         }
     
+    def _normalize_innovation_strategy_payload(obj: dict) -> dict:
+        """
+        Maps readable AI keys to the specific IDs (1, 2, 3a...) required by the frontend.
+        """
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+        if not isinstance(raw_data, dict):
+            raw_data = {}
+
+        # Map AI Keys -> Frontend IDs
+        clean_data = {
+            "1": str(raw_data.get("current_outlook_on_ai") or "TBD"),
+            "2": str(raw_data.get("top_motivations_for_genai") or "TBD"),
+            "3a": str(raw_data.get("top_genai_projects") or "TBD"),
+            "3b": str(raw_data.get("other_innovation_projects") or "TBD"),
+            "4": str(raw_data.get("high_value_use_cases") or "TBD")
+        }
+
+        return {
+            "template_type": "innovation_strategy",
+            "data": clean_data
+        }
     
     def _normalize_operational_excellence_payload(obj: dict) -> dict:
         """
@@ -471,7 +492,76 @@ def chat(request):
             "template_type": "service_line_growth_actions",
             "data": clean_data
         }
+    
+    def _normalize_account_performance_payload(obj: dict) -> dict:
+        """
+        Enforces the exact rows required for the Account Performance table.
+        """
+        # 1. Define the Exact Rows from your UI
+        DEFAULTS = {
+            "financials": [
+                {"metric": "Revenue Budget", "unit": "€ Mn"},
+                {"metric": "Revenue Actuals / Forecast", "unit": "€ Mn"},
+                {"metric": "TCV won", "unit": "€ Mn"},
+                {"metric": "Win rate (YTD)", "unit": "%"},
+                {"metric": "Book to bill ratio", "unit": "#"},
+                {"metric": "SL revenue penetration %", "unit": "%"},
+                {"metric": "# of SLs present in the account*", "unit": "#"}
+            ],
+            "delivery": [
+                {"metric": "Gross Margin %", "unit": "%"},
+                {"metric": "Revenue / FTE (ONS)", "unit": "€ K"},
+                {"metric": "Revenue / FTE (OFS)", "unit": "€ K"},
+                {"metric": "Cost / FTE (ONS)", "unit": "#"},
+                {"metric": "Cost / FTE (OFS)", "unit": "#"}
+            ],
+            "talent": [
+                {"metric": "Attrition %", "unit": "%"},
+                {"metric": "Fulfilment %", "unit": "%"},
+                {"metric": "Delivery on time %", "unit": "%"}
+            ]
+        }
+        
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+        clean_data = {}
 
+        # 2. Iterate through sections (financials, delivery, talent)
+        for section_key, expected_rows in DEFAULTS.items():
+            # Get LLM list or empty list
+            llm_list = raw_data.get(section_key) or []
+            
+            # Map LLM data for easy lookup by metric name (lowercase)
+            llm_map = {}
+            if isinstance(llm_list, list):
+                for item in llm_list:
+                    if isinstance(item, dict) and item.get("metric"):
+                        key = str(item["metric"]).lower().strip()
+                        llm_map[key] = item
+
+            # Build final list preserving EXACT order and units
+            final_list = []
+            for row_def in expected_rows:
+                metric_name = row_def["metric"]
+                default_unit = row_def["unit"]
+                
+                # Find match in LLM data
+                match = llm_map.get(metric_name.lower()) or {}
+                
+                final_list.append({
+                    "metric": metric_name,
+                    "unit": str(match.get("unit") or default_unit),
+                    "fy24": str(match.get("fy24") or "").strip(),
+                    "fy25": str(match.get("fy25") or "").strip(),
+                    "fy26": str(match.get("fy26") or "").strip()
+                })
+            
+            clean_data[section_key] = final_list
+
+        return {
+            "template_type": "account_performance_annual_plan",
+            "data": clean_data
+        }
+    
 
     def _normalize_growth_strategy_payload(obj: dict) -> dict:
         """
@@ -509,7 +599,92 @@ def chat(request):
             },
         }
     
-    # ... inside def chat(request): ...
+    def _normalize_tech_spend_payload(obj: dict) -> dict:
+        """
+        Ensures the Tech Spend payload has the exact shape required by TechSpendView.tsx.
+        """
+        # Defaults matching Frontend
+        DEFAULTS = {
+            "rows": [
+                {"id": 1, "name": "BU1"}, {"id": 2, "name": "BU2"}, {"id": 3, "name": "BU3"},
+                {"id": 4, "name": "BU4"}, {"id": 5, "name": "BU5"}, {"id": 6, "name": "BU6"}
+            ],
+            "geoRevenue": [
+                {"l": "Americas", "h": "75%"}, {"l": "EMEA", "h": "60%"},
+                {"l": "APAC", "h": "20%"}, {"l": "Others", "h": "15%"}
+            ],
+            "geoTalent": [
+                {"geo": "Americas"}, {"geo": "EMEA"}, {"geo": "APAC"}
+            ],
+            "geoPriorities": [
+                {"geo": "Americas"}, {"geo": "EMEA"}, {"geo": "APAC"}
+            ]
+        }
+
+        raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+        clean_data = {}
+
+        # 1. Normalize Rows (Business Units)
+        llm_rows = raw_data.get("rows") or []
+        clean_rows = []
+        for i, def_row in enumerate(DEFAULTS["rows"]):
+            # Try to find matching row from LLM by ID or Index
+            match = {}
+            if i < len(llm_rows) and isinstance(llm_rows[i], dict):
+                match = llm_rows[i]
+            
+            clean_rows.append({
+                "id": def_row["id"],
+                "name": str(match.get("name") or def_row["name"]),
+                "desc": str(match.get("desc") or ""),
+                "size": str(match.get("size") or ""),
+                "growth": str(match.get("growth") or ""),
+                "spend": str(match.get("spend") or ""),
+                "priorities": str(match.get("priorities") or ""),
+                "presence": str(match.get("presence") or ""),
+                "incumbent": str(match.get("incumbent") or "")
+            })
+        clean_data["rows"] = clean_rows
+
+        # 2. Normalize Geo Revenue
+        llm_geo_rev = raw_data.get("geoRevenue") or []
+        clean_geo_rev = []
+        for i, def_row in enumerate(DEFAULTS["geoRevenue"]):
+            match = llm_geo_rev[i] if i < len(llm_geo_rev) and isinstance(llm_geo_rev[i], dict) else {}
+            clean_geo_rev.append({
+                "l": def_row["l"],
+                "v": str(match.get("v") or ""),
+                "h": def_row["h"]
+            })
+        clean_data["geoRevenue"] = clean_geo_rev
+
+        # 3. Normalize Geo Talent
+        llm_geo_tal = raw_data.get("geoTalent") or []
+        clean_geo_tal = []
+        for i, def_row in enumerate(DEFAULTS["geoTalent"]):
+            match = llm_geo_tal[i] if i < len(llm_geo_tal) and isinstance(llm_geo_tal[i], dict) else {}
+            clean_geo_tal.append({
+                "geo": def_row["geo"],
+                "val": str(match.get("val") or "")
+            })
+        clean_data["geoTalent"] = clean_geo_tal
+
+        # 4. Normalize Geo Priorities
+        llm_geo_prio = raw_data.get("geoPriorities") or []
+        clean_geo_prio = []
+        for i, def_row in enumerate(DEFAULTS["geoPriorities"]):
+            match = llm_geo_prio[i] if i < len(llm_geo_prio) and isinstance(llm_geo_prio[i], dict) else {}
+            clean_geo_prio.append({
+                "geo": def_row["geo"],
+                "val": str(match.get("val") or "")
+            })
+        clean_data["geoPriorities"] = clean_geo_prio
+
+        return {
+            "template_type": "tech_spend_view",
+            "data": clean_data
+        }
+
 
     # =========================================================
     # OPERATIONAL EXCELLENCE STRATEGY
@@ -649,7 +824,24 @@ def chat(request):
 
         return JsonResponse({"message": "Profile updated", "payload": safe})
     
-    # Inside chat(request) in views.py
+    
+    if template_type == "innovation_strategy":
+        schema = get_template_schema("innovation_strategy")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        
+        # Normalize
+        safe = _normalize_innovation_strategy_payload(filled)
+        
+        # Save
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="innovation_strategy", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Innovation Strategy updated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
+    
+
     if template_type == "customer_profile":
         schema = get_template_schema("customer_profile")
         filled = fill_template_json_only(template=schema, context_text=context_text)
@@ -664,8 +856,24 @@ def chat(request):
         )
         return JsonResponse({"message": "Profile updated", "payload": safe}) 
     
-    # Inside chat(request) in views.py
-    # Inside chat(request) in views.py
+
+    if template_type == "tech_spend_view":
+        schema = get_template_schema("tech_spend_view")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        
+        # Normalize
+        safe = _normalize_tech_spend_payload(filled)
+        
+        # Save
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="tech_spend_view", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Tech Spend View generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
+    
+
     if template_type == "service_line_growth_actions":
         schema = get_template_schema("service_line_growth_actions")
         filled = fill_template_json_only(template=schema, context_text=context_text)
@@ -681,6 +889,23 @@ def chat(request):
         )
         
         return JsonResponse({"message": "Profile updated", "payload": safe})
+    
+    
+    if template_type == "account_performance_annual_plan":
+        schema = get_template_schema("account_performance_annual_plan")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        
+        # Normalize
+        safe = _normalize_account_performance_payload(filled)
+        
+        # Save
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="account_performance_annual_plan", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Annual Plan generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
 
     # Normal Q&A
     answer = answer_only_from_context(query=question, context_text=context_text)
@@ -1147,4 +1372,93 @@ def operational_excellence_save(request):
 
     _save_payload(user_id=user_id, company_name=company, template_type="operational_excellence_strategy", payload=payload)
     
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def account_performance_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="account_performance_annual_plan"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def account_performance_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    payload = {
+        "template_type": "account_performance_annual_plan",
+        "data": body
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="account_performance_annual_plan", payload=payload)
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+
+@csrf_exempt
+def tech_spend_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="tech_spend_view"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def tech_spend_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    payload = {
+        "template_type": "tech_spend_view",
+        "data": body
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="tech_spend_view", payload=payload)
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def innovation_strategy_get(request):
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="innovation_strategy"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def innovation_strategy_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    # Frontend sends { "1": "text", "2": "text"... } directly
+    payload = {
+        "template_type": "innovation_strategy",
+        "data": body
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="innovation_strategy", payload=payload)
     return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})

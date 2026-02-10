@@ -288,6 +288,33 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
     },
     
+    "account_performance_annual_plan": {
+        "template_type": "account_performance_annual_plan",
+        "data": {
+            "financials": [
+                {"metric": "Revenue Budget", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue Actuals / Forecast", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "TCV won", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Win rate (YTD)", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Book to bill ratio", "unit": "#", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "SL revenue penetration %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "# of SLs present in the account*", "unit": "#", "fy24": "", "fy25": "", "fy26": ""}
+            ],
+            "delivery": [
+                {"metric": "Gross Margin %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue / FTE (ONS)", "unit": "€ K", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue / FTE (OFS)", "unit": "€ K", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Cost / FTE (ONS)", "unit": "#", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Cost / FTE (OFS)", "unit": "#", "fy24": "", "fy25": "", "fy26": ""}
+            ],
+            "talent": [
+                {"metric": "Attrition %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Fulfilment %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Delivery on time %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""}
+            ]
+        },
+    },
+ 
 
     # ---------------------------------------------------------
     # Tech Spend View
@@ -317,3 +344,4 @@ def get_template_schema(template_name: str) -> Dict[str, Any]:
         raise KeyError(f"unknown template_name: {key}")
 
     return deepcopy(TEMPLATE_SCHEMAS[key])
+
