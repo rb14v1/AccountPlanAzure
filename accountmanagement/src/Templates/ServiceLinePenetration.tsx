@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -14,10 +14,16 @@ import {
   Paper,
   Button,
   TextField,
+  Snackbar,
+  Alert,
+  CircularProgress,
 } from "@mui/material";
 import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
+ 
+// --- API CONFIGURATION ---
+const API_BASE_URL = "http://localhost:8000/api";
  
 // --- STYLED COMPONENTS ---
  
@@ -156,6 +162,30 @@ const SLStackedBar = ({ label, values, colors, xxVal, index, onXXChange, isEditi
 const ServiceLinePenetration: React.FC = () => {
   const { globalData, setGlobalData } = useData();
  
+  const userId =
+    globalData?.user_id ||
+    localStorage.getItem("user_id") ||
+    localStorage.getItem("userid") ||
+    "101";
+
+  const companyName =
+    globalData?.company_name ||
+    globalData?.account_name ||
+    localStorage.getItem("company_name") ||
+    localStorage.getItem("account_name") ||
+    "";
+
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "warning",
+  });
+
+  const autoSaveAttempted = useRef(false);
+  const dataLoadedFromDB = useRef(false);
+ 
   const defaultData = {
     tableRows: [
       { id: '1', name: "Secured Order Book", v1: "", v2: "", v3: "", v4: "" },
@@ -172,6 +202,125 @@ const ServiceLinePenetration: React.FC = () => {
   const slData = globalData?.Service_Line_Penetration || defaultData;
   const editable = useEditableTable(slData);
  
+  // STEP 1: Load data from database when component mounts
+  useEffect(() => {
+    const loadDataFromDB = async () => {
+      if (dataLoadedFromDB.current) return;
+
+      console.log("Loading service line penetration from database...");
+      setInitialLoading(true);
+
+      if (!userId) {
+        console.warn("Skipping DB fetch: missing userId");
+        setInitialLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/service-line-penetration/?user_id=${encodeURIComponent(userId)}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (response.ok) {
+          const dbData = await response.json();
+          console.log("Service line penetration loaded from DB:", dbData);
+
+          if (dbData && Object.keys(dbData).length > 0) {
+            setGlobalData((prev: any) => ({
+              ...prev,
+              Service_Line_Penetration: dbData,
+            }));
+            editable.updateDraft(dbData);
+            dataLoadedFromDB.current = true;
+          }
+        }
+      } catch (error) {
+        console.error("Error loading service line penetration from DB:", error);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    loadDataFromDB();
+  }, [userId]);
+
+  // STEP 2: Auto-save logic when NEW data arrives from chatbot
+  useEffect(() => {
+    const autoSaveToDatabase = async () => {
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
+        console.log("Service line penetration already in DB, skipping auto-save");
+        return;
+      }
+
+      const hasValidData = slData && 
+        (slData.tableRows?.length > 0 || slData.xxValues?.length > 0 || slData.insights);
+
+      const isNewDataFromChatbot = slData && !slData.id;
+
+      if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
+        if (!userId) return;
+
+        autoSaveAttempted.current = true;
+
+        try {
+          console.log("Sending service line penetration to backend:", slData);
+
+          const payload = {
+            user_id: userId,
+            company_name: companyName,
+            tableRows: slData.tableRows,
+            xxValues: slData.xxValues,
+            insights: slData.insights,
+          };
+
+          const response = await fetch(
+            `${API_BASE_URL}/service-line-penetration/save_penetration/`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            }
+          );
+
+          const result = await response.json();
+          console.log("Auto-save response:", result);
+
+          if (response.ok && result.success) {
+            setGlobalData((prev: any) => ({
+              ...prev,
+              Service_Line_Penetration: result.data,
+            }));
+            dataLoadedFromDB.current = true;
+            setSnackbar({
+              open: true,
+              message: "✅ Service Line Penetration auto-saved to database",
+              severity: "success",
+            });
+          } else {
+            throw new Error(result.message || "Auto-save failed");
+          }
+        } catch (error) {
+          console.error("Auto-save error:", error);
+          setSnackbar({
+            open: true,
+            message: "⚠️ Auto-save failed. You can edit and save manually.",
+            severity: "warning",
+          });
+          autoSaveAttempted.current = false;
+        }
+      }
+    };
+
+    const timeoutId = setTimeout(() => autoSaveToDatabase(), 500);
+    return () => clearTimeout(timeoutId);
+  }, [slData, userId, companyName]);
+ 
   const handleTableChange = (index: number, field: string, value: string) => {
     const updated = [...editable.draftData.tableRows];
     updated[index] = { ...updated[index], [field]: value };
@@ -183,18 +332,99 @@ const ServiceLinePenetration: React.FC = () => {
     updated[index] = value;
     editable.updateDraft({ ...editable.draftData, xxValues: updated });
   };
+
+  // STEP 3: Manual save - update global state and persist to backend
+  const handleManualSave = async () => {
+    setLoading(true);
+    try {
+      if (!userId) {
+        setSnackbar({
+          open: true,
+          message: "❌ Missing User ID. Cannot save.",
+          severity: "error",
+        });
+        return;
+      }
+
+      const payload = {
+        user_id: userId,
+        company_name: companyName,
+        tableRows: editable.draftData.tableRows,
+        xxValues: editable.draftData.xxValues,
+        insights: editable.draftData.insights,
+      };
+
+      const response = await fetch(
+        `${API_BASE_URL}/service-line-penetration/save_penetration/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-User-Id": userId,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setGlobalData((prev: any) => ({
+          ...prev,
+          Service_Line_Penetration: result.data || editable.draftData,
+        }));
+        editable.saveEdit(() => {});
+        setSnackbar({
+          open: true,
+          message: "✅ Service Line Penetration saved",
+          severity: "success",
+        });
+        dataLoadedFromDB.current = true;
+      } else {
+        throw new Error(result.message || "Failed to save");
+      }
+    } catch (error) {
+      console.error("Manual save error:", error);
+      setSnackbar({
+        open: true,
+        message: "❌ Failed to save changes",
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (initialLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Loading service line penetration...</Typography>
+      </Box>
+    );
+  }
  
   const slColors = ["#001a1a", "#00c1b1", "#efefe9", "#d8d3cf"];
   const slLabels = ["App Mod", "Data & AI", "EA", "Managed Services", "SAM", "Security", "Exp. Design"];
  
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, gap: 2 }}>
         <DownloadTemplates templateName={TEMPLATE_NAME} />
         {!editable.isEditing ? (
           <Button variant="outlined" onClick={editable.startEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Edit</Button>
         ) : (
-          <><Button variant="contained" onClick={() => editable.saveEdit((updated) => setGlobalData((prev: any) => ({ ...prev, Service_Line_Penetration: updated })))} sx={{ backgroundColor: "#00a99d", color: "#fff" }}>Save</Button>
+          <><Button variant="contained" onClick={handleManualSave} disabled={loading} sx={{ backgroundColor: "#00a99d", color: "#fff" }}>{loading ? "Saving..." : "Save"}</Button>
           <Button variant="outlined" onClick={editable.cancelEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Cancel</Button></>
         )}
       </Box>

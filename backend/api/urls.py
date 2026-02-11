@@ -38,4 +38,7 @@ urlpatterns = [
 
     path("service-line-growth/", views.service_line_growth_get),   
     path("service-line-growth/save_growth/", views.service_line_growth_save),
+
+    path("service-line-penetration/", views.service_line_penetration_get),
+    path("service-line-penetration/save_penetration/", views.service_line_penetration_save),
 ]

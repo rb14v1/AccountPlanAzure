@@ -1462,3 +1462,39 @@ def innovation_strategy_save(request):
 
     _save_payload(user_id=user_id, company_name=company, template_type="innovation_strategy", payload=payload)
     return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+
+@csrf_exempt
+def service_line_penetration_get(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "GET only"}, status=405)
+
+    user_id = str(request.GET.get("user_id") or "101").strip()
+
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="service_line_penetration"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+
+    return JsonResponse(obj.payload.get("data", {}), json_dumps_params={"ensure_ascii": False})
+
+
+@csrf_exempt
+def service_line_penetration_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    payload = {
+        "template_type": "service_line_penetration",
+        "data": body
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="service_line_penetration", payload=payload)
+    return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
