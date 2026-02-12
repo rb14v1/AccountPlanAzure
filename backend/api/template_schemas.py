@@ -201,6 +201,26 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
     },
 
+    "operational_implementation_plan": {
+        "template_type": "operational_implementation_plan",
+        "plan_date": "TBD",
+        "data": [
+            {
+                "category": "Operational Excellence",
+                "subcategory": "Process Improvement",
+                "action_number": 1,
+                "action_description": "",
+                "primary_owner": "",
+                "support_team": "",
+                "timeline": "",
+                "status": "To be initiated",
+                "help_required": "",
+                "investment_needed": "",
+                "impact": ""
+            }
+        ]
+    },
+
 
     # ---------------------------------------------------------
     # Growth Opportunities

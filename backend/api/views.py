@@ -443,7 +443,64 @@ def chat(request):
                 "insights": str(raw.get("insights") or "TBD")
             }
         }
+    
+    def _normalize_operational_implementation_plan(obj) -> dict:
+        """
+        Robust normalizer that handles if LLM returns:
+        1. A list of rows directly: [...]
+        2. A dict with data list: {"data": [...]}
+        3. A nested dict: {"data": {"data": [...]}}
+        """
+        rows = []
+        plan_date = "xx"
 
+        # 1. unwrapping layers
+        if isinstance(obj, list):
+            rows = obj
+        elif isinstance(obj, dict):
+            # Try to find the list inside 'data'
+            if isinstance(obj.get("data"), list):
+                rows = obj.get("data")
+                plan_date = str(obj.get("plan_date") or "xx")
+            # Handle double nesting {"data": {"data": [...]}}
+            elif isinstance(obj.get("data"), dict):
+                inner = obj.get("data")
+                rows = inner.get("data") or []
+                plan_date = str(inner.get("plan_date") or obj.get("plan_date") or "xx")
+            else:
+                # Fallback if the dict itself is the row wrapper? Unlikely but safe.
+                rows = []
+        
+        # 2. Safety check
+        if not isinstance(rows, list):
+            rows = []
+
+        # 3. Clean rows
+        clean_rows = []
+        for i, r in enumerate(rows):
+            if not isinstance(r, dict): 
+                continue
+            
+            clean_rows.append({
+                "category": str(r.get("category") or "Operational Excellence"),
+                "subcategory": str(r.get("subcategory") or "TBD"),
+                "action_number": i + 1,
+                "action_description": str(r.get("action_description") or "TBD"),
+                "primary_owner": str(r.get("primary_owner") or "TBD"),
+                "support_team": str(r.get("support_team") or "TBD"),
+                "timeline": str(r.get("timeline") or "TBD"),
+                "status": str(r.get("status") or "To be initiated"),
+                "help_required": str(r.get("help_required") or "TBD"),
+                "investment_needed": str(r.get("investment_needed") or "TBD"),
+                "impact": str(r.get("impact") or "TBD")
+            })
+            
+        return {
+            "template_type": "operational_implementation_plan",
+            "plan_date": plan_date,
+            "data": clean_rows
+        }
+    
     def _normalize_operational_excellence_payload(obj: dict) -> dict:
         """
         Ensures the LLM output matches exactly what OperationalExcellencePage.tsx expects.
@@ -889,6 +946,22 @@ def chat(request):
         )
 
         return JsonResponse({"message": "Profile updated", "payload": safe})
+    
+    if template_type == "operational_implementation_plan":
+        schema = get_template_schema("operational_implementation_plan")
+        filled = fill_template_json_only(template=schema, context_text=context_text)
+        
+        # Use the robust normalizer
+        safe = _normalize_operational_implementation_plan(filled)
+        
+        # Save to DB
+        _save_payload(
+            user_id=user_id, 
+            company_name=company_name, 
+            template_type="operational_implementation_plan", 
+            payload=safe
+        )
+        return JsonResponse({"message": "Operational Implementation Plan generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
 
     if template_type == "relationship_heatmap":
         schema = get_template_schema("relationship_heatmap")
@@ -1763,3 +1836,38 @@ def implementation_plan_save(request):
  
     _save_payload(user_id=user_id, company_name=company, template_type="implementation_plan", payload=payload)
     return JsonResponse({"success": True, "data": body}, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def operational_implementation_plan_get(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "GET only"}, status=405)
+    
+    user_id = str(request.GET.get("user_id") or "101").strip()
+    obj = TemplatePayload.objects.filter(
+        user_id=user_id, 
+        template_type="operational_implementation_plan"
+    ).order_by('-updated_at').first()
+
+    if not obj:
+        return JsonResponse({}, json_dumps_params={"ensure_ascii": False})
+    
+    # Return the whole payload (includes plan_date and data array)
+    return JsonResponse(obj.payload, json_dumps_params={"ensure_ascii": False})
+
+@csrf_exempt
+def operational_implementation_plan_save(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    body = _json_body(request)
+    user_id = str(body.get("user_id") or "101").strip()
+    company = str(body.get("company_name") or "").strip()
+
+    payload = {
+        "template_type": "operational_implementation_plan",
+        "plan_date": body.get("plan_date") or "xx",
+        "data": body.get("data") or []
+    }
+
+    _save_payload(user_id=user_id, company_name=company, template_type="operational_implementation_plan", payload=payload)
+    return JsonResponse({"success": True, "payload": payload}, json_dumps_params={"ensure_ascii": False})

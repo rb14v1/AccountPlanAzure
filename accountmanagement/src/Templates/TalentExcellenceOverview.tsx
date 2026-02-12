@@ -13,7 +13,6 @@ import {
   Paper,
   Button,
   TextField,
-  MenuItem,
 } from "@mui/material";
 import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
@@ -27,7 +26,7 @@ const PageWrapper = styled(Box)({
   height: "calc(100vh - 100px)",
   backgroundColor: "#fff",
   padding: "4px 16px",
-  overflow: "hidden",
+  overflow: "auto",
   color: "#000",
   width: "100%",
 });
@@ -49,7 +48,11 @@ const StyledCell = styled(TableCell)({
   border: "1px solid #ccc",
   color: "#000",
   height: "clamp(18px, 2.5vh, 22px)",
+  overflow: "hidden",
+  textOverflow: "ellipsis",
+  whiteSpace: "nowrap"
 });
+
 
 // RECTIFIED: Gray Inset Input for Table Cells
 const FormatLockedInput = styled(TextField)({
@@ -96,15 +99,6 @@ const InsightInput = styled(TextField)({
 const API_BASE_URL = "http://localhost:8000/api";
 const TEMPLATE_NAME = "Talent_Excellence_Overview";
 
-const STATUS_COLORS: Record<string, string> = {
-  "Above target": "#92d050",
-  "Meets Target": "#ffc000",
-  "Below Target": "#e05a6d",
-};
-
-const STATUS_OPTIONS = ["Above target", "Meets Target", "Below Target"];
-
-
 const TalentExcellenceOverview: React.FC = () => {
   const { globalData, setGlobalData } = useData();
 
@@ -139,15 +133,27 @@ const TalentExcellenceOverview: React.FC = () => {
     const fetchData = async () => {
       try {
         const res = await fetch(
-          `${API_BASE_URL}/talent-excellence/?user_id=101`
+          `${API_BASE_URL}/talent-excellence/?user_id=${userId}`
         );
         const dbData = await res.json();
 
-        if (dbData && (dbData.overviewRows || dbData.demandRows)) {
-          editable.updateDraft(dbData);
+        if (dbData) {
+          const mergedData = {
+            overviewRows: defaultData.overviewRows.map((row, i) => ({
+              ...row,
+              ...(dbData.overviewRows?.[i] || {})
+            })),
+            demandRows: defaultData.demandRows.map((row, i) => ({
+              ...row,
+              ...(dbData.demandRows?.[i] || {})
+            })),
+            insights: dbData.insights || defaultData.insights
+          };
+
+          editable.updateDraft(mergedData);
           setGlobalData((prev: any) => ({
             ...prev,
-            Talent_Excellence_Overview: dbData,
+            Talent_Excellence_Overview: mergedData,
           }));
         }
       } catch (e) {
@@ -158,15 +164,19 @@ const TalentExcellenceOverview: React.FC = () => {
     fetchData();
   }, []);
 
+
   const handleRowChange = (section: 'overviewRows' | 'demandRows', index: number, field: string, value: string) => {
     const updated = [...editable.draftData[section]];
     updated[index] = { ...updated[index], [field]: value };
     editable.updateDraft({ ...editable.draftData, [section]: updated });
   };
+
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+
   const handleSave = async () => {
     try {
       const payload = {
-        user_id: "101",
+        user_id: userId,
         overviewRows: editable.draftData.overviewRows,
         demandRows: editable.draftData.demandRows,
         insights: editable.draftData.insights
@@ -195,42 +205,53 @@ const TalentExcellenceOverview: React.FC = () => {
       alert("❌ Save failed");
     }
   };
-  const renderQuarterCell = (section: 'overviewRows' | 'demandRows', index: number, q: 'q1' | 'q2' | 'q3' | 'q4') => {
+  const renderQuarterCell = (
+    section: 'overviewRows' | 'demandRows',
+    index: number,
+    q: 'q1' | 'q2' | 'q3' | 'q4'
+  ) => {
     const row = editable.draftData[section][index];
-    const val = row[q];
-    const statusKey = `${q}Status`;
-    const currentStatus = row[statusKey];
+    if (!row) return null;
+
+    const rawValue = row[q];
+    const rawTarget = row.target;
+
+    const value = parseFloat(String(rawValue).replace(/[^\d.-]/g, ""));
+    const target = parseFloat(String(rawTarget).replace(/[^\d.-]/g, ""));
+
+    let bgColor = "#fff";
+
+    if (!isNaN(value) && !isNaN(target)) {
+      if (value > target) bgColor = "#92d050";        // Above target
+      else if (value === target) bgColor = "#ffc000"; // Meets
+      else bgColor = "#e05a6d";                       // Below
+    }
+
+    const normalized = String(rawValue || "").toLowerCase();
+
+    const displayValue =
+      rawValue &&
+        !["#", "xx%", "x%", ""].includes(normalized)
+        ? rawValue
+        : "TBD";
 
     return (
-      <StyledCell sx={{ bgcolor: STATUS_COLORS[currentStatus] || "#fff", p: 0 }}>
+      <StyledCell sx={{ bgcolor: bgColor, p: 0 }}>
         {editable.isEditing ? (
-          <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <FormatLockedInput
-              variant="outlined"
-              value={val}
-              onChange={(e) => handleRowChange(section, index, q, e.target.value)}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              select
-              size="small"
-              value={currentStatus}
-              onChange={(e) => handleRowChange(section, index, statusKey, e.target.value)}
-              sx={{
-                height: '12px',
-                '& .MuiInputBase-root': { fontSize: '0.4rem', height: '12px', bgcolor: 'rgba(255,255,255,0.3)' },
-                '& .MuiOutlinedInput-notchedOutline': { border: 'none' }
-              }}
-            >
-              {STATUS_OPTIONS.map(opt => <MenuItem key={opt} value={opt} sx={{ fontSize: '0.6rem' }}>{opt}</MenuItem>)}
-            </TextField>
-          </Box>
+          <FormatLockedInput
+            variant="outlined"
+            value={rawValue || ""}
+            onChange={(e) =>
+              handleRowChange(section, index, q, e.target.value)
+            }
+          />
         ) : (
-          val
+          displayValue
         )}
       </StyledCell>
     );
   };
+
 
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
@@ -261,17 +282,17 @@ const TalentExcellenceOverview: React.FC = () => {
         <Grid container wrap="nowrap" spacing={1.5} sx={{ flex: 1, minHeight: 0, width: "100%" }}>
           <Grid item sx={{ width: '72%', height: '100%', display: 'flex', flexDirection: 'column' }}>
             <TableContainer component={Paper} elevation={0} sx={{ border: '1.5px solid #002b2e', flex: 1, overflow: 'hidden' }}>
-              <Table size="small" stickyHeader sx={{ tableLayout: 'fixed', height: '100%' }}>
+              <Table size="small" sx={{ tableLayout: 'fixed', height: '100%' }}>
                 <TableHead>
                   <TableRow>
-                    <StyledTableHeader sx={{ width: '85px' }}>Themes</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '25px' }}>#</StyledTableHeader>
-                    <StyledTableHeader sx={{ textAlign: 'left' }}>Metric</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '75px' }}>Target/ Benchmark</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '60px' }}>FY25 Q1</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '60px' }}>FY25 Q2</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '60px' }}>FY25 Q3</StyledTableHeader>
-                    <StyledTableHeader sx={{ width: '60px' }}>FY25 Q4</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '110px' }}>Themes</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '35px' }}>#</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '220px', textAlign: 'left' }}>Metric</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '110px' }}>Target</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '90px' }}>FY25 Q1</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '90px' }}>FY25 Q2</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '90px' }}>FY25 Q3</StyledTableHeader>
+                    <StyledTableHeader sx={{ width: '90px' }}>FY25 Q4</StyledTableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -279,9 +300,12 @@ const TalentExcellenceOverview: React.FC = () => {
                     <TableRow key={`ov-${i}`}>
                       {i === 0 && <StyledCell rowSpan={6} sx={{ bgcolor: '#005f6b', color: '#fff', fontWeight: 700, textAlign: 'center' }}>Overall Workforce Overview</StyledCell>}
                       <StyledCell align="center">{row.id}</StyledCell>
-                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric}</StyledCell>
+                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || "TBD"}</StyledCell>
                       <StyledCell sx={{ bgcolor: '#d9d9d9' }}>
-                        {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('overviewRows', i, 'target', e.target.value)} /> : row.target}
+                        {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('overviewRows', i, 'target', e.target.value)} /> : row.target &&
+                          !["#", "xx%", "x%", ""].includes(String(row.target).toLowerCase())
+                          ? row.target
+                          : "TBD"}
                       </StyledCell>
                       {renderQuarterCell('overviewRows', i, 'q1')}
                       {renderQuarterCell('overviewRows', i, 'q2')}
@@ -293,9 +317,12 @@ const TalentExcellenceOverview: React.FC = () => {
                     <TableRow key={`dm-${i}`}>
                       {i === 0 && <StyledCell rowSpan={10} sx={{ bgcolor: '#005f6b', color: '#fff', fontWeight: 700, textAlign: 'center' }}>Demand and Fulfilment</StyledCell>}
                       <StyledCell align="center">{row.id}</StyledCell>
-                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric}</StyledCell>
+                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || "TBD"}</StyledCell>
                       <StyledCell sx={{ bgcolor: '#d9d9d9' }}>
-                        {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('demandRows', i, 'target', e.target.value)} /> : row.target}
+                        {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('demandRows', i, 'target', e.target.value)} /> : row.target &&
+                          !["#", "xx%", "x%", ""].includes(String(row.target).toLowerCase())
+                          ? row.target
+                          : "TBD"}
                       </StyledCell>
                       {renderQuarterCell('demandRows', i, 'q1')}
                       {renderQuarterCell('demandRows', i, 'q2')}

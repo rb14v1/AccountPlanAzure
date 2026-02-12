@@ -50,5 +50,7 @@ urlpatterns = [
 
     path("implementation-plan/", views.implementation_plan_get),
     path("implementation-plan/save/", views.implementation_plan_save),
- 
+
+    path("operational-implementation-plan/", views.operational_implementation_plan_get),
+    path("operational-implementation-plan/save/", views.operational_implementation_plan_save),
 ]

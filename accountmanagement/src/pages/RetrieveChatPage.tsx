@@ -272,9 +272,7 @@ const RetrieveChatPage: React.FC = () => {
                 onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])}
               />
 
-              <IconButton onClick={() => fileInputRef.current?.click()} sx={{ color: "#999", p: 1 }}>
-                📎
-              </IconButton>
+              
 
               <TextField
                 fullWidth
