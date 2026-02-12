@@ -92,21 +92,34 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         "template_type": "Service_Line_Penetration",
         "data": {
             "tableRows": [
-                {"id": "1",  "name": "Secured Order Book",  "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "1a", "name": "- Gross Order Book",  "v1": "", "v2": "", "v3": "", "v4": "", "indent": True},
-                {"id": "1b", "name": "- Expiry / run-off",  "v1": "", "v2": "", "v3": "", "v4": "", "indent": True},
-                {"id": "2",  "name": "Open TCV",           "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "3",  "name": "Win Rate (%)",       "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "4",  "name": "NRR (%)",            "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "5",  "name": "Revenue",            "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "6",  "name": "Tech Spend",         "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "7",  "name": "Propensity to Buy",  "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "1",  "name": "Secured Order Book",
+                    "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "1a", "name": "- Gross Order Book",  "v1": "",
+                    "v2": "", "v3": "", "v4": "", "indent": True},
+                {"id": "1b", "name": "- Expiry / run-off",  "v1": "",
+                    "v2": "", "v3": "", "v4": "", "indent": True},
+                {"id": "2",  "name": "Open TCV",
+                    "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "3",  "name": "Win Rate (%)",
+                 "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "4",  "name": "NRR (%)",
+                 "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "5",  "name": "Revenue",
+                    "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "6",  "name": "Tech Spend",
+                    "v1": "", "v2": "", "v3": "", "v4": ""},
+                {"id": "7",  "name": "Propensity to Buy",
+                    "v1": "", "v2": "", "v3": "", "v4": ""},
             ],
             "serviceLines": [
-                {"name": "Cloud",        "pos": 0, "penetration": "", "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Data",         "pos": 0, "penetration": "", "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Engineering",  "pos": 0, "penetration": "", "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Security",     "pos": 0, "penetration": "", "revenue": "", "techSpend": "", "propensity": ""},
+                {"name": "Cloud",        "pos": 0, "penetration": "",
+                    "revenue": "", "techSpend": "", "propensity": ""},
+                {"name": "Data",         "pos": 0, "penetration": "",
+                    "revenue": "", "techSpend": "", "propensity": ""},
+                {"name": "Engineering",  "pos": 0, "penetration": "",
+                    "revenue": "", "techSpend": "", "propensity": ""},
+                {"name": "Security",     "pos": 0, "penetration": "",
+                    "revenue": "", "techSpend": "", "propensity": ""},
             ],
         },
     },
@@ -159,13 +172,35 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "implementation_plan": {
         "template_type": "implementation_plan",
         "data": {
-            "objectives": [""],
-            "key_initiatives": [""],
-            "milestones": [""],
-            "dependencies": [""],
-            "risks_and_mitigations": [""],
+            "actions": [
+                {
+                    "action": "",
+                    "timeline": "",
+                    "owner": "",
+                    "status": "To be initiated",
+                    "investment_needed": "",
+                    "impact": ""
+                },
+                {
+                    "action": "",
+                    "timeline": "",
+                    "owner": "",
+                    "status": "To be initiated",
+                    "investment_needed": "",
+                    "impact": ""
+                },
+                {
+                    "action": "",
+                    "timeline": "",
+                    "owner": "",
+                    "status": "To be initiated",
+                    "investment_needed": "",
+                    "impact": ""
+                }
+            ]
         },
     },
+
 
     # ---------------------------------------------------------
     # Growth Opportunities
@@ -246,11 +281,11 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             ]
         },
     },
-    
+
     # ---------------------------------------------------------
     # Service Line Growth Actions
     # ---------------------------------------------------------
-    "service_line_growth_actions": { 
+    "service_line_growth_actions": {
         "template_type": "service_line_growth_actions",
         "data": {
             # ✅ THESE KEYS MATCH YOUR FRONTEND KEY_MAP EXACTLY
@@ -287,34 +322,160 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "plan_for_commercial_model_transformation": [""]
         },
     },
-    
+    # ---------------------------------------------------------
+    # Talent Excellence Overview
+    # ---------------------------------------------------------
+    "talent_excellence_overview": {
+        "template_type": "talent_excellence_overview",
+        "data": {
+            "overviewRows": [
+                {
+                    "id": 1,
+                    "metric": "",
+                    "target": "",
+                    "q1": "", "q1Status": "",
+                    "q2": "", "q2Status": "",
+                    "q3": "", "q3Status": "",
+                    "q4": "", "q4Status": ""
+                }
+            ],
+            "demandRows": [
+                {
+                    "id": 1,
+                    "metric": "",
+                    "target": "",
+                    "q1": "", "q1Status": "",
+                    "q2": "", "q2Status": "",
+                    "q3": "", "q3Status": "",
+                    "q4": "", "q4Status": ""
+                }
+            ],
+            "insights": ""
+        }
+    },
+
+    "innovation_strategy": {
+        "template_type": "innovation_strategy",
+        "data": {
+            "current_outlook_on_ai": "",
+            "top_motivations_for_genai": "",
+            "top_genai_projects": "",
+            "other_innovation_projects": "",
+            "high_value_use_cases": ""
+        },
+    },
+
+    "investment_plan": {
+        "template_type": "investment_plan",
+        "data": {
+            "investments": [
+                {
+                    "investment_number": 1,
+                    "investment_type": "Billing investment",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Approved",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 2,
+                    "investment_type": "Buffers",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Delayed",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 3,
+                    "investment_type": "Innovation",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "At Risk",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 4,
+                    "investment_type": "Free resources",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "On-track",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 5,
+                    "investment_type": "Marketing investments / relationship building",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Approved",
+                    "remarks": ""
+                },
+                {
+                    "investment_number": 6,
+                    "investment_type": "Travel investments",
+                    "investment_description": "",
+                    "investment_value_eur": "",
+                    "targeted_outcome": "",
+                    "primary_owner": "",
+                    "timeline_status": "Delayed",
+                    "remarks": ""
+                }
+            ],
+            "total_investment_value": "XX"
+        },
+    },
+
     "account_performance_annual_plan": {
         "template_type": "account_performance_annual_plan",
         "data": {
             "financials": [
-                {"metric": "Revenue Budget", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Revenue Actuals / Forecast", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "TCV won", "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Win rate (YTD)", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Book to bill ratio", "unit": "#", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "SL revenue penetration %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "# of SLs present in the account*", "unit": "#", "fy24": "", "fy25": "", "fy26": ""}
+                {"metric": "Revenue Budget", "unit": "€ Mn",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue Actuals / Forecast",
+                    "unit": "€ Mn", "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "TCV won", "unit": "€ Mn",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Win rate (YTD)", "unit": "%",
+                 "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Book to bill ratio", "unit": "#",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "SL revenue penetration %", "unit": "%",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "# of SLs present in the account*",
+                    "unit": "#", "fy24": "", "fy25": "", "fy26": ""}
             ],
             "delivery": [
-                {"metric": "Gross Margin %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Revenue / FTE (ONS)", "unit": "€ K", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Revenue / FTE (OFS)", "unit": "€ K", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Cost / FTE (ONS)", "unit": "#", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Cost / FTE (OFS)", "unit": "#", "fy24": "", "fy25": "", "fy26": ""}
+                {"metric": "Gross Margin %", "unit": "%",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue / FTE (ONS)", "unit": "€ K",
+                 "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Revenue / FTE (OFS)", "unit": "€ K",
+                 "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Cost / FTE (ONS)", "unit": "#",
+                 "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Cost / FTE (OFS)", "unit": "#",
+                 "fy24": "", "fy25": "", "fy26": ""}
             ],
             "talent": [
-                {"metric": "Attrition %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Fulfilment %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""},
-                {"metric": "Delivery on time %", "unit": "%", "fy24": "", "fy25": "", "fy26": ""}
+                {"metric": "Attrition %", "unit": "%",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Fulfilment %", "unit": "%",
+                    "fy24": "", "fy25": "", "fy26": ""},
+                {"metric": "Delivery on time %", "unit": "%",
+                    "fy24": "", "fy25": "", "fy26": ""}
             ]
         },
     },
- 
+
 
     # ---------------------------------------------------------
     # Tech Spend View
@@ -322,10 +483,37 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "tech_spend_view": {
         "template_type": "tech_spend_view",
         "data": {
-            "current_tech_spend": [""],
-            "spend_breakdown": [""],
-            "key_vendors": [""],
-            "opportunities_to_optimize": [""],
+            "rows": [
+                # We expect 6 rows for Business Units (BU1 - BU6)
+                {"id": 1, "name": "BU1", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 2, "name": "BU2", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 3, "name": "BU3", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 4, "name": "BU4", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 5, "name": "BU5", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""},
+                {"id": 6, "name": "BU6", "desc": "", "size": "", "growth": "",
+                    "spend": "", "priorities": "", "presence": "", "incumbent": ""}
+            ],
+            "geoRevenue": [
+                {"l": "Americas", "v": "", "h": "75%"},
+                {"l": "EMEA", "v": "", "h": "60%"},
+                {"l": "APAC", "v": "", "h": "20%"},
+                {"l": "Others", "v": "", "h": "15%"}
+            ],
+            "geoTalent": [
+                {"geo": "Americas", "val": ""},
+                {"geo": "EMEA", "val": ""},
+                {"geo": "APAC", "val": ""}
+            ],
+            "geoPriorities": [
+                {"geo": "Americas", "val": ""},
+                {"geo": "EMEA", "val": ""},
+                {"geo": "APAC", "val": ""}
+            ]
         },
     },
 }
@@ -344,4 +532,3 @@ def get_template_schema(template_name: str) -> Dict[str, Any]:
         raise KeyError(f"unknown template_name: {key}")
 
     return deepcopy(TEMPLATE_SCHEMAS[key])
-

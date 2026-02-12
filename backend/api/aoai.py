@@ -158,24 +158,25 @@ def detect_template_type_from_query(query: str) -> str:
         "tech_spend_view": [
             # 1. ✅ MASTER TRIGGER (Matches JSON ID)
             "tech_spend_view",
-
+ 
             # 2. Natural Language
-            "tech spend", 
-            "spend breakdown", 
+            "tech spend",
+            "spend breakdown",
             "technology spend",
             "business unit view",
             "geography view",
-            
+           
             # 3. Specific Headers
             "client's revenue breakdown",
-            "talent split", 
+            "talent split",
             "incumbent",
             "client presence"
         ],
+ 
         "innovation_strategy": [
             # 1. ✅ MASTER TRIGGER
             "innovation_strategy",
-            
+           
             # 2. Keywords
             "innovation excellence",
             "client's ai strategy",
@@ -183,9 +184,19 @@ def detect_template_type_from_query(query: str) -> str:
             "adoption journey",
             "outlook on ai"
         ],
+ 
         "investment_plan": [
-            "investment plan", "investment value", "investment priority"
+            # 1. ✅ MASTER TRIGGER
+            "investment_plan",
+           
+            # 2. Keywords
+            "investment plan",
+            "billing investment",
+            "travel investments",
+            "investment value",
+            "targeted outcome"
         ],
+ 
         "critical_risk": [
             "critical risk", "risk tracking", "mitigation plan"
         ],
@@ -193,8 +204,17 @@ def detect_template_type_from_query(query: str) -> str:
             "relationship heatmap", "stakeholder", "relationship strength"
         ],
         "implementation_plan": [
-            "implementation plan", "action plan", "timeline"
-        ]
+            # 1. ✅ MASTER TRIGGER
+            "implementation_plan",
+           
+            # 2. Keywords
+            "implementation plan",
+            "action plan",
+            "growth plan actions",
+            "timeline for growth",
+            "investment needed"
+        ],
+ 
     }
     
     for template_type, keywords in template_keywords.items():
