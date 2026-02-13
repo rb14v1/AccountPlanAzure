@@ -52,7 +52,6 @@ import ServiceLinePenetration from "../Templates/ServiceLinePenetration";
 import PlannedActionGenAI from "../Templates/PlannedActionGenAI";
 import MarginImprovementPlan from "../Templates/MarginImprovementPlan";
 import TalentExcellenceOverview from "../Templates/TalentExcellenceOverview";
-import AccountPerformanceAnnualPlan from "../Templates/AccountPerformanceAnnualPlan";
 
 import profileIcon from "../assets/profileIcon.png";
 
@@ -98,7 +97,11 @@ export default function MainLayout() {
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
     { id: "talent-excellence", label: "Talent Excellence", icon: "bi-people-fill" },
-    { id: "account-performance", label: "Account Performance", icon: "bi-speedometer" },
+ 
+ 
+ 
+ 
+ 
   ];
 
   const renderPage = () => {
@@ -127,7 +130,13 @@ export default function MainLayout() {
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;
       case "talent-excellence": return <TalentExcellenceOverview />;
-      case "account-performance": return <AccountPerformanceAnnualPlan />;
+ 
+ 
+ 
+ 
+ 
+ 
+
       default: return <AccountTeamPod />;
     }
   };
@@ -138,15 +147,19 @@ export default function MainLayout() {
 
       <Box display="flex" flex={1} minHeight={0}>
         <Box
-          sx={{
-            width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
-            backgroundColor: "#0b2b2e",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",
-          }}
-        >
+  sx={{
+    width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH,
+    backgroundColor: "#f0fdfa",
+    color: "#134e4a",
+
+    borderRight: "1px solid #ccfbf1", // 👈 ADD HERE
+
+    display: "flex",
+    flexDirection: "column",
+    position: "relative",
+  }}
+>
+
           <Box
             flex={1}
             overflow="auto"
@@ -167,17 +180,51 @@ export default function MainLayout() {
                     selected={activeTab === item.id}
                     onClick={() => navigateTo(item.id)}
                     sx={{
-                      justifyContent: collapsed ? "center" : "flex-start",
-                      px: collapsed ? 0 : 2,
-                      gap: collapsed ? 0 : 1.5,
-                    }}
+  justifyContent: collapsed ? "center" : "flex-start",
+  px: collapsed ? 0 : 2,
+  gap: collapsed ? 0 : 1.5,
+  borderRadius: 2,
+  mx: 1,
+  my: 0.5,
+  transition: "all 0.2s ease",
+
+  // TEXT COLOR
+  color: activeTab === item.id ? "#ffffff" : "#134e4a",
+
+  // ACTIVE (selected tab)
+  backgroundColor: activeTab === item.id ? "#14b8a6" : "transparent",
+
+  // HOVER
+  "&:hover": {
+    backgroundColor: "#ccfbf1",
+  },
+
+  // CLICK EFFECT
+  "&:active": {
+    backgroundColor: "#0f766e",
+    color: "#ffffff",
+  },
+}}
+
                   >
-                    <i className={`bi ${item.icon}`} style={{ fontSize: 18 }} />
+                    <i
+  className={`bi ${item.icon}`}
+  style={{
+    fontSize: 18,
+    color: activeTab === item.id ? "#332525" : "#0f766e",
+  }}
+/>
+
                     {!collapsed && (
                       <ListItemText
-                        primary={item.label}
-                        primaryTypographyProps={{ fontWeight: 600, fontSize: 14 }}
-                      />
+  primary={item.label}
+  primaryTypographyProps={{
+    fontWeight: 600,
+    fontSize: 14,
+    color: activeTab === item.id ? "#302323" : "#075a54",
+  }}
+/>
+
                     )}
                   </ListItemButton>
                 </Tooltip>
@@ -193,13 +240,21 @@ export default function MainLayout() {
             display="flex"
             alignItems="center"
             gap={1.5}
-            borderTop="1px solid rgba(255,255,255,0.15)"
-            sx={{ cursor: "pointer", backgroundColor: "#0b2b2e" }}
+            borderTop="1px solid #ccfbf1"
+sx={{
+  cursor: "pointer",
+  backgroundColor: "#f0fdfa",
+  "&:hover": {
+    backgroundColor: "#ccfbf1",
+  },
+}}
+
             onClick={() => setLogoutOpen(true)}
           >
             <Avatar src={profileIcon} sx={{ width: 32, height: 32 }} />
             {!collapsed && (
-              <Typography fontSize={14} fontWeight={600}>
+              <Typography fontSize={14} fontWeight={600} color="#134e4a">
+
                 {user?.username || "User"}
               </Typography>
             )}
@@ -212,9 +267,13 @@ export default function MainLayout() {
               top: "50%",
               right: -16,
               transform: "translateY(-50%)",
-              backgroundColor: "#0b2b2e",
-              color: "white",
-              border: "1px solid rgba(255,255,255,0.3)",
+              backgroundColor: "#14b8a6",
+color: "#ffffff",
+border: "1px solid #5eead4",
+"&:hover": {
+  backgroundColor: "#0f766e",
+},
+
             }}
           >
             {collapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}

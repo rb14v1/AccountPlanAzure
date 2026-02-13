@@ -126,9 +126,9 @@ WSGI_APPLICATION = 'account_management.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'accman',
+        'NAME': 'account_Management',
         'USER': 'postgres',  # Change this to your PostgreSQL username
-        'PASSWORD': 'qwerty',  # Change this to your PostgreSQL password
+        'PASSWORD': '1234',  # Change this to your PostgreSQL password
         'HOST': 'localhost',
         'PORT': '5432',
     }

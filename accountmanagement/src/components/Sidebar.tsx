@@ -1,67 +1,169 @@
-// src/Components/Sidebar.tsx
- 
-import React from "react";
-import { Box, Typography, Button, IconButton, List, ListItem, ListItemText } from "@mui/material";
+import React, { useState } from "react";
+import { Box, Typography, Button, IconButton } from "@mui/material";
 import { DARK_BG, SIDEBAR_WIDTH, COLLAPSED_WIDTH } from "./constants";
- 
-interface SidebarProps {
-  isOpen: boolean;
-  toggleSidebar: () => void;
-  onNewChat: () => void;
-}
-
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
  
-// const mockHistory = ["Java Learning Path", "React Project Setup", "SQL Optimization"];
+interface SidebarProps {
+  open: boolean;
+  chatList: any[];
+  onOpenChat: (id: number) => void;
+  onNewChat: () => void;
+}
+
  
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, onNewChat }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  open,
+  chatList,
+  onOpenChat,
+  onNewChat,
+}) => {
+  // 1. Logic for "Default Collapsed" (false)
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const [activeChatId, setActiveChatId] = useState<number | null>(null);
+
+  // 2. Local toggle function that actually makes the button work
+  const handleToggle = () => {
+    setIsOpen(!isOpen);
+  };
+ 
   return (
     <Box sx={{
       width: isOpen ? SIDEBAR_WIDTH : COLLAPSED_WIDTH,
       transition: "width 0.3s ease",
-      bgcolor: DARK_BG,
-      color: "#fff",
+      backgroundColor: "#f0fdfa", // light teal
+      color: "#134e4a",
       display: "flex",
       flexDirection: "column",
-      borderRight: "1px solid #333",
+      borderRight: "1px solid #ccfbf1",
       flexShrink: 0,
       position: "relative"
     }}>
       {/* Header */}
-      <Box sx={{ p: 3, borderBottom: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: isOpen ? "flex-start" : "center" }}>
-        {isOpen ? (
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: 1, whiteSpace: "nowrap" }}>APM</Typography>
-        ) : (
-          <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff" }}>APM</Typography>
-        )}
+      <Box sx={{ p: 3, borderBottom: "1px solid #ccfbf1",
+ display: "flex", alignItems: "center", justifyContent: isOpen ? "flex-start" : "center" }}>
+        <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: isOpen ? 1 : 0, whiteSpace: "nowrap" }}>
+          APM
+        </Typography>
       </Box>
  
       {/* New Chat Button */}
       <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-         {isOpen ? (
-          <Button fullWidth onClick={onNewChat} variant="outlined" sx={{ color: "#fff", borderColor: "rgba(255,255,255,0.3)", textTransform: "none", justifyContent: "flex-start", "&:hover": { borderColor: "#fff", bgcolor: "rgba(255,255,255,0.05)" } }}>+ New Chat</Button>
-         ) : (
-           <IconButton aria-label="Start new chat" onClick={onNewChat} sx={{ color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }}><span>+</span></IconButton>
-         )}
+          {isOpen ? (
+            <Button
+              fullWidth
+              onClick={onNewChat}
+              variant="contained"
+sx={{
+  textTransform: "none",
+  justifyContent: "flex-start",
+  borderRadius: 2,
+  fontWeight: 500,
+  backgroundColor: "#0f766e",
+  color: "#ffffff",
+  boxShadow: "0 2px 6px rgba(20,184,166,0.3)",
+  "&:hover": {
+    backgroundColor: "#115e59",
+  },
+}}
+
+            >
+              + New Chat
+            </Button>
+          ) : (
+            <IconButton
+              aria-label="Start new chat"
+              onClick={onNewChat}
+              sx={{
+  color: "#0f766e",
+  border: "1px solid #99f6e4",
+  "&:hover": {
+    backgroundColor: "#ccfbf1",
+  },
+}}
+
+            >
+              <span>+</span>
+            </IconButton>
+          )}
       </Box>
  
-      {/* History List */}
+      {/* History List Space */}
       <Box sx={{ flex: 1, overflowY: "auto", px: 2 }}>
-        {isOpen && <Typography variant="caption" sx={{ color: "rgba(255,255,255,0.5)", fontWeight: 700, mb: 1, display: "block" }}>RECENT</Typography>}
-        {/* <List>
-          {mockHistory.map((item, index) => (
-            <ListItem button key={index} sx={{ borderRadius: 1, mb: 0.5, justifyContent: isOpen ? "flex-start" : "center", px: isOpen ? 2 : 1, "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
-              {!isOpen && <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "rgba(255,255,255,0.5)" }} />}
-              {isOpen && <ListItemText primary={item} primaryTypographyProps={{ fontSize: "0.85rem", color: "#ddd", noWrap: true }} />}
-            </ListItem>
-          ))}
-        </List> */}
-      </Box>
+  {isOpen && (
+    <>
+      <Typography
+        variant="caption"
+        sx={{ color: "#5eead4", fontWeight: 700, mb: 1 }}
+      >
+        RECENT
+      </Typography>
+
+      {chatList.map((chat) => (
+        <Button
+  key={chat.id}
+  fullWidth
+  onClick={() => {
+  setActiveChatId(chat.id);
+  onOpenChat(chat.id);
+}}
+
+  sx={{
+  justifyContent: "flex-start",
+  textTransform: "none",
+  mb: 0.5,
+  px: 1.5,
+  py: 1,
+  borderRadius: 2,
+  transition: "all 0.2s ease",
+
+  // ACTIVE (selected chat)
+  backgroundColor: activeChatId === chat.id ? "#14b8a6" : "transparent",
+  color: activeChatId === chat.id ? "#ffffff" : "#134e4a",
+
+
+  // HOVER
+  "&:hover": {
+    backgroundColor: "#ccfbf1",
+  },
+
+  // CLICK effect
+  "&:active": {
+  backgroundColor: "#14b8a6",
+  color: "#ffffff",
+},
+
+}}
+
+>
+  {chat.title || "New Chat"}
+</Button>
+
+      ))}
+    </>
+  )}
+</Box>
+
  
-      {/* Toggle Button */}
+      {/* Toggle Button - Now uses local handleToggle */}
       <Box sx={{ position: 'absolute', top: '50%', right: -16, transform: 'translateY(-50%)', zIndex: 10 }}>
-        <IconButton aria-label="Toggle sidebar" onClick={toggleSidebar} sx={{ bgcolor: DARK_BG, color: "#fff", width: 32, height: 32, border: '1px solid #333', "&:hover": { bgcolor: "#1a2e38" } }}>
+        <IconButton
+          aria-label="Toggle sidebar"
+          onClick={handleToggle}
+          sx={{
+  bgcolor: "#14b8a6",
+  color: "#ffffff",
+  width: 34,
+  height: 34,
+  border: "1px solid #5eead4",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+  "&:hover": {
+    bgcolor: "#0f766e",
+  },
+}}
+
+        >
           {isOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}
         </IconButton>
       </Box>
@@ -70,4 +172,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar, onNewChat }) =
 };
  
 export default Sidebar;
+ 
+ 
  
