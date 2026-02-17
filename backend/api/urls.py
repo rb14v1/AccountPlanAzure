@@ -1,3 +1,4 @@
+# backend/api/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
@@ -7,6 +8,7 @@ router = DefaultRouter()
 urlpatterns = [
     path('', include(router.urls)),
 
+    # Core system routes
     path("upload/request", views.upload_request),
     path("upload/complete", views.upload_complete),
     path("ingest", views.ingest_file),
@@ -14,41 +16,58 @@ urlpatterns = [
     path("chat", views.chat),
     path("template/fill", views.fill_template),
 
-    path("relationship-heatmap/", views.relationship_heatmap_get),
-    path("relationship-heatmap/save_heatmap/", views.relationship_heatmap_save),
+    # =========================================================================
+    # ALL TEMPLATES - Mapped to the single dynamic view using kwargs!
+    # =========================================================================
+    
+    # 1. Relationship Heatmap
+    path("relationship-heatmap/", views.template_payload_detail, kwargs={"template_type": "relationship_heatmap"}),
+    path("relationship-heatmap/save_heatmap/", views.template_payload_detail, kwargs={"template_type": "relationship_heatmap"}),
 
-    # ✅ Growth Strategy
-    path("growth-strategy/", views.growth_strategy_get),
-    path("growth-strategy/save/", views.growth_strategy_save),
+    # 2. Growth Strategy
+    path("growth-strategy/", views.template_payload_detail, kwargs={"template_type": "growth_strategy"}),
+    path("growth-strategy/save/", views.template_payload_detail, kwargs={"template_type": "growth_strategy"}),
 
-    path("customer-profile/", views.customer_profile_get),
-    path("customer-profile/save_profile/", views.customer_profile_save),
+    # 3. Customer Profile
+    path("customer-profile/", views.template_payload_detail, kwargs={"template_type": "customer_profile"}),
+    path("customer-profile/save_profile/", views.template_payload_detail, kwargs={"template_type": "customer_profile"}),
 
-    path("operational-excellence/", views.operational_excellence_get),
-    path("operational-excellence/save/", views.operational_excellence_save),
+    # 4. Operational Excellence
+    path("operational-excellence/", views.template_payload_detail, kwargs={"template_type": "operational_excellence_strategy"}),
+    path("operational-excellence/save/", views.template_payload_detail, kwargs={"template_type": "operational_excellence_strategy"}),
 
-    path("account-performance/", views.account_performance_get),
-    path("account-performance/save/", views.account_performance_save),
+    # 5. Account Performance Annual Plan
+    path("account-performance/", views.template_payload_detail, kwargs={"template_type": "account_performance_annual_plan"}),
+    path("account-performance/save/", views.template_payload_detail, kwargs={"template_type": "account_performance_annual_plan"}),
 
-    path("tech-spend/", views.tech_spend_get),
-    path("tech-spend/save/", views.tech_spend_save),
+    # 6. Tech Spend View
+    path("tech-spend/", views.template_payload_detail, kwargs={"template_type": "tech_spend_view"}),
+    path("tech-spend/save/", views.template_payload_detail, kwargs={"template_type": "tech_spend_view"}),
 
-    path("innovation-strategy/", views.innovation_strategy_get),
-    path("innovation-strategy/save/", views.innovation_strategy_save),
+    # 7. Innovation Strategy
+    path("innovation-strategy/", views.template_payload_detail, kwargs={"template_type": "innovation_strategy"}),
+    path("innovation-strategy/save/", views.template_payload_detail, kwargs={"template_type": "innovation_strategy"}),
 
-    path("service-line-growth/", views.service_line_growth_get),   
-    path("service-line-growth/save_growth/", views.service_line_growth_save),
+    # 8. Service Line Growth Actions
+    path("service-line-growth/", views.template_payload_detail, kwargs={"template_type": "service_line_growth_actions"}),   
+    path("service-line-growth/save_growth/", views.template_payload_detail, kwargs={"template_type": "service_line_growth_actions"}),
 
-    path("investment-plan/", views.investment_plan_get),
-    path("investment-plan/save_plan/", views.investment_plan_save),
+    # 9. Investment Plan
+    path("investment-plan/", views.template_payload_detail, kwargs={"template_type": "investment_plan"}),
+    path("investment-plan/save_plan/", views.template_payload_detail, kwargs={"template_type": "investment_plan"}),
 
-    path("talent-excellence/", views.talent_excellence_get),
-    path("talent-excellence/save/", views.talent_excellence_save),
+    # 10. Talent Excellence Overview
+    path("talent-excellence/", views.template_payload_detail, kwargs={"template_type": "talent_excellence_overview"}),
+    path("talent-excellence/save/", views.template_payload_detail, kwargs={"template_type": "talent_excellence_overview"}),
 
-    path("innovation-strategy/", views.innovation_strategy_get),
-    path("innovation-strategy/save/", views.innovation_strategy_save),
+    # 11. Implementation Plan
+    path("implementation-plan/", views.template_payload_detail, kwargs={"template_type": "implementation_plan"}),
+    path("implementation-plan/save/", views.template_payload_detail, kwargs={"template_type": "implementation_plan"}),
 
-    path("implementation-plan/", views.implementation_plan_get),
-    path("implementation-plan/save/", views.implementation_plan_save),
- 
+    # 12. Service Line Penetration
+    path("service-line-penetration/", views.template_payload_detail, kwargs={"template_type": "service_line_penetration"}),
+    path("service-line-penetration/save/", views.template_payload_detail, kwargs={"template_type": "service_line_penetration"}),
+    # 13. Account Team Pod
+    path("account-team-pod/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
+    path("account-team-pod/save/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
 ]

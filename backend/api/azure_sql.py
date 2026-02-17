@@ -30,7 +30,7 @@ def _rows_to_dicts(cur) -> List[Dict[str, Any]]:
 # ============================================================
 
 SQL_COPT_SS_ACCESS_TOKEN = 1256
-FABRIC_SCOPE = "https://database.windows.net/.default"
+FABRIC_SCOPE = os.getenv("FABRIC_SQL_SCOPE").strip()
 
 
 def fabric_conn() -> pyodbc.Connection:
@@ -41,9 +41,9 @@ def fabric_conn() -> pyodbc.Connection:
     """
     from azure.identity import InteractiveBrowserCredential
 
-    driver = _env("FABRIC_SQL_DRIVER", "ODBC Driver 18 for SQL Server")
-    server = _env("FABRIC_SQL_SERVER")
-    db = _env("FABRIC_SQL_DB")
+    driver = os.getenv("FABRIC_SQL_DRIVER")
+    server = os.getenv("FABRIC_SQL_SERVER")
+    db = os.getenv("FABRIC_SQL_DB")
 
     if not server or not db:
         raise RuntimeError("Missing FABRIC_SQL_SERVER / FABRIC_SQL_DB in .env")
@@ -63,8 +63,23 @@ def fabric_conn() -> pyodbc.Connection:
     token_bytes = token.encode("utf-16-le")
     token_struct = struct.pack("<I", len(token_bytes)) + token_bytes
 
-    return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
-
+    try:
+        return pyodbc.connect(conn_str, attrs_before={SQL_COPT_SS_ACCESS_TOKEN: token_struct})
+    except pyodbc.Error as e:
+        # ✅ DYNAMIC DRIVER DEBUGGING
+        available_drivers = pyodbc.drivers()
+        print("\n" + "="*60)
+        print("🚨 ODBC DRIVER ERROR 🚨")
+        print(f"Attempted to use Driver: '{driver}'")
+        print(f"Available Drivers on this system: {available_drivers}")
+        print("="*60 + "\n")
+        
+        if 'IM002' in str(e):
+            raise RuntimeError(
+                f"ODBC Driver '{driver}' not found! "
+                f"Please update FABRIC_SQL_DRIVER in your .env file to exactly match one of these available drivers: {available_drivers}"
+            ) from e
+        raise
 
 def fetch_fabric_bundle(account_name: str, top_n: int = 50) -> Dict[str, Any]:
     """
@@ -139,7 +154,7 @@ def sql_auth_conn() -> pyodbc.Connection:
     Uses env vars:
       AZURE_SQL_SERVER, AZURE_SQL_DB, AZURE_SQL_USER, AZURE_SQL_PASSWORD
     """
-    driver = _env("AZURE_SQL_DRIVER", "ODBC Driver 18 for SQL Server")
+    driver = _env("AZURE_SQL_DRIVER")
     server = _env("AZURE_SQL_SERVER")
     db = _env("AZURE_SQL_DB")
     user = _env("AZURE_SQL_USER")

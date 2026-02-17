@@ -21,7 +21,7 @@ import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 const TEMPLATE_NAME = "Implementation_Plan_For_Growth";
 
 const STATUS_OPTIONS = [

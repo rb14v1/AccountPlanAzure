@@ -116,13 +116,12 @@ def search_chunks(
         "count": True,
         "top": int(top_k),
         "select": "chunk_text,file_name,blob_path,user_id",
-
         # 🔎 keyword / lexical search
         "search": query,
         "queryType": "simple",
 
         # ✨ highlight exact matching text
-        "highlight": "chunk_text",
+        "highlight": "",
         "highlightPreTag": "<<<",
         "highlightPostTag": ">>>",
 

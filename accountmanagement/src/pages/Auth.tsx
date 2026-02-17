@@ -25,8 +25,9 @@ const authWebhook = async (
   data: any
 ) => {
   // NOTE: Ensure this URL matches your n8n webhook exactly
+  const webhookBase = import.meta.env.VITE_WEBHOOK_URL || "http://localhost:5678/webhook";
   const response = await fetch(
-    `http://54.226.23.150:5678/webhook/28b70d38-c7aa-4cd8-bbcc-bb5a2a2412e1/auth/${action}`,
+    `${webhookBase}/28b70d38-c7aa-4cd8-bbcc-bb5a2a2412e1/auth/${action}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
