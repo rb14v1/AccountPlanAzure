@@ -26,7 +26,32 @@ const chatContainerSx = {
   flexDirection: "column",
   gap: 3,
   height: "100%",
+
+  /* ===== SCROLLBAR STYLING ===== */
+
+  /* For Chrome, Edge, Safari */
+  "&::-webkit-scrollbar": {
+    width: "8px",
+  },
+
+  "&::-webkit-scrollbar-track": {
+    background: "transparent",   // Track transparent
+  },
+
+  "&::-webkit-scrollbar-thumb": {
+    backgroundColor: "transparent",  // Thumb transparent
+    borderRadius: "10px",
+  },
+
+  "&::-webkit-scrollbar-thumb:hover": {
+    backgroundColor: "rgba(0,0,0,0.2)",  // show slightly on hover
+  },
+
+  /* For Firefox */
+  scrollbarWidth: "thin",
+  scrollbarColor: "transparent transparent",
 };
+
  
 const typingIndicatorSx = {
   display: "flex",
