@@ -1144,7 +1144,7 @@ def chat(request):
         if chat:
             save_message(chat, "bot", message)
 
-        return JsonResponse({"message": message, "payload": safe})
+        return JsonResponse({"message": message, "payload": safe, "template_type": "relationship_heatmap"})
 
 
 
@@ -1191,7 +1191,7 @@ def chat(request):
         if chat:
             save_message(chat, "bot", message)
 
-        return JsonResponse({"message": message, "payload": safe})
+        return JsonResponse({"message": message, "payload": safe, "template_type": "growth_strategy"})
 
 
 
@@ -1209,7 +1209,7 @@ def chat(request):
             template_type="implementation_plan", 
             payload=safe
         )
-        return JsonResponse({"message": "Implementation Plan generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse({"message": "Implementation Plan generated.", "payload": safe, "template_type": "implementation_plan"}, json_dumps_params={"ensure_ascii": False})
 
     if template_type == "innovation_strategy":
         schema = get_template_schema("innovation_strategy")
@@ -1246,13 +1246,7 @@ def chat(request):
         if chat:
             save_message(chat, "bot", message)
 
-        return JsonResponse({"message": message, "payload": safe})
-
-
-
-
-
-
+        return JsonResponse({"message": message, "payload": safe, "template_type": "customer_profile"})
 
 
     if template_type == "investment_plan":

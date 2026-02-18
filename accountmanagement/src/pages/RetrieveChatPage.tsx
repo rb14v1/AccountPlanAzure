@@ -1,18 +1,18 @@
 // src/Components/ChatPage.tsx
 
 import React, { useState, useEffect } from "react";
-
 import { Box, TextField, Button, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
 import api from "../api/axios";
 import { PRIMARY_TEAL } from "../components/constants";
-import type { Message } from "../components/constants";
+import type { Message, PromptDefinition } from "../components/constants";
 import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
 import PromptModal from "../components/PromptModal";
 import { useData } from "../context/DataContext";
-
+import { useTab } from "../context/TabContext";
+import { STARTER_PROMPTS } from "../components/constants";
 
 const ALLOWED_TEMPLATES = [
   "growth_strategy",
@@ -33,12 +33,11 @@ const RetrieveChatPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
-const [currentChatId, setCurrentChatId] = useState<number | null>(null);
-const [chatList, setChatList] = useState<any[]>([]);
-
-  
+  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [chatList, setChatList] = useState<any[]>([]);
   const navigate = useNavigate();
-
+  const { navigateTo } = useTab();
+  
   const getUser = () => {
   try {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -102,7 +101,7 @@ const [chatList, setChatList] = useState<any[]>([]);
 
   // Modal State
   const [openModal, setOpenModal] = useState(false);
-  const [activePrompt, setActivePrompt] = useState<any>(null);
+  const [activePrompt, setActivePrompt] = useState<PromptDefinition | null>(null);
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
@@ -168,10 +167,6 @@ const [chatList, setChatList] = useState<any[]>([]);
 };
 
 
-
-  
-
-
   const handleCardClick = (promptObj: any) => {
     setActivePrompt(promptObj);
     setOpenModal(true);
@@ -187,174 +182,111 @@ const [chatList, setChatList] = useState<any[]>([]);
     }, 100);
   };
 
-  const handleSend = async (overrideText?: string) => {
-    const textToSend = overrideText || input;
+    const handleSend = async (textOverride?: string) => {
+    const textToSend = textOverride !== undefined ? textOverride : input;
     if (!textToSend.trim() && !selectedFile) return;
-
-    const fileName = selectedFile ? selectedFile.name : undefined;
-
-    
-
-    // --- UI UPDATE (Show User Message) ---
+ 
     const newUserMsg: Message = {
-      id: crypto.randomUUID(),
+      id: Date.now().toString(),
       text: textToSend,
       sender: "user",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      attachment: fileName,
+      timestamp: new Date().toLocaleTimeString(),
+      attachment: selectedFile ? selectedFile.name : undefined,
     };
-
+ 
     setMessages((prev) => [...prev, newUserMsg]);
     setInput("");
     setSelectedFile(null);
     setIsTyping(true);
-
-
-
-
+ 
     try {
-      // ✅ If user types: "<template_name> <company_name>"
+      // ✅ Template Fill Logic
       const parts = textToSend.trim().split(/\s+/);
       const maybeTemplate = parts[0] || "";
       const companyName = parts.slice(1).join(" ").trim();
-
+ 
       if ((ALLOWED_TEMPLATES as readonly string[]).includes(maybeTemplate) && companyName) {
-        const user = getUser();
-if (!user) return;
-
         const fillRes = await api.post("/template/fill", {
-          user_id: user.id,
-
+          user_id: "101",
           template_name: maybeTemplate,
           company_name: companyName,
         });
-
+ 
         const parsedData = fillRes.data;
-
+ 
         if (parsedData?.template_type) {
           setGlobalData((prev: any) => ({
             ...prev,
             [parsedData.template_type]: parsedData.data,
           }));
+ 
+          // ✅ Store any detected template as a route-friendly key
+          const routeName = parsedData.template_type.toLowerCase().replace(/_/g, "-");
+          localStorage.setItem("last_detected_template", routeName);
         }
-
+ 
         const assistantMsg: Message = {
           id: crypto.randomUUID(),
           text: `✅ Filled template "${maybeTemplate}" for "${companyName}".`,
           sender: "bot",
-          timestamp: new Date().toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
-
+ 
         setMessages((prev) => [...prev, assistantMsg]);
         setIsTyping(false);
         return;
       }
-
+ 
       // --- Normal Chat ---
-      const user = getUser();
-if (!user) return;
-
-if (!currentChatId) {
-  alert("Please create a chat first");
-  return;
-}
-
-const response = await api.post("/chat", {
-  user_id: user.id,
-  chat_id: currentChatId,
-  query: textToSend,
-});
-
-
-
-
-      // IMPORTANT: response.data can be STRING or OBJECT
+      const response = await api.post("/chat", {
+        user_id: "101",
+        query: textToSend,
+      });
+ 
       const respData = response.data;
-
-        // ✅ NEW: backend returns { message, payload }
-        if (respData && typeof respData === "object" && respData.message) {
-          const messageText = String(respData.message || "");
-
-          const payload = respData.payload;
-          if (payload?.template_type && payload?.data) {
-            setGlobalData((prev: any) => ({
-              ...prev,
-              [payload.template_type]: payload.data,
-            }));
-          }
-
-          const botResponse: Message = {
-            id: crypto.randomUUID(),
-            text: messageText,
-            sender: "bot",
-            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          };
-
-          setMessages((prev) => [...prev, botResponse]);
-          setIsTyping(false);
-          return;
+ 
+      if (respData && typeof respData === "object" && respData.message) {
+        // ✅ messageText declaration fixed
+        const messageText = String(respData.message || "");
+ 
+        // ✅ UNIVERSAL MAPPING: Capture any template type and normalize for the Data button
+        const rawType = respData.template_type || respData.payload?.template_type;
+        if (rawType) {
+          const routeName = rawType.toLowerCase().replace(/_/g, "-");
+          localStorage.setItem("last_detected_template", routeName);
         }
-
-      const logosHeader = response.headers["x-company-logos"];
-
-      if (logosHeader) {
-        try {
-          const parsedLogos = JSON.parse(logosHeader);
-
-          console.log("🖼️ Logos from backend:", parsedLogos);
-
+ 
+        const payload = respData.payload;
+        if (payload?.template_type && payload?.data) {
           setGlobalData((prev: any) => ({
             ...prev,
-            companyLogos: parsedLogos,
+            [payload.template_type]: payload.data,
           }));
-        } catch (err) {
-          console.error("❌ Failed to parse company logos header", err);
         }
+ 
+        const botResponse: Message = {
+          id: crypto.randomUUID(),
+          text: messageText,
+          sender: "bot",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+ 
+        setMessages((prev) => [...prev, botResponse]);
+        setIsTyping(false);
+        return;
       }
-
-      // Existing header based logic (keep, but safe)
-      const templateDataHeader = response.headers["x-template-data"];
-      const templateTypeHeader = response.headers["x-template-type"];
-
-      const textAnswer = response.data;
-
-      console.log("📝 Text Answer:", textAnswer);
-      console.log("📋 Template Type:", templateTypeHeader);
-
-      if (templateDataHeader && templateTypeHeader) {
-        try {
-          const parsedHeader = JSON.parse(templateDataHeader);
-          setGlobalData((prev: any) => ({
-            ...prev,
-            [parsedHeader.template_type]: parsedHeader.data,
-          }));
-        } catch (err) {
-          console.error("❌ Template parse error:", err);
-        }
-      }
-
+ 
       const botResponse: Message = {
         id: crypto.randomUUID(),
-        text: toDisplayText(respData), // ✅ ALWAYS STRING
+        text: toDisplayText(respData),
         sender: "bot",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
-
+ 
       setMessages((prev) => [...prev, botResponse]);
     } catch (error: any) {
       let errorText = "❌ Could not connect to backend. ";
-
       if (error.response) {
-        // also try to show backend body
         const body = error.response?.data;
         errorText += `Server error: ${error.response.status}. `;
         if (body) errorText += `\n${toDisplayText(body).slice(0, 1200)}`;
@@ -363,19 +295,19 @@ const response = await api.post("/chat", {
       } else {
         errorText += error.message;
       }
-
+ 
       const errorMsg: Message = {
         id: crypto.randomUUID(),
         text: errorText,
         sender: "bot",
         timestamp: new Date().toLocaleTimeString(),
       };
-
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);
     }
   };
+ 
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -385,7 +317,18 @@ const response = await api.post("/chat", {
   };
 
   const handleTopRightAction = () => {
-    navigate("/app");
+    const lastTemplate = localStorage.getItem("last_detected_template");
+ 
+    if (lastTemplate) {
+      // 1. Tell TabContext to set the active component
+      navigateTo(lastTemplate);
+      // 2. Change the URL so MainLayout's renderPage() switch finds the match
+      navigate(`/app/${lastTemplate}`);
+    } else {
+      // Default fallback
+      navigateTo("customer-profile");
+      navigate("/app/customer-profile");
+    }
   };
 
   return (
@@ -421,7 +364,18 @@ const response = await api.post("/chat", {
             </Button>
           </Box>
 
-          <ChatArea messages={messages} isTyping={isTyping} />
+          <ChatArea
+            messages={messages}
+            isTyping={isTyping}
+            prompts={STARTER_PROMPTS}
+            onPromptSelect={(id) => {
+              const found = STARTER_PROMPTS.find(p => p.id === id);
+              if (found) {
+                setActivePrompt(found);
+                setOpenModal(true);
+              }
+            }}
+          />
 
           <Box sx={{ p: 2, bgcolor: "#fff", borderTop: "1px solid #ddd" }}>
             <Box sx={{ maxWidth: 900, mx: "auto", display: "flex", gap: 1, alignItems: "center" }}>
@@ -470,9 +424,12 @@ const response = await api.post("/chat", {
 
       <PromptModal
         open={openModal}
-        prompt={activePrompt}
+        activePrompt={activePrompt}
         onClose={() => setOpenModal(false)}
-        onSubmit={handleModalSubmit}
+        onSubmit={(finalText) => {
+          setOpenModal(false);
+          handleSend(finalText);
+        }}
       />
     </Box>
   );
