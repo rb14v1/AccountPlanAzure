@@ -2,14 +2,14 @@ djangorestframework
 django-cors-headers
 requests
 PyJWT
-
+dotenv
 pyodbc
 azure-identity
 azure-storage-blob
 azure-search-documents
 openai
 python-pptx
-
+psycopg2
 
 python-docx
 pypdf

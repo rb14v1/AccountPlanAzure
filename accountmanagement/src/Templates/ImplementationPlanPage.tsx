@@ -18,6 +18,10 @@ import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
+<<<<<<< HEAD
+=======
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+>>>>>>> b29ea88654154141f0937a06b456b9e0d3780324
 const TEMPLATE_NAME = "Implementation_Plan_For_Growth";
 const STATUS_OPTIONS = [
   "Completed",

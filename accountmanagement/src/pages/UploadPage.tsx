@@ -18,8 +18,8 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { useAuth } from "../context/AuthContext";
 
-// ✅ n8n webhook URL
-const WEBHOOK_URL = "http://54.226.23.150:5678/webhook/upload";
+// n8n webhook URL
+const WEBHOOK_URL = import.meta.env.VITE_WEBHOOK_URL || "http://localhost:5678/webhook/upload";
 
 export default function UploadPage() {
   const { user, loading } = useAuth();
@@ -31,12 +31,12 @@ export default function UploadPage() {
     text: string;
   } | null>(null);
 
-  // 🔐 wait for auth to hydrate from localStorage
+  //  wait for auth to hydrate from localStorage
   if (loading) {
     return null;
   }
 
-  // 🔐 protect page
+  //  protect page
   if (!user) {
     return <Navigate to="/login" replace />;
   }
