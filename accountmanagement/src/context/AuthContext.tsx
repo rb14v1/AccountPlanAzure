@@ -17,12 +17,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+  try {
     const storedUser = localStorage.getItem("user");
-    if (storedUser) {
+
+    if (storedUser && storedUser !== "undefined") {
       setUser(JSON.parse(storedUser));
+    } else {
+      localStorage.removeItem("user");
     }
-    setLoading(false);
-  }, []);
+  } catch (error) {
+    console.error("Invalid user in localStorage");
+    localStorage.removeItem("user");
+  }
+
+  setLoading(false);
+}, []);
+
 
   const login = (user: any) => {
     localStorage.setItem("user", JSON.stringify(user));

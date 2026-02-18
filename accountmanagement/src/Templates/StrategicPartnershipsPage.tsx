@@ -51,8 +51,12 @@ const subHeaderCell = {
 const bodyCell = {
   fontSize: 11,
   border: "1px solid #ccc",
-  height: 40,
+  verticalAlign: "top",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
 };
+
+
 
 const partnerCell = {
   ...bodyCell,
@@ -60,6 +64,48 @@ const partnerCell = {
   color: "white",
   fontWeight: 700,
 };
+
+// ✅ Used ONLY for view & PDF (same logic as ImplementationPlan)
+const PrintBox = ({ value }: { value: string }) => (
+  <Box
+    sx={{
+      whiteSpace: "pre-wrap",
+      wordBreak: "break-word",
+      overflow: "visible",
+      height: "auto",
+      lineHeight: 1.4,
+      fontSize: "0.75rem",
+    }}
+  >
+    {value || ""}
+  </Box>
+);
+
+const AutoGrowTextField = ({ value, onChange }: any) => (
+  <TextField
+    fullWidth
+    multiline
+    minRows={1}
+    size="small"
+    value={value}
+    onChange={onChange}
+    InputProps={{
+      style: {
+        fontSize: "0.75rem",
+        lineHeight: "1.4",
+        overflow: "hidden",
+        resize: "none",
+      },
+    }}
+    sx={{
+      "& textarea": {
+        overflow: "hidden",
+      },
+    }}
+  />
+);
+
+
 
 export default function StrategicPartnershipsPage() {
   const { globalData, setGlobalData } = useData();
@@ -71,6 +117,8 @@ export default function StrategicPartnershipsPage() {
     severity: "success" as "success" | "error" | "warning",
   });
   
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const autoSaveAttempted = useRef(false);
   const dataLoadedFromDB = useRef(false);
 
@@ -119,22 +167,30 @@ export default function StrategicPartnershipsPage() {
   }, []); // Run only once on mount
 
   const partnershipsData: APIPartnershipRow[] =
-    globalData?.Strategic_Partnerships || [];
+  globalData?.Strategic_Partnerships || [];
 
-  const editable = useEditableTable(partnershipsData);
+// ✅ PAD ROWS FIRST (same pattern as RelationshipHeatmap)
+const initialRows: APIPartnershipRow[] = [...partnershipsData];
 
-  const displayData =
-    editable.draftData.length > 0
-      ? editable.draftData
-      : Array(5).fill({
-          partner_name: "",
-          internal_poc: "",
-          partner_type: "",
-          sell_with_revenue_fy25_actuals_forecast: "",
-          sell_with_revenue_fy26_target: "",
-          key_engagements: "",
-          support_needed: "",
-        });
+while (initialRows.length < 5) {
+  initialRows.push({
+    partner_name: "",
+    internal_poc: "",
+    partner_type: "",
+    sell_with_revenue_fy25_actuals_forecast: "",
+    sell_with_revenue_fy26_target: "",
+    key_engagements: "",
+    support_needed: "",
+  });
+}
+
+// ✅ PASS PADDED DATA INTO THE HOOK
+const editable = useEditableTable(initialRows);
+
+
+  // Ensure minimum 5 rows always
+
+
 
   // STEP 2: Auto-save when NEW data arrives from chatbot
   useEffect(() => {
@@ -303,202 +359,371 @@ export default function StrategicPartnershipsPage() {
         </Alert>
       </Snackbar>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-        <DownloadTemplates templateName={TEMPLATE_NAME} />
-        <Box>
-          {!editable.isEditing ? (
-            <Button
-              variant="contained"
-              onClick={editable.startEdit}
-              disabled={loading}
-            >
-              Edit
-            </Button>
-          ) : (
-            <>
-              <Button
-                variant="contained"
-                onClick={handleManualSave}
-                disabled={loading}
-                sx={{
-                  backgroundColor: "#008080",
-                  ml: 2,
-                  color: "#fff",
-                  "&:hover": {
-                    backgroundColor: "#006d6d",
-                  },
-                }}
-              >
-                {loading ? <CircularProgress size={24} /> : "Save"}
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={editable.cancelEdit}
-                disabled={loading}
-                sx={{ ml: 2 }}
-              >
-                Cancel
-              </Button>
-            </>
-          )}
-        </Box>
-      </Box>
+      <Box
+  sx={{
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    mb: 2,
+    gap: 2,
+  }}
+>
+  <DownloadTemplates
+    templateName={TEMPLATE_NAME}
+    beforeDownload={() => setIsPrinting(true)}
+    afterDownload={() => setIsPrinting(false)}
+  />
 
-      <Typography variant="h5" sx={{ mb: 2, fontWeight: 700 }}>
-        Strategic partnerships
-      </Typography>
+
+  {!editable.isEditing ? (
+    <Button
+      variant="outlined"
+      onClick={editable.startEdit}
+      disabled={loading}
+      sx={{
+        borderColor: "#008080",
+        color: "#008080",
+        "&:hover": {
+          borderColor: "#006d6d",
+          backgroundColor: "#e6f4f4",
+        },
+      }}
+    >
+      Edit
+    </Button>
+  ) : (
+    <>
+      <Button
+        variant="contained"
+        onClick={handleManualSave}
+        disabled={loading}
+        sx={{
+          backgroundColor: "#008080",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#006d6d" },
+        }}
+      >
+        {loading ? <CircularProgress size={24} /> : "Save"}
+      </Button>
+
+      <Button
+        variant="outlined"
+        onClick={editable.cancelEdit}
+        disabled={loading}
+        sx={{
+          borderColor: "#008080",
+          color: "#008080",
+          "&:hover": {
+            borderColor: "#006d6d",
+            backgroundColor: "#e6f4f4",
+          },
+        }}
+      >
+        Cancel
+      </Button>
+    </>
+  )}
+</Box>
+
+
+      <Box id="template-to-download" className="template-section">
+        {isPrinting && (
+  <TableContainer component={Paper}>
+    <Table
+      sx={{
+        width: "100%",
+        tableLayout: "fixed",
+      }}
+    >
+      {/* IMPORTANT: NO COLSPAN */}
+      <colgroup>
+        <col style={{ width: "14%" }} /> {/* Partner */}
+        <col style={{ width: "14%" }} /> {/* Internal POC */}
+        <col style={{ width: "14%" }} /> {/* Partner type */}
+        <col style={{ width: "10%" }} /> {/* FY25 */}
+        <col style={{ width: "10%" }} /> {/* FY26 */}
+        <col style={{ width: "19%" }} /> {/* Key Engagements */}
+        <col style={{ width: "19%" }} /> {/* Support needed */}
+      </colgroup>
+
+      <TableHead sx={{ display: "table-header-group" }}>
+        <TableRow>
+          <TableCell sx={headerCell}>Partner *</TableCell>
+          <TableCell sx={headerCell}>Internal POC</TableCell>
+          <TableCell sx={headerCell}>Partner type</TableCell>
+          <TableCell sx={headerCell}>
+            Sell-with Revenue
+            <br />
+            FY25 (Actuals + Forecast)
+          </TableCell>
+          <TableCell sx={headerCell}>
+            Sell-with Revenue
+            <br />
+            FY26 (Target)
+          </TableCell>
+          <TableCell sx={headerCell}>Key Engagements</TableCell>
+          <TableCell sx={headerCell}>Support needed</TableCell>
+        </TableRow>
+      </TableHead>
+
+      <TableBody>
+        {editable.draftData.map((row, index) => (
+          <TableRow key={row.id || index}>
+            <TableCell sx={partnerCell}>
+              <PrintBox value={row.partner_name} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.internal_poc} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.partner_type} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.sell_with_revenue_fy25_actuals_forecast} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.sell_with_revenue_fy26_target} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.key_engagements} />
+            </TableCell>
+
+            <TableCell sx={bodyCell}>
+              <PrintBox value={row.support_needed} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  </TableContainer>
+)}
+
+        <Typography
+          variant="h5"
+          sx={{
+            mb: 2,
+            fontWeight: 700,
+            color: "#008080",
+          }}
+        >
+          Strategic partnerships
+        </Typography>
 
       <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={headerCell}>Partner *</TableCell>
-              <TableCell sx={headerCell}>Internal POC</TableCell>
-              <TableCell sx={headerCell}>Partner type</TableCell>
-              <TableCell sx={headerCell} colSpan={2} align="center">
-                Sell-with Revenue
-              </TableCell>
-              <TableCell sx={headerCell}>Key Engagements</TableCell>
-              <TableCell sx={headerCell}>Support needed</TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell sx={subHeaderCell}></TableCell>
-              <TableCell sx={subHeaderCell}></TableCell>
-              <TableCell sx={subHeaderCell}></TableCell>
-              <TableCell sx={subHeaderCell}>
-                FY25
-                <br />
-                (Actuals + Forecast)
-              </TableCell>
-              <TableCell sx={subHeaderCell}>
-                FY26
-                <br />
-                (Target)
-              </TableCell>
-              <TableCell sx={subHeaderCell}></TableCell>
-              <TableCell sx={subHeaderCell}></TableCell>
-            </TableRow>
-          </TableHead>
+        <Table
+  sx={{
+    tableLayout: "fixed",   // 🔒 LOCK ALWAYS
+    width: "100%",
+  }}
+>
+
+          <colgroup>
+  <col style={{ width: "14%" }} />  {/* Partner */}
+  <col style={{ width: "14%" }} />  {/* Internal POC */}
+  <col style={{ width: "14%" }} />  {/* Partner type */}
+  <col style={{ width: "10%" }} />  {/* FY25 */}
+  <col style={{ width: "10%" }} />  {/* FY26 */}
+  <col style={{ width: "19%" }} />  {/* Key Engagements */}
+  <col style={{ width: "19%" }} />  {/* Support needed */}
+</colgroup>
+
+
+          <TableHead sx={{ display: "table-header-group" }}>
+
+  {/* HEADER ROW 1 */}
+  <TableRow>
+    <TableCell sx={headerCell}>Partner *</TableCell>
+    <TableCell sx={headerCell}>Internal POC</TableCell>
+    <TableCell sx={headerCell}>Partner type</TableCell>
+
+    {/* 🔒 Sell-with Revenue MUST occupy EXACTLY FY25 + FY26 */}
+    <TableCell sx={headerCell} colSpan={2} align="center">
+      Sell-with Revenue
+    </TableCell>
+
+    <TableCell sx={headerCell}>Key Engagements</TableCell>
+    <TableCell sx={headerCell}>Support needed</TableCell>
+  </TableRow>
+
+  {/* HEADER ROW 2 */}
+  <TableRow>
+    {/* These THREE cells ALIGN with Partner / POC / Partner type */}
+    <TableCell sx={subHeaderCell} />
+    <TableCell sx={subHeaderCell} />
+    <TableCell sx={subHeaderCell} />
+
+    {/* These TWO are UNDER Sell-with Revenue */}
+    <TableCell sx={subHeaderCell}>
+      FY25
+      <br />
+      (Actuals + Forecast)
+    </TableCell>
+    <TableCell sx={subHeaderCell}>
+      FY26
+      <br />
+      (Target)
+    </TableCell>
+
+    {/* These TWO align with Key Engagements & Support */}
+    <TableCell sx={subHeaderCell} />
+    <TableCell sx={subHeaderCell} />
+  </TableRow>
+
+</TableHead>
+
           <TableBody>
-            {displayData.map((row, index) => (
+            {editable.draftData.map((row, index) => (
+
               <TableRow key={row.id || index}>
                 <TableCell sx={partnerCell}>
-                  {editable.isEditing ? (
+  {editable.isEditing && !isPrinting ? (
+    <AutoGrowTextField
+      value={row.partner_name}
+      onChange={(e) =>
+        handleFieldChange(index, "partner_name", e.target.value)
+      }
+    />
+  ) : (
+    <PrintBox value={row.partner_name} />
+  )}
+</TableCell>
+
+                <TableCell sx={bodyCell}>
+                  {editable.isEditing && !isPrinting ? (
+  <TextField
+    fullWidth
+    size="small"
+    multiline
+    minRows={1}
+    value={row.internal_poc}
+    onChange={(e) =>
+      handleFieldChange(index, "internal_poc", e.target.value)
+    }
+  />
+) : (
+  <PrintBox value={row.internal_poc} />
+)}
+
+                </TableCell>
+                <TableCell sx={bodyCell}>
+                  {editable.isEditing && !isPrinting ? (
+  <TextField
+    fullWidth
+    size="small"
+    multiline
+    minRows={1}
+    value={row.partner_type}
+    onChange={(e) =>
+      handleFieldChange(index, "partner_type", e.target.value)
+    }
+  />
+) : (
+  <PrintBox value={row.partner_type} />
+)}
+
+                </TableCell>
+                <TableCell sx={bodyCell}>
+                  {editable.isEditing && !isPrinting
+ ? (
                     <TextField
-                      fullWidth
-                      size="small"
-                      value={row.partner_name}
-                      onChange={(e) =>
-                        handleFieldChange(index, "partner_name", e.target.value)
-                      }
-                      sx={{
-                        "& .MuiInputBase-root": {
-                          color: "white",
-                        },
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "rgba(255, 255, 255, 0.3)",
-                        },
-                      }}
-                    />
+  fullWidth
+  size="small"
+  multiline
+  minRows={1}
+  
+  value={row.sell_with_revenue_fy25_actuals_forecast}
+  onChange={(e) =>
+    handleFieldChange(
+      index,
+      "sell_with_revenue_fy25_actuals_forecast",
+      e.target.value
+    )
+  }
+  InputProps={{
+    style: {
+      overflow: "hidden",
+      resize: "none",
+    },
+  }}
+/>
+
                   ) : (
-                    row.partner_name
+                    <PrintBox value={row.sell_with_revenue_fy25_actuals_forecast} />
+
                   )}
                 </TableCell>
                 <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={row.internal_poc}
-                      onChange={(e) =>
-                        handleFieldChange(index, "internal_poc", e.target.value)
-                      }
-                    />
-                  ) : (
-                    row.internal_poc
-                  )}
+  {editable.isEditing && !isPrinting ? (
+    <TextField
+      fullWidth
+      size="small"
+      multiline
+      minRows={1}
+      value={row.sell_with_revenue_fy26_target}
+      onChange={(e) =>
+        handleFieldChange(
+          index,
+          "sell_with_revenue_fy26_target",
+          e.target.value
+        )
+      }
+      InputProps={{
+        style: {
+          overflow: "hidden",
+          resize: "none",
+        },
+      }}
+    />
+  ) : (
+    <PrintBox value={row.sell_with_revenue_fy26_target} />
+  )}
+</TableCell>
+
+                <TableCell sx={bodyCell}>
+                 {editable.isEditing && !isPrinting ? (
+  <TextField
+    fullWidth
+    size="small"
+    multiline
+    value={row.key_engagements}
+    onChange={(e) =>
+      handleFieldChange(index, "key_engagements", e.target.value)
+    }
+  />
+) : (
+  <PrintBox value={row.key_engagements} />
+)}
+
                 </TableCell>
                 <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
+                  {editable.isEditing && !isPrinting
+ ? (
                     <TextField
-                      fullWidth
-                      size="small"
-                      value={row.partner_type}
-                      onChange={(e) =>
-                        handleFieldChange(index, "partner_type", e.target.value)
-                      }
-                    />
+  fullWidth
+  size="small"
+  multiline
+  minRows={1}
+  
+  value={row.support_needed}
+  onChange={(e) =>
+    handleFieldChange(index, "support_needed", e.target.value)
+  }
+  InputProps={{
+    style: {
+      overflow: "hidden",
+      resize: "none",
+    },
+  }}
+/>
+
                   ) : (
-                    row.partner_type
-                  )}
-                </TableCell>
-                <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={row.sell_with_revenue_fy25_actuals_forecast}
-                      onChange={(e) =>
-                        handleFieldChange(
-                          index,
-                          "sell_with_revenue_fy25_actuals_forecast",
-                          e.target.value
-                        )
-                      }
-                    />
-                  ) : (
-                    row.sell_with_revenue_fy25_actuals_forecast
-                  )}
-                </TableCell>
-                <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={row.sell_with_revenue_fy26_target}
-                      onChange={(e) =>
-                        handleFieldChange(
-                          index,
-                          "sell_with_revenue_fy26_target",
-                          e.target.value
-                        )
-                      }
-                    />
-                  ) : (
-                    row.sell_with_revenue_fy26_target
-                  )}
-                </TableCell>
-                <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      multiline
-                      value={row.key_engagements}
-                      onChange={(e) =>
-                        handleFieldChange(
-                          index,
-                          "key_engagements",
-                          e.target.value
-                        )
-                      }
-                    />
-                  ) : (
-                    row.key_engagements
-                  )}
-                </TableCell>
-                <TableCell sx={bodyCell}>
-                  {editable.isEditing ? (
-                    <TextField
-                      fullWidth
-                      size="small"
-                      value={row.support_needed}
-                      onChange={(e) =>
-                        handleFieldChange(index, "support_needed", e.target.value)
-                      }
-                    />
-                  ) : (
-                    row.support_needed
+                    <PrintBox value={row.support_needed} />
+
                   )}
                 </TableCell>
               </TableRow>
@@ -506,10 +731,43 @@ export default function StrategicPartnershipsPage() {
           </TableBody>
         </Table>
       </TableContainer>
+      <style>
+{`
+@media print {
 
-      <Typography variant="caption" sx={{ display: "block", mt: 2 }}>
-        Classification: Controlled. Copyright ©2025 Version 1. All rights reserved.
-      </Typography>
+  textarea,
+  input {
+    display: none !important;
+  }
+
+  table {
+    table-layout: fixed !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    vertical-align: top !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+}
+`}
+</style>
+
+
+      
+      </Box>
     </Box>
   );
 }

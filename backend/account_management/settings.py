@@ -193,3 +193,7 @@ CORS_EXPOSE_HEADERS = [
     'X-Template-Data',
     'X-Template-Type',
 ]
+
+
+MEDIA_URL = "/logos/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "api/logos")

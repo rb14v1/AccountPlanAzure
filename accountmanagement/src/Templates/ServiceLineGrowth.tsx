@@ -20,10 +20,13 @@ import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
 
+
 const API_BASE_URL = "http://localhost:8000/api";
+
 
 /* ---------- CONSTANTS ---------- */
 const TEMPLATE_NAME = "Service Line Growth Actions";
+
 
 const columns = [
   "Development Area",
@@ -32,6 +35,7 @@ const columns = [
   "Current Status",
   "Next Action / Responsible person",
 ];
+
 
 const KEY_MAP: Record<string, string> = {
   "Cloud Transformation": "Cloud_Transformation",
@@ -43,10 +47,13 @@ const KEY_MAP: Record<string, string> = {
   "SAM & Licensing": "SAM_and_Licensing",
 };
 
+
 const rowLabels = Object.keys(KEY_MAP);
+
 
 const PRIMARY_TEAL = "#008080";
 const DARK_BG = "#0b1e26";
+
 
 /* ---------- STYLES ---------- */
 const StyledTableCell = styled(TableCell)(() => ({
@@ -65,6 +72,7 @@ const StyledTableCell = styled(TableCell)(() => ({
     width: "20%",
   },
 }));
+
 
 /* ---------- MAIN COMPONENT ---------- */
 const ServiceLineGrowth: React.FC = () => {
@@ -86,6 +94,7 @@ const ServiceLineGrowth: React.FC = () => {
   const dataLoadedFromDB = useRef(false);
   const previousDataRef = useRef<any>(null);
 
+
   /* 🔑 Build editable array from object - Function to create rows */
   const buildRows = (data: any) => {
     return rowLabels.map((label) => {
@@ -101,6 +110,7 @@ const ServiceLineGrowth: React.FC = () => {
       };
     });
   };
+
 
   const editable = useEditableTable(buildRows(backendData));
 

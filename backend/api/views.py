@@ -29,7 +29,29 @@ from django.http import JsonResponse, HttpResponse
 import json
 
 from .models import TemplatePayload
+from .logo_fetcher import fetch_company_logo
 
+from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
+from .serializers import RegisterSerializer
+
+from .models import ChatSession, ChatMessage
+from .serializers import ChatSessionSerializer, ChatMessageSerializer
+
+import re
+
+def extract_company_names(answer_text):
+    companies = []
+
+    lines = answer_text.split("\n")
+    for line in lines:
+        line = line.strip()
+        if line and not line.lower().startswith(("core", "preferred", "other")):
+            companies.append(line)
+
+    return companies
+
+from .models import TemplatePayload
 
 def _env(name: str, default: str = "") -> str:
     return (os.getenv(name) or default).strip()
@@ -67,6 +89,56 @@ def _get_user_id(request, data: dict) -> str:
         str(data.get("user_id") or "").strip()
         or str(request.headers.get("X-User-Id") or "").strip()
     )
+
+@csrf_exempt
+def register_user(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    if User.objects.filter(username=data.get("username")).exists():
+        return JsonResponse({"error": "Username already exists"}, status=400)
+
+    serializer = RegisterSerializer(data=data)
+
+    if serializer.is_valid():
+        user = serializer.save()
+        return JsonResponse({
+            "success": True,
+            "username": user.username
+        })
+
+    return JsonResponse(serializer.errors, status=400)
+
+@csrf_exempt
+def login_user(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    data = json.loads(request.body.decode("utf-8"))
+
+    user = authenticate(
+        username=data.get("username"),
+        password=data.get("password")
+    )
+
+    if not user:
+        return JsonResponse({"error": "Invalid username or password"}, status=401)
+
+    
+
+    return JsonResponse({
+    "success": True,
+    "user": {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email
+    }
+})
 
 
 @csrf_exempt
@@ -168,6 +240,53 @@ def ingest_status(request):
 
     return JsonResponse(get_indexer_status())
 
+@csrf_exempt
+def create_chat(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "POST only"}, status=405)
+
+    data = json.loads(request.body.decode("utf-8"))
+    user_id = data.get("user_id")
+
+    if not user_id:
+        return JsonResponse({"error": "user_id required"}, status=400)
+
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({"error": "User not found"}, status=404)
+
+    chat = ChatSession.objects.create(
+        user=user,
+        title="New Chat"
+    )
+
+    return JsonResponse({
+        "id": chat.id,
+        "title": chat.title,
+        "created_at": chat.created_at
+    })
+
+
+def list_chats(request):
+    user_id = request.GET.get("user_id")
+    chats = ChatSession.objects.filter(user_id=user_id).order_by("-created_at")
+    data = ChatSessionSerializer(chats, many=True).data
+    return JsonResponse(data, safe=False)
+
+
+def get_chat_messages(request, chat_id):
+    messages = ChatMessage.objects.filter(chat_id=chat_id).order_by("timestamp")
+    data = ChatMessageSerializer(messages, many=True).data
+    return JsonResponse(data, safe=False)
+
+
+def save_message(chat, sender, text):
+    ChatMessage.objects.create(
+        chat=chat,
+        sender=sender,
+        text=text
+    )
 
 ######################################################################
 def _bundle_to_context_text(bundle: dict) -> str:
@@ -263,6 +382,8 @@ def chat(request):
     user_id = _get_user_id(request, body)
 
     raw_query = str(body.get("query") or body.get("prompt") or "").strip()
+    chat_id = body.get("chat_id")
+
     top_k = int(body.get("top_k") or int(
         os.getenv("AZURE_SEARCH_FALLBACK_TOPK", "12")))
 
@@ -270,6 +391,24 @@ def chat(request):
         return JsonResponse({"error": "user_id required"}, status=400)
     if not raw_query:
         return JsonResponse({"error": "query required"}, status=400)
+
+    chat = None
+    if chat_id:
+        try:
+            chat = ChatSession.objects.get(id=chat_id)
+            # ✅ Save USER message immediately
+            if chat:
+                save_message(chat, "user", raw_query)
+
+            # ✅ Update chat title (first message)
+            if chat and chat.title == "New Chat":
+                chat.title = raw_query[:50]
+                chat.save()
+
+
+        except ChatSession.DoesNotExist:
+            return JsonResponse({"error": "Invalid chat_id"}, status=400)
+
 
     # -----------------------------
     # Extract account name from prompt (optional)
@@ -354,7 +493,12 @@ def chat(request):
     # -----------------------------
     search_text = ""
     if not fabric_ok:
-        chunks = search_chunks(user_id=user_id, query=raw_query, top_k=top_k)
+        try:
+            chunks = search_chunks(user_id=user_id, query=raw_query, top_k=top_k)
+        except Exception as e:
+            print("⚠️ Search failed:", e)
+            chunks = []
+
         search_text = "\n".join(
             (c.get("chunk_text") or "").strip()
             for c in chunks
@@ -365,13 +509,22 @@ def chat(request):
     # -----------------------------
     # 3) Final context → AOAI answer
     # -----------------------------
-    context_text = "\n\n".join(
-        [t for t in [fabric_text, search_text] if t]).strip()
-    if not context_text:
-        return JsonResponse(
-            {"message": "TBD - No relevant information found in Fabric or uploaded documents.", "payload": None},
-            status=200,
-        )
+        context_text = "\n\n".join(
+            [t for t in [fabric_text, search_text] if t]
+        ).strip()
+
+        if not context_text:
+            answer = "No relevant data found."
+
+            if chat:
+                save_message(chat, "bot", answer)
+
+            return JsonResponse(
+                {"message": answer, "payload": None},
+                json_dumps_params={"ensure_ascii": False}
+            )
+
+
 
     # ✅ Detect template intent
     template_type = detect_template_type_from_query(question)
@@ -926,18 +1079,15 @@ def chat(request):
     # OPERATIONAL EXCELLENCE STRATEGY
     # =========================================================
     if template_type == "operational_excellence_strategy":
-        # 1. Get Schema
         schema = get_template_schema("operational_excellence_strategy")
 
-        # 2. Fill Template (Raw LLM Output)
         filled = fill_template_json_only(
-            template=schema, context_text=context_text)
+            template=schema,
+            context_text=context_text
+        )
 
-        # 3. Normalize (Clean the data so it doesn't crash the frontend)
-        #    Make sure you added the helper function I gave you earlier!
         safe = _normalize_operational_excellence_payload(filled)
 
-        # 4. Save to DB
         _save_payload(
             user_id=user_id,
             company_name=company_name,
@@ -945,7 +1095,16 @@ def chat(request):
             payload=safe
         )
 
-        return JsonResponse({"message": "Profile updated", "payload": safe})
+        message = "Profile updated"
+
+        if chat:
+            save_message(chat, "bot", message)
+
+        return JsonResponse({"message": message, "payload": safe})
+
+
+
+
     
     if template_type == "operational_implementation_plan":
         schema = get_template_schema("operational_implementation_plan")
@@ -967,21 +1126,28 @@ def chat(request):
         schema = get_template_schema("relationship_heatmap")
 
         filled = fill_template_json_only(
-            template=schema, context_text=context_text)
+            template=schema, context_text=context_text
+        )
         safe = enforce_tbd(schema, filled)
 
-        
-        # ✅ THIS LINE WAS MISSING BEFORE (the real fix)
         safe = _normalize_relationship_heatmap_payload(safe)
 
-        # ✅ save JSON to DB
-        _save_payload(user_id=user_id, company_name=company_name,
-                      template_type="relationship_heatmap", payload=safe)
+        _save_payload(
+            user_id=user_id,
+            company_name=company_name,
+            template_type="relationship_heatmap",
+            payload=safe
+        )
 
-        # ✅ show human-readable in chat
-        message = _humanize_relationship_heatmap(safe)
+        message = "Profile updated"
 
-        return JsonResponse({"message": "Profile updated", "payload": safe})
+        if chat:
+            save_message(chat, "bot", message)
+
+        return JsonResponse({"message": message, "payload": safe})
+
+
+
 
     if template_type == "talent_excellence_overview":
         schema = get_template_schema("talent_excellence_overview")
@@ -1001,8 +1167,8 @@ def chat(request):
             json_dumps_params={"ensure_ascii": False}
         )
 
-    # =========================================================
-    # ✅ ADDITION: Growth Strategy template branch (NEW)
+        # =========================================================
+    # Growth Strategy
     # =========================================================
     if template_type == "growth_strategy":
         schema = get_template_schema("growth_strategy")
@@ -1011,30 +1177,24 @@ def chat(request):
             template=schema, context_text=context_text)
         safe = enforce_tbd(schema, filled)
 
-        # ✅ normalize
         safe = _normalize_growth_strategy_payload(safe)
 
-        # ✅ save JSON to DB
-        _save_payload(user_id=user_id, company_name=company_name,
-                      template_type="growth_strategy", payload=safe)
-
-        # ✅ human readable chat message
-        d = safe.get("data") or {}
-        gv = d.get("growth_vectors") or []
-        if isinstance(gv, list):
-            gv_text = "\n".join([f"- {x}" for x in gv])
-        else:
-            gv_text = str(gv)
-
-        message = (
-            "Growth Strategy:\n"
-            f"• Growth aspiration: {d.get('growth_aspiration', 'TBD')}\n"
-            f"• Growth vectors:\n{gv_text}\n"
-            f"• Revenue quality & sustainability: {d.get('revenue_quality_sustainability', 'TBD')}\n"
-            f"• Inorganic opportunities: {d.get('inorganic_opportunities', 'TBD')}"
+        _save_payload(
+            user_id=user_id,
+            company_name=company_name,
+            template_type="growth_strategy",
+            payload=safe
         )
 
-        return JsonResponse({"message": "Profile updated", "payload": safe})
+        message = "Profile updated"
+
+        if chat:
+            save_message(chat, "bot", message)
+
+        return JsonResponse({"message": message, "payload": safe})
+
+
+
     
     if template_type == "implementation_plan":
         schema = get_template_schema("implementation_plan")
@@ -1074,14 +1234,26 @@ def chat(request):
             template=schema, context_text=context_text)
         safe = _normalize_customer_profile_payload(filled)
 
-        # Save to DB
         _save_payload(
             user_id=user_id,
             company_name=company_name,
             template_type="customer_profile",
             payload=safe
         )
-        return JsonResponse({"message": "Profile updated", "payload": safe})
+
+        message = "Profile updated"
+
+        if chat:
+            save_message(chat, "bot", message)
+
+        return JsonResponse({"message": message, "payload": safe})
+
+
+
+
+
+
+
 
     if template_type == "investment_plan":
         schema = get_template_schema("investment_plan")
@@ -1122,7 +1294,6 @@ def chat(request):
         filled = fill_template_json_only(
             template=schema, context_text=context_text)
 
-        # ✅ Transform AI list into Keyed Object for Frontend
         safe = _normalize_service_line_growth_payload(filled)
 
         _save_payload(
@@ -1132,7 +1303,18 @@ def chat(request):
             payload=safe
         )
 
-        return JsonResponse({"message": "Profile updated", "payload": safe})
+        message = "Profile updated"
+
+        if chat:
+            save_message(chat, "bot", message)
+
+        return JsonResponse({"message": message, "payload": safe})
+
+
+
+
+
+
 
     if template_type == "account_performance_annual_plan":
         schema = get_template_schema("account_performance_annual_plan")
@@ -1152,9 +1334,45 @@ def chat(request):
         return JsonResponse({"message": "Annual Plan generated.", "payload": safe}, json_dumps_params={"ensure_ascii": False})
 
     # Normal Q&A
-    answer = answer_only_from_context(
-        query=question, context_text=context_text)
-    return JsonResponse({"message": answer or "TBD", "payload": None}, json_dumps_params={"ensure_ascii": False})
+            # Normal Q&A (SAFE VERSION)
+
+    # 🔒 Check if Azure is configured
+    azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+
+    if not azure_endpoint:
+        print("⚠️ Azure OpenAI not configured. Using fallback response.")
+
+        answer = (
+            "⚠️ AI service not configured.\n\n"
+            "Showing available context instead:\n\n"
+            + context_text[:1000]
+        )
+
+    else:
+        try:
+            answer = answer_only_from_context(
+                query=question,
+                context_text=context_text
+            )
+        except Exception as e:
+            print("❌ AI ERROR:", e)
+
+            answer = (
+                "⚠️ AI failed. Showing fallback response.\n\n"
+                + context_text[:1000]
+            )
+
+    
+        # ✅ Save BOT message
+        if chat:
+            save_message(chat, "bot", answer or "TBD")
+
+        return JsonResponse(
+            {"message": answer or "TBD", "payload": None},
+            json_dumps_params={"ensure_ascii": False}
+        )
+
+
 
 
 # ----------------------------

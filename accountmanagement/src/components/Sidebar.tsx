@@ -6,18 +6,20 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
  
 interface SidebarProps {
   open: boolean;
-  chatList: any[];
+  chatList?: any[];   // 👈 change here (make optional)
   onOpenChat: (id: number) => void;
   onNewChat: () => void;
 }
 
+
  
 const Sidebar: React.FC<SidebarProps> = ({
   open,
-  chatList,
+  chatList = [],   // 👈 IMPORTANT FIX
   onOpenChat,
   onNewChat,
 }) => {
+
   // 1. Logic for "Default Collapsed" (false)
   const [isOpen, setIsOpen] = useState(false);
   
@@ -43,8 +45,8 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Header */}
       <Box sx={{ p: 3, borderBottom: "1px solid #ccfbf1",
  display: "flex", alignItems: "center", justifyContent: isOpen ? "flex-start" : "center" }}>
-        <Typography variant="h6" sx={{ fontWeight: 700, color: "#fff", letterSpacing: isOpen ? 1 : 0, whiteSpace: "nowrap" }}>
-          APM
+        <Typography variant="h6" sx={{ fontWeight: 700, color: "#111111", letterSpacing: isOpen ? 1 : 0, whiteSpace: "nowrap" }}>
+          AMP
         </Typography>
       </Box>
  
@@ -100,9 +102,10 @@ sx={{
         RECENT
       </Typography>
 
-      {chatList.map((chat) => (
+      {Array.isArray(chatList) && chatList.map((chat) => (
+
         <Button
-  key={chat.id}
+  key={chat?.id}
   fullWidth
   onClick={() => {
   setActiveChatId(chat.id);

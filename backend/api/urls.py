@@ -2,6 +2,15 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 
+from .views import (
+    register_user,
+    login_user,
+    create_chat,
+    list_chats,
+    get_chat_messages,
+)
+
+
 router = DefaultRouter()
 
 urlpatterns = [
@@ -13,6 +22,13 @@ urlpatterns = [
     path("ingest/status", views.ingest_status),
     path("chat", views.chat),
     path("template/fill", views.fill_template),
+
+    path("auth/register/", register_user),
+    path("auth/login/", login_user),
+
+    path("chats/new", create_chat),
+    path("chats", list_chats),
+    path("chats/<int:chat_id>", get_chat_messages),
 
     path("relationship-heatmap/", views.relationship_heatmap_get),
     path("relationship-heatmap/save_heatmap/", views.relationship_heatmap_save),
@@ -53,4 +69,5 @@ urlpatterns = [
 
     path("operational-implementation-plan/", views.operational_implementation_plan_get),
     path("operational-implementation-plan/save/", views.operational_implementation_plan_save),
+    
 ]

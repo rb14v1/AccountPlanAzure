@@ -125,31 +125,89 @@ const LegendItem = ({ color, label, circle }: { color: string; label: string; ci
   </Box>
 );
  
-const SLStackedBar = ({ label, values, colors, xxVal, index, onXXChange, isEditing }: any) => (
-  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-    {/* RECTIFICATION: Height adjusted to remove top empty space */}
-    <Stack spacing={0} sx={{ width: '85%', height: '110px', justifyContent: 'flex-end', mb: 0.5 }}>
-      {[...values].reverse().map((v: number, i: number) => (
-        <Box key={i} sx={{ width: '100%', height: `${(v / 45) * 100}%`, bgcolor: [...colors].reverse()[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 700, color: i === 1 ? '#333' : '#fff', border: '0.1px solid rgba(255,255,255,0.2)' }}>
-          {v}
-        </Box>
-      ))}
-    </Stack>
-    <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, mb: 0.5 }}>{label}</Typography>
-    <Box sx={{ width: '100%', bgcolor: isEditing ? '#f2f2f2' : '#00adef', color: isEditing ? '#000' : '#fff', textAlign: 'center', py: 0.2 }}>
+const SLStackedBar = ({
+  label,
+  values,
+  colors,
+  xxVal,
+  index,
+  onXXChange,
+  isEditing,
+  onBarValueChange
+}: any) => {
+ 
+  const total = values.reduce((sum: number, val: number) => sum + val, 0);
+ 
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
+      <Stack spacing={0} sx={{ width: '85%', height: '110px', justifyContent: 'flex-end', mb: 0.5 }}>
+        {[...values].reverse().map((v: number, i: number) => {
+          const realIndex = values.length - 1 - i;
+          const percentage = total === 0 ? 0 : (v / total) * 100;
+ 
+          return (
+            <Box
+              key={i}
+              sx={{
+                width: '100%',
+                height: `${percentage}%`,
+                bgcolor: [...colors].reverse()[i],
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.6rem',
+                fontWeight: 700,
+                color: '#fff',
+                border: '0.1px solid rgba(255,255,255,0.2)'
+              }}
+            >
+              {isEditing ? (
+                <TextField
+                  value={v}
+                  onChange={(e) =>
+                    onBarValueChange(index, realIndex, e.target.value)
+                  }
+                  variant="standard"
+                  inputProps={{
+                    style: {
+                      color: "white",
+                      fontSize: "0.6rem",
+                      textAlign: "center",
+                      width: "35px"
+                    }
+                  }}
+                />
+              ) : (
+                v
+              )}
+            </Box>
+          );
+        })}
+      </Stack>
+ 
+      <Typography sx={{ fontSize: '0.55rem', fontWeight: 700, mb: 0.5 }}>
+        {label}
+      </Typography>
+ 
+      <Box sx={{ width: '100%', bgcolor: isEditing ? '#f2f2f2' : '#00adef', textAlign: 'center', py: 0.2 }}>
         {isEditing ? (
           <GrayInsetInput
-            variant="outlined"
-            sx={{ input: { fontStyle: 'italic', fontSize: '0.55rem', color: '#000' } }}
             value={xxVal}
             onChange={(e) => onXXChange(index, e.target.value)}
           />
         ) : (
-          <Typography sx={{ fontSize: '0.55rem', fontStyle: 'italic' }}>{xxVal}</Typography>
+          <Typography sx={{ fontSize: '0.55rem', fontStyle: 'italic' }}>
+            {xxVal}
+          </Typography>
         )}
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
+ 
+ 
+ 
+ 
  
 // --- MAIN COMPONENT ---
  
@@ -157,17 +215,30 @@ const ServiceLinePenetration: React.FC = () => {
   const { globalData, setGlobalData } = useData();
  
   const defaultData = {
-    tableRows: [
-      { id: '1', name: "Secured Order Book", v1: "", v2: "", v3: "", v4: "" },
-      { id: '1a', name: "- Gross Order Book", v1: "", v2: "", v3: "", v4: "", indent: true },
-      { id: '1b', name: "- Expiry / run-off", v1: "", v2: "", v3: "", v4: "", indent: true },
-      { id: '2', name: "Open TCV", v1: "", v2: "", v3: "", v4: "", disabled: true },
-      { id: '3', name: "TCV Won", v1: "", v2: "", v3: "", v4: "", disabled: true },
-      { id: '4', name: "TCV dropped / lost", v1: "", v2: "", v3: "", v4: "", disabled: true },
-    ],
-    xxValues: ["XX", "XX", "XX", "XX", "XX", "XX", "XX", "XX"],
-    insights: ""
-  };
+  tableRows: [
+    { id: '1', name: "Secured Order Book", v1: "", v2: "", v3: "", v4: "" },
+    { id: '1a', name: "- Gross Order Book", v1: "", v2: "", v3: "", v4: "", indent: true },
+    { id: '1b', name: "- Expiry / run-off", v1: "", v2: "", v3: "", v4: "", indent: true },
+    { id: '2', name: "Open TCV", v1: "", v2: "", v3: "", v4: "", disabled: true },
+    { id: '3', name: "TCV Won", v1: "", v2: "", v3: "", v4: "", disabled: true },
+    { id: '4', name: "TCV dropped / lost", v1: "", v2: "", v3: "", v4: "", disabled: true },
+  ],
+  xxValues: ["XX","XX","XX","XX","XX","XX","XX","XX"],
+ 
+  barValues: [
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+    [10,12,14,16],
+  ],
+ 
+  insights: ""
+};
+ 
  
   const slData = globalData?.Service_Line_Penetration || defaultData;
   const editable = useEditableTable(slData);
@@ -183,6 +254,12 @@ const ServiceLinePenetration: React.FC = () => {
     updated[index] = value;
     editable.updateDraft({ ...editable.draftData, xxValues: updated });
   };
+ 
+  const handleBarValueChange = (barIndex: number, segmentIndex: number, value: string) => {
+  const updated = [...editable.draftData.barValues];
+  updated[barIndex][segmentIndex] = Number(value);
+  editable.updateDraft({ ...editable.draftData, barValues: updated });
+};
  
   const slColors = ["#001a1a", "#00c1b1", "#efefe9", "#d8d3cf"];
   const slLabels = ["App Mod", "Data & AI", "EA", "Managed Services", "SAM", "Security", "Exp. Design"];
@@ -218,9 +295,20 @@ const ServiceLinePenetration: React.FC = () => {
                 </Box>
                 {/* RECTIFICATION: height flex and alignItems adjusted to remove top space */}
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', mt: 1 }}>
-                  {["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"].map((label, i) => (
-                    <SLStackedBar key={i} index={i} label={label} values={[10, 12, 14, 16]} colors={slColors} xxVal={editable.draftData.xxValues[i]} onXXChange={handleXXChange} isEditing={editable.isEditing} />
-                  ))}
+                  {["Q1 FY25","Q2 FY25","Q3 FY25","Q4 FY25","Q1 FY26","Q2 FY26","Q3 FY26","Q4 FY26"].map((label, i) => (
+  <SLStackedBar
+    key={i}
+    index={i}
+    label={label}
+    values={editable.draftData.barValues[i]}
+    colors={slColors}
+    xxVal={editable.draftData.xxValues[i]}
+    onXXChange={handleXXChange}
+    onBarValueChange={handleBarValueChange}
+    isEditing={editable.isEditing}
+  />
+))}
+ 
                 </Box>
             </Box>
  
@@ -276,4 +364,5 @@ const ServiceLinePenetration: React.FC = () => {
 };
  
 export default ServiceLinePenetration;
+ 
  

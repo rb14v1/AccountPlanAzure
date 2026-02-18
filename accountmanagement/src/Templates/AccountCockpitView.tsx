@@ -59,12 +59,14 @@ const LabelSmall = styled(Typography)({
  
 // Gray Inset Input for the "sunken" edit look
 const GrayInsetInput = styled(TextField)({
-  width: '100%',
+  width: 'auto',   // ✅ not full width
+  minWidth: 40,
   '& .MuiInputBase-input': {
     fontSize: "0.55rem",
-    padding: "4px",
+    padding: "2px",
     color: "#000",
-    fontWeight: 500
+    fontWeight: 500,
+    textAlign: "center"
   },
   '& .MuiInputBase-root': {
     padding: 0,
@@ -75,69 +77,225 @@ const GrayInsetInput = styled(TextField)({
   },
   '& .MuiOutlinedInput-notchedOutline': {
     border: 'none !important',
-  },
-  '&:hover .MuiInputBase-root': {
-    backgroundColor: '#ebebeb',
   }
 });
+ 
  
 // Constants for functionality
 const TEMPLATE_NAME = "Account_Cockpit";
  
 // --- SUB-COMPONENTS ---
  
-const PerformanceBlock = ({ title, color, data, qoqData }: any) => (
-  <CockpitCard>
-    <CardHeader bgcolor={color}>
-      <Typography variant="caption" fontWeight={700}>{title}</Typography>
-    </CardHeader>
-   
-    <Box sx={{ px: 0.5 }}>
-      <LabelSmall sx={{ mb: 1 }}>YoY, € Mn</LabelSmall>
-      <Box sx={{ display: 'flex', justifyContent: 'space-around', mb: 1 }}>
-        <Stack alignItems="center"><LabelSmall>% Target Achieved</LabelSmall></Stack>
-        <TargetPill>xx</TargetPill><TargetPill>xx</TargetPill><TargetPill>xx</TargetPill>
-      </Box>
+const PerformanceBlock = ({ title, color, data, setData, qoqData, editable }: any) => {
+  const [editIndex, setEditIndex] = React.useState<number | null>(null);
+  const maxValue = Math.max(...data.map((d: any) => d.v));
  
-      <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 80, mb: 2, borderBottom: '1px solid #ccc' }}>
-        {data.map((d: any, i: number) => (
-          <Box key={i} sx={{ textAlign: 'center', width: '25%' }}>
-            <Typography sx={{ fontSize: '0.6rem' }}>{d.v}</Typography>
-            <Box sx={{ height: d.h, bgcolor: '#b2b2b2', mx: 'auto', width: '70%' }} />
-            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>{d.y}</Typography>
-          </Box>
-        ))}
-      </Box>
+  const handleChange = (index: number, value: string) => {
+    const newData = [...data];
+    newData[index].v = Number(value);
+    setData(newData);
+  };
  
-      <LabelSmall sx={{ mb: 1 }}>QoQ, € Mn</LabelSmall>
-      <Stack spacing={0.5}>
-        {qoqData.map((q: any) => (
-          <Box key={q.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Typography sx={{ fontSize: '0.6rem', width: 45 }}>{q.label}</Typography>
-            <Box sx={{ flex: 1, height: 12, bgcolor: '#eee' }}>
-              <Box sx={{ width: `${q.percent}%`, height: '100%', bgcolor: '#e85c00' }} />
+  return (
+    <CockpitCard>
+      <CardHeader bgcolor={color}>
+        <Typography variant="caption" fontWeight={700}>{title}</Typography>
+      </CardHeader>
+ 
+      <Box sx={{ px: 0.5 }}>
+        <LabelSmall sx={{ mb: 1 }}>YoY, € Mn</LabelSmall>
+ 
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', height: 80, mb: 2, borderBottom: '1px solid #ccc' }}>
+          {data.map((d: any, i: number) => {
+            const heightPercent = (d.v / maxValue) * 60;
+ 
+            return (
+              <Box key={i} sx={{ textAlign: 'center', width: '25%' }}>
+                {editable && editIndex === i ? (
+                  <GrayInsetInput
+                    type="number"
+                    size="small"
+                    value={d.v}
+                    onChange={(e) => handleChange(i, e.target.value)}
+                    onBlur={() => setEditIndex(null)}
+                  />
+                ) : (
+                  <Typography
+                    sx={{ fontSize: '0.6rem', cursor: editable ? "pointer" : "default" }}
+                    onClick={() => editable && setEditIndex(i)}
+                  >
+                    {d.v}
+                  </Typography>
+                )}
+ 
+                <Box
+                  sx={{
+                    height: `${heightPercent}px`,
+                    bgcolor: '#b2b2b2',
+                    mx: 'auto',
+                    width: '70%',
+                    transition: "0.3s"
+                  }}
+                />
+ 
+                <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>{d.y}</Typography>
+              </Box>
+            );
+          })}
+        </Box>
+ 
+        <LabelSmall sx={{ mb: 1 }}>QoQ, € Mn</LabelSmall>
+        <Stack spacing={0.5}>
+          {qoqData.map((q: any) => (
+            <Box key={q.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '0.6rem', width: 45 }}>{q.label}</Typography>
+              <Box sx={{ flex: 1, height: 12, bgcolor: '#eee' }}>
+                <Box sx={{ width: `${q.percent}%`, height: '100%', bgcolor: '#e85c00' }} />
+              </Box>
+              <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>{q.val}</Typography>
+              <TargetPill sx={{ fontSize: '0.55rem' }}>€ xx Mn</TargetPill>
             </Box>
-            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700 }}>{q.val}</Typography>
-            <TargetPill sx={{ fontSize: '0.55rem' }}>€ xx Mn</TargetPill>
-          </Box>
+          ))}
+        </Stack>
+      </Box>
+    </CockpitCard>
+  );
+};
+ 
+const LargeDealsBlock = ({ data, setData, editable }: any) => {
+  const [editIndex, setEditIndex] = React.useState<number | null>(null);
+  const maxValue = Math.max(...data.map((d: any) => d.v));
+ 
+  const handleChange = (index: number, value: string) => {
+    const newData = [...data];
+    newData[index].v = Number(value);
+    setData(newData);
+  };
+ 
+  return (
+    <CockpitCard>
+      <CardHeader bgcolor="#c00000">
+        <Typography variant="caption" fontWeight={700}>Large Deals</Typography>
+      </CardHeader>
+ 
+      <LabelSmall>TCV of LD wins, € Mn</LabelSmall>
+ 
+      <Box sx={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around", height: 80, mt: 1, mb: 2 }}>
+        {data.map((d: any, i: number) => {
+          const height = (d.v / maxValue) * 60;
+ 
+          return (
+            <Box key={i} sx={{ textAlign: "center", width: "22%" }}>
+              {editable && editIndex === i ? (
+                <GrayInsetInput
+                  type="number"
+                  size="small"
+                  value={d.v}
+                  onChange={(e) => handleChange(i, e.target.value)}
+                  onBlur={() => setEditIndex(null)}
+                />
+              ) : (
+                <Typography
+                  sx={{ fontSize: "0.65rem", cursor: editable ? "pointer" : "default" }}
+                  onClick={() => editable && setEditIndex(i)}
+                >
+                  {d.v}
+                </Typography>
+              )}
+ 
+              <Box
+                sx={{
+                  height: `${height}px`,
+                  bgcolor: "#0b2b2e",
+                  mx: "auto",
+                  width: "70%",
+                  transition: "0.3s"
+                }}
+              />
+ 
+              <Typography sx={{ fontSize: "0.55rem", fontWeight: 700 }}>
+                {d.label}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
+ 
+      <LabelSmall># of LD wins</LabelSmall>
+      <Box sx={{ display: "flex", gap: 0.5, mt: 0.5 }}>
+        {[1, 2, 3, 4].map(i => (
+          <TargetPill key={i} sx={{ flex: 1 }}>xx</TargetPill>
         ))}
-      </Stack>
-    </Box>
-  </CockpitCard>
-);
+      </Box>
+    </CockpitCard>
+  );
+};
+ 
  
 const AccountCockpitView: React.FC = () => {
   const { globalData, setGlobalData } = useData();
   const cockpitData = globalData?.Account_Cockpit || {};
   const editable = useEditableTable(cockpitData);
  
-  const mockYoy = [{ y: 'FY24', h: 40, v: 20 }, { y: 'FY25', h: 50, v: 22 }, { y: 'FY26', h: 65, v: 25 }];
+  const [revenueYoyData, setRevenueYoyData] = React.useState([
+  { y: "FY24", v: 15 },
+  { y: "FY25", v: 22 },
+  { y: "FY26", v: 24 },
+]);
+ 
+const [bookingYoyData, setBookingYoyData] = React.useState([
+  { y: "FY24", v: 15 },
+  { y: "FY25", v: 22 },
+  { y: "FY26", v: 24 },
+]);
+ 
+// ✅ ADD THIS
+const [marginYoyData, setMarginYoyData] = React.useState([
+  { y: "FY24", v: 10 },
+  { y: "FY25", v: 14 },
+  { y: "FY26", v: 18 },
+]);
+ 
+const [largeDealsData, setLargeDealsData] = React.useState([
+  { label: "FY24", v: 28 },
+  { label: "FY25", v: 30 },
+  { label: "FY26", v: 45 },
+  { label: "FY27", v: 50 },
+]);
+ 
+ 
+ 
+  const [slPenetrationData, setSlPenetrationData] = React.useState([
+  { label: 'FY25 Q1', val: 13 },
+  { label: 'FY25 Q2', val: 15 },
+  { label: 'FY25 Q3', val: 20 },
+  { label: 'FY25 Q4', val: 24 },
+  { label: 'FY26 Q1', val: 25 },
+  { label: 'FY26 Q2', val: 30 },
+  { label: 'FY26 Q3', val: 32 },
+  { label: 'FY26 Q4', val: 32 },
+]);
+ 
   const mockQoq = [
-    { label: 'FY25 Q1', percent: 40, val: 13 }, { label: 'FY25 Q2', percent: 45, val: 15 },
-    { label: 'FY25 Q3', percent: 60, val: 20 }, { label: 'FY25 Q4', percent: 70, val: 24 },
-    { label: 'FY26 Q1', percent: 75, val: 25 }, { label: 'FY26 Q2', percent: 85, val: 30 },
-    { label: 'FY26 Q3', percent: 90, val: 32 }, { label: 'FY26 Q4', percent: 90, val: 32 },
-  ];
+  { label: 'FY25 Q1', percent: 40, val: 13 },
+  { label: 'FY25 Q2', percent: 45, val: 15 },
+  { label: 'FY25 Q3', percent: 60, val: 20 },
+  { label: 'FY25 Q4', percent: 70, val: 24 },
+  { label: 'FY26 Q1', percent: 75, val: 25 },
+  { label: 'FY26 Q2', percent: 85, val: 30 },
+  { label: 'FY26 Q3', percent: 90, val: 32 },
+  { label: 'FY26 Q4', percent: 90, val: 32 },
+];
+ 
+ 
+const [editSlIndex, setEditSlIndex] = React.useState<number | null>(null);
+ 
+const handleSlChange = (index: number, value: string) => {
+  const newData = [...slPenetrationData];
+  newData[index].val = Number(value);
+  setSlPenetrationData(newData);
+};
+ 
  
   const handleTableChange = (index: number, field: string, value: string) => {
     const currentPartners = [...(editable.draftData.partners || [{},{},{},{},{}])];
@@ -184,30 +342,45 @@ const AccountCockpitView: React.FC = () => {
  
         <Grid container spacing={1}>
           <Grid item xs={12} md={2.4}>
-            <PerformanceBlock title="Revenue Performance" color="#92d050" data={mockYoy} qoqData={mockQoq} />
+            <PerformanceBlock
+  title="Revenue Performance"
+  color="#92d050"
+  data={revenueYoyData}
+  setData={setRevenueYoyData}
+  qoqData={mockQoq}
+  editable={editable.isEditing}
+/>
           </Grid>
           <Grid item xs={12} md={2.4}>
-            <PerformanceBlock title="Booking Performance" color="#ffc000" data={mockYoy} qoqData={mockQoq} />
+            <PerformanceBlock
+  title="Booking Performance"
+  color="#ffc000"
+  data={bookingYoyData}
+  setData={setBookingYoyData}
+  qoqData={mockQoq}
+  editable={editable.isEditing}
+/>
           </Grid>
           <Grid item xs={12} md={2.4}>
-            <PerformanceBlock title="Margin Performance" color="#92d050" data={mockYoy} qoqData={mockQoq} />
+            <PerformanceBlock
+  title="Margin Performance"
+  color="#92d050"
+  data={marginYoyData}
+  setData={setMarginYoyData}
+  qoqData={mockQoq}
+  editable={editable.isEditing}
+/>
+ 
           </Grid>
  
           <Grid item xs={12} md={2.4}>
             <Stack spacing={1}>
-              <CockpitCard>
-                <CardHeader bgcolor="#c00000"><Typography variant="caption" fontWeight={700}>Large Deals</Typography></CardHeader>
-                <LabelSmall>TCV of LD wins, € Mn</LabelSmall>
-                <Box sx={{ display: 'flex', gap: 0.5, mt: 1, mb: 2 }}>
-                  {[28, 30, 45, 50].map((v) => (
-                    <Box key={v} sx={{ bgcolor: '#0b2b2e', color: '#fff', p: 0.5, flex: 1, textAlign: 'center', fontSize: '0.7rem' }}>{v}</Box>
-                  ))}
-                </Box>
-                <LabelSmall># of LD wins</LabelSmall>
-                <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
-                  {[1, 2, 3, 4].map(i => <TargetPill key={i} sx={{ flex: 1 }}>xx</TargetPill>)}
-                </Box>
-              </CockpitCard>
+              <LargeDealsBlock
+  data={largeDealsData}
+  setData={setLargeDealsData}
+  editable={editable.isEditing}
+/>
+ 
  
               <CockpitCard>
                 <CardHeader bgcolor="#c00000"><Typography variant="caption" fontWeight={700}>Presence across Service Lines</Typography></CardHeader>
@@ -222,18 +395,82 @@ const AccountCockpitView: React.FC = () => {
               </CockpitCard>
  
               <CockpitCard>
-                <CardHeader bgcolor="#92d050"><Typography variant="caption" fontWeight={700}>SL Penetration</Typography></CardHeader>
-                <LabelSmall>% SL revenue, QoQ, %</LabelSmall>
-                <Stack spacing={0.4} sx={{ mt: 1 }}>
-                  {mockQoq.slice(0, 8).map(q => (
-                    <Box key={q.label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontSize: '0.55rem', width: 40 }}>{q.label}</Typography>
-                      <Box sx={{ flex: 1, height: 8, bgcolor: '#eee' }}><Box sx={{ width: `${q.percent}%`, height: '100%', bgcolor: '#e85c00' }} /></Box>
-                      <Typography sx={{ fontSize: '0.55rem' }}>{q.val}</Typography>
-                    </Box>
-                  ))}
-                </Stack>
-              </CockpitCard>
+  <CardHeader bgcolor="#92d050">
+    <Typography variant="caption" fontWeight={700}>SL Penetration</Typography>
+  </CardHeader>
+ 
+  <LabelSmall>% SL revenue, QoQ, %</LabelSmall>
+ 
+  <Stack spacing={0.6} sx={{ mt: 1 }}>
+    {slPenetrationData.map((q, i) => {
+      const maxValue = Math.max(...slPenetrationData.map(d => d.val));
+      const widthPercent = (q.val / maxValue) * 100;
+ 
+      return (
+        <Box key={q.label}>
+ 
+          {/* Row 1: Label + Value/Input */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 0.2
+            }}
+          >
+            <Typography sx={{ fontSize: "0.55rem" }}>
+              {q.label}
+            </Typography>
+ 
+            {editable.isEditing && editSlIndex === i ? (
+              <GrayInsetInput
+                type="number"
+                value={q.val}
+                onChange={(e) => handleSlChange(i, e.target.value)}
+                onBlur={() => setEditSlIndex(null)}
+                sx={{
+                  width: 40,            // ✅ fixed width
+                  flexShrink: 0,        // ✅ prevents shrinking bar
+                  height: 18,
+                  '& input': {
+                    fontSize: '0.55rem',
+                    padding: '2px',
+                    textAlign: 'center'
+                  }
+                }}
+              />
+            ) : (
+              <Typography
+                sx={{
+                  fontSize: "0.55rem",
+                  cursor: editable.isEditing ? "pointer" : "default"
+                }}
+                onClick={() => editable.isEditing && setEditSlIndex(i)}
+              >
+                {q.val}
+              </Typography>
+            )}
+          </Box>
+ 
+          {/* Row 2: Bar */}
+          <Box sx={{ width: "100%", height: 8, bgcolor: "#eee" }}>
+            <Box
+              sx={{
+                width: `${widthPercent}%`,
+                height: "100%",
+                bgcolor: "#e85c00",
+                transition: "0.3s"
+              }}
+            />
+          </Box>
+ 
+        </Box>
+      );
+    })}
+  </Stack>
+</CockpitCard>
+ 
+ 
             </Stack>
           </Grid>
  
@@ -316,4 +553,5 @@ const AccountCockpitView: React.FC = () => {
 };
  
 export default AccountCockpitView;
+ 
  

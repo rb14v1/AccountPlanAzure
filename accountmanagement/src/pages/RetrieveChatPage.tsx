@@ -1,6 +1,7 @@
 // src/Components/ChatPage.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
 import { Box, TextField, Button, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import Header from "../components/Header";
@@ -11,6 +12,7 @@ import Sidebar from "../components/Sidebar";
 import ChatArea from "../components/ChatArea";
 import PromptModal from "../components/PromptModal";
 import { useData } from "../context/DataContext";
+
 
 const ALLOWED_TEMPLATES = [
   "growth_strategy",
@@ -31,7 +33,72 @@ const RetrieveChatPage: React.FC = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [messages, setMessages] = useState<Message[]>([]);
+const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+const [chatList, setChatList] = useState<any[]>([]);
+
+  
   const navigate = useNavigate();
+
+  const getUser = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    if (!user || !user.id) {
+      throw new Error("User not logged in");
+    }
+    return user;
+  } catch (e) {
+    console.error("Invalid user in localStorage");
+    return null;
+  }
+};
+
+  const fetchChats = async () => {
+  const user = getUser();
+  if (!user) return;
+
+  try {
+    const res = await api.get("/chats", {
+      params: { user_id: user.id },
+    });
+    setChatList(res.data);
+  } catch (err) {
+    console.error("Error fetching chats", err);
+  }
+};
+
+
+
+  useEffect(() => {
+    const user = getUser();
+    if (!user) return;
+
+    const storedChatId = localStorage.getItem("activeChatId");
+
+    // Load chat list
+    api.get("/chats", {
+      params: { user_id: user.id },
+    }).then(res => {
+      setChatList(res.data);
+    });
+
+    // 🔥 Restore last active chat
+    if (storedChatId) {
+      const chatIdNum = Number(storedChatId);
+      setCurrentChatId(chatIdNum);
+
+
+      api.get(`/chats/${chatIdNum}`).then(res => {
+        setMessages(
+          res.data.map((m: any) => ({
+            id: m.id,
+            sender: m.sender,
+            text: m.text,
+            timestamp: new Date(m.timestamp).toLocaleTimeString(),
+          }))
+        );
+      });
+    }
+  }, []);
 
   // Modal State
   const [openModal, setOpenModal] = useState(false);
@@ -40,7 +107,31 @@ const RetrieveChatPage: React.FC = () => {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
 
-  // --- helpers ---
+  // --- Handlers ---
+  const openChat = async (id: number) => {
+  try {
+    setCurrentChatId(id);
+    localStorage.setItem("activeChatId", id.toString());
+
+    const res = await api.get(`/chats/${id}`);
+
+    const formatted = res.data.map((m: any) => ({
+      id: m.id,
+      sender: m.sender,
+      text: m.text,
+      timestamp: new Date(m.timestamp).toLocaleTimeString(),
+    }));
+
+    setMessages(formatted);
+
+    await fetchChats(); // optional refresh
+  } catch (err) {
+    console.error("Error opening chat", err);
+  }
+};
+
+
+  
   const toDisplayText = (val: any): string => {
     if (val === null || val === undefined) return "";
     if (typeof val === "string") return val;
@@ -53,11 +144,33 @@ const RetrieveChatPage: React.FC = () => {
   };
 
   // --- Handlers ---
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+  try {
+    const user = getUser();
+    if (!user) return;
+
+    const res = await api.post("/chats/new", {
+      user_id: user.id,
+    });
+
+    const newChat = res.data;
+
+    setCurrentChatId(newChat.id);
+    localStorage.setItem("activeChatId", newChat.id.toString());
+
     setMessages([]);
-    setInput("");
-    setSelectedFile(null);
-  };
+
+    await fetchChats(); // refresh sidebar
+
+  } catch (err) {
+    console.error("Error creating chat", err);
+  }
+};
+
+
+
+  
+
 
   const handleCardClick = (promptObj: any) => {
     setActivePrompt(promptObj);
@@ -99,6 +212,9 @@ const RetrieveChatPage: React.FC = () => {
     setSelectedFile(null);
     setIsTyping(true);
 
+
+
+
     try {
       // ✅ If user types: "<template_name> <company_name>"
       const parts = textToSend.trim().split(/\s+/);
@@ -106,8 +222,12 @@ const RetrieveChatPage: React.FC = () => {
       const companyName = parts.slice(1).join(" ").trim();
 
       if ((ALLOWED_TEMPLATES as readonly string[]).includes(maybeTemplate) && companyName) {
+        const user = getUser();
+if (!user) return;
+
         const fillRes = await api.post("/template/fill", {
-          user_id: "101",
+          user_id: user.id,
+
           template_name: maybeTemplate,
           company_name: companyName,
         });
@@ -137,10 +257,22 @@ const RetrieveChatPage: React.FC = () => {
       }
 
       // --- Normal Chat ---
-      const response = await api.post("/chat", {
-        user_id: "101",
-        query: textToSend,
-      });
+      const user = getUser();
+if (!user) return;
+
+if (!currentChatId) {
+  alert("Please create a chat first");
+  return;
+}
+
+const response = await api.post("/chat", {
+  user_id: user.id,
+  chat_id: currentChatId,
+  query: textToSend,
+});
+
+
+
 
       // IMPORTANT: response.data can be STRING or OBJECT
       const respData = response.data;
@@ -169,10 +301,31 @@ const RetrieveChatPage: React.FC = () => {
           return;
         }
 
+      const logosHeader = response.headers["x-company-logos"];
+
+      if (logosHeader) {
+        try {
+          const parsedLogos = JSON.parse(logosHeader);
+
+          console.log("🖼️ Logos from backend:", parsedLogos);
+
+          setGlobalData((prev: any) => ({
+            ...prev,
+            companyLogos: parsedLogos,
+          }));
+        } catch (err) {
+          console.error("❌ Failed to parse company logos header", err);
+        }
+      }
 
       // Existing header based logic (keep, but safe)
       const templateDataHeader = response.headers["x-template-data"];
       const templateTypeHeader = response.headers["x-template-type"];
+
+      const textAnswer = response.data;
+
+      console.log("📝 Text Answer:", textAnswer);
+      console.log("📋 Template Type:", templateTypeHeader);
 
       if (templateDataHeader && templateTypeHeader) {
         try {
@@ -243,7 +396,14 @@ const RetrieveChatPage: React.FC = () => {
       />
 
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <Sidebar open={isSidebarOpen} />
+        <Sidebar
+  open={isSidebarOpen}
+  chatList={chatList}
+  onOpenChat={openChat}
+  onNewChat={handleNewChat}
+/>
+
+
 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
           <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>

@@ -46,9 +46,12 @@ const headerCell = {
 const cell = {
   border: "1px solid #000",
   fontSize: 12,
-  height: 42,
   padding: "8px",
+  verticalAlign: "top",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
 };
+
 
 const categoryCell = {
   backgroundColor: "#177E89",
@@ -56,6 +59,35 @@ const categoryCell = {
   fontWeight: 700,
   verticalAlign: "middle",
 };
+
+const AutoGrowTextField = ({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) => (
+  <TextField
+    fullWidth
+    multiline
+    minRows={1}
+    size="small"
+    value={value}
+    onChange={onChange}
+    InputProps={{
+      style: {
+        overflow: "hidden",
+        resize: "none",
+      },
+    }}
+    sx={{
+      "& textarea": {
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      },
+    }}
+  />
+);
 
 const CriticalRiskPage: React.FC = () => {
   const { globalData, setGlobalData } = useData();
@@ -69,34 +101,33 @@ const CriticalRiskPage: React.FC = () => {
     severity: "success" as "success" | "error" | "warning",
   });
 
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const initialRows: CriticalRisk[] = [...risksData];
+
+while (initialRows.length < 5) {
+  initialRows.push({
+    category: "",
+    risk_number: initialRows.length + 1,
+    description_of_risk: "",
+    impact_of_risk: "",
+    timeline: "",
+    countermeasures_taken: "",
+    owner: "",
+  });
+}
+
   const autoSaveAttempted = useRef(false);
   const dataLoadedFromDB = useRef(false);
 
   // Initialize editable table hook
-  const editable = useEditableTable(risksData);
+  const editable = useEditableTable(initialRows);
+
 
   // Create placeholder rows if no data (show 5 empty rows)
-  const displayData =
-    editable.draftData.length > 0
-      ? editable.draftData
-      : Array(5)
-          .fill({
-            category: "",
-            risk_number: 0,
-            description_of_risk: "",
-            impact_of_risk: "",
-            timeline: "",
-            countermeasures_taken: "",
-            owner: "",
-          })
-          .map((item, idx) => ({ ...item, risk_number: idx + 1 }));
-
+  
   // Update draft when data changes from chatbot
-  useEffect(() => {
-    if (risksData && risksData.length > 0 && !editable.isEditing) {
-      editable.updateDraft(risksData);
-    }
-  }, [risksData]);
+  
 
   // STEP 1: Load data from database when component mounts
   useEffect(() => {
@@ -206,14 +237,13 @@ const CriticalRiskPage: React.FC = () => {
   }, [risksData, setGlobalData]);
 
   // Group risks by category for display
-  const groupedRisks = displayData.reduce((acc, risk) => {
+  const groupedRisks = editable.draftData.reduce((acc, risk) => {
     const cat = risk.category || "Category";
-    if (!acc[cat]) {
-      acc[cat] = [];
-    }
+    if (!acc[cat]) acc[cat] = [];
     acc[cat].push(risk);
     return acc;
   }, {} as Record<string, CriticalRisk[]>);
+
 
   // Handle field changes
   const handleFieldChange = (
@@ -334,7 +364,12 @@ const CriticalRiskPage: React.FC = () => {
             mb: 2,
           }}
         >
-          <DownloadTemplates templateName={TEMPLATE_NAME} />
+          <DownloadTemplates
+  templateName={TEMPLATE_NAME}
+  beforeDownload={() => setIsPrinting(true)}
+  afterDownload={() => setIsPrinting(false)}
+/>
+
           {!editable.isEditing ? (
             <Button
               variant="outlined"
@@ -403,7 +438,23 @@ const CriticalRiskPage: React.FC = () => {
 
           {/* TABLE */}
           <TableContainer component={Paper} elevation={0}>
-            <Table>
+            <Table
+              sx={{
+                tableLayout: "fixed",
+                width: "100%",
+              }}
+            >
+              <colgroup>
+  <col style={{ width: "14%" }} />  {/* Category */}
+  <col style={{ width: "6%" }} />   {/* # */}
+  <col style={{ width: "20%" }} />  {/* Description */}
+  <col style={{ width: "18%" }} />  {/* Impact */}
+  <col style={{ width: "12%" }} />  {/* Timeline */}
+  <col style={{ width: "18%" }} />  {/* Countermeasures */}
+  <col style={{ width: "12%" }} />  {/* Owner */}
+</colgroup>
+
+
               <TableHead>
                 <TableRow>
                   {[
@@ -427,38 +478,22 @@ const CriticalRiskPage: React.FC = () => {
                     const globalIndex = getGlobalIndex(category, idx);
                     return (
                       <TableRow key={globalIndex}>
-                        {/* Category cell with rowspan */}
-                        {idx === 0 && (
-                          <TableCell
-                            rowSpan={risks.length}
-                            sx={{ ...cell, ...categoryCell }}
-                          >
-                            {editable.isEditing ? (
-                              <TextField
-                                fullWidth
-                                size="small"
-                                value={risk.category}
-                                onChange={(e) =>
-                                  handleFieldChange(
-                                    globalIndex,
-                                    "category",
-                                    e.target.value
-                                  )
-                                }
-                                sx={{
-                                  "& .MuiInputBase-root": {
-                                    color: "white",
-                                  },
-                                  "& .MuiOutlinedInput-notchedOutline": {
-                                    borderColor: "rgba(255, 255, 255, 0.3)",
-                                  },
-                                }}
-                              />
-                            ) : (
-                              category
-                            )}
-                          </TableCell>
-                        )}
+                        {/* Category */}
+<TableCell sx={{ ...cell, ...categoryCell }}>
+  {editable.isEditing && !isPrinting ? (
+    <AutoGrowTextField
+      value={risk.category}
+      onChange={(e) =>
+        handleFieldChange(globalIndex, "category", e.target.value)
+      }
+    />
+  ) : (
+    <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+      {risk.category}
+    </Box>
+  )}
+</TableCell>
+
 
                         {/* Risk number */}
                         <TableCell sx={cell}>
@@ -483,102 +518,96 @@ const CriticalRiskPage: React.FC = () => {
 
                         {/* Description of Risk */}
                         <TableCell sx={cell}>
-                          {editable.isEditing ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={risk.description_of_risk}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  globalIndex,
-                                  "description_of_risk",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          ) : (
-                            risk.description_of_risk
-                          )}
-                        </TableCell>
+  {editable.isEditing && !isPrinting ? (
+  <AutoGrowTextField
+    value={risk.description_of_risk}
+    onChange={(e) =>
+      handleFieldChange(
+        globalIndex,
+        "description_of_risk",
+        e.target.value
+      )
+    }
+  />
+) : (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+    {risk.description_of_risk}
+  </Box>
+)}
+
+</TableCell>
+
 
                         {/* Impact of Risk */}
                         <TableCell sx={cell}>
-                          {editable.isEditing ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={risk.impact_of_risk}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  globalIndex,
-                                  "impact_of_risk",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          ) : (
-                            risk.impact_of_risk
-                          )}
+                          {editable.isEditing && !isPrinting ? (
+  <AutoGrowTextField
+    value={risk.impact_of_risk}
+    onChange={(e) =>
+      handleFieldChange(globalIndex, "impact_of_risk", e.target.value)
+    }
+  />
+) : (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+    {risk.impact_of_risk}
+  </Box>
+)}
+
                         </TableCell>
 
                         {/* Timeline */}
                         <TableCell sx={cell}>
-                          {editable.isEditing ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={risk.timeline}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  globalIndex,
-                                  "timeline",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          ) : (
-                            risk.timeline
-                          )}
+                          {editable.isEditing && !isPrinting ? (
+  <AutoGrowTextField
+    value={risk.timeline}
+    onChange={(e) =>
+      handleFieldChange(globalIndex, "timeline", e.target.value)
+    }
+  />
+) : (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+    {risk.timeline}
+  </Box>
+)}
+
                         </TableCell>
 
                         {/* Countermeasures Taken */}
                         <TableCell sx={cell}>
-                          {editable.isEditing ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={risk.countermeasures_taken}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  globalIndex,
-                                  "countermeasures_taken",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          ) : (
-                            risk.countermeasures_taken
-                          )}
+                          {editable.isEditing && !isPrinting ? (
+  <AutoGrowTextField
+    value={risk.countermeasures_taken}
+    onChange={(e) =>
+      handleFieldChange(
+        globalIndex,
+        "countermeasures_taken",
+        e.target.value
+      )
+    }
+  />
+) : (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+    {risk.countermeasures_taken}
+  </Box>
+)}
+
                         </TableCell>
 
                         {/* Owner */}
                         <TableCell sx={cell}>
-                          {editable.isEditing ? (
-                            <TextField
-                              fullWidth
-                              size="small"
-                              value={risk.owner}
-                              onChange={(e) =>
-                                handleFieldChange(
-                                  globalIndex,
-                                  "owner",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          ) : (
-                            risk.owner
-                          )}
+                          {editable.isEditing && !isPrinting ? (
+  <AutoGrowTextField
+    value={risk.owner}
+    onChange={(e) =>
+      handleFieldChange(globalIndex, "owner", e.target.value)
+    }
+  />
+) : (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+    {risk.owner}
+  </Box>
+)}
+
                         </TableCell>
                       </TableRow>
                     );
@@ -594,6 +623,32 @@ const CriticalRiskPage: React.FC = () => {
           </Typography>
         </Box>
       </Box>
+      <style>
+{`
+@media print {
+  table {
+    table-layout: fixed !important;
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    vertical-align: top !important;
+  }
+}
+`}
+</style>
+
     </Box>
   );
 };

@@ -12,26 +12,23 @@ import DownloadIcon from "@mui/icons-material/Download";
 import DescriptionIcon from "@mui/icons-material/Description";
 import LayersIcon from "@mui/icons-material/Layers";
 
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+
 interface DownloadTemplatesProps {
   templateName: string;
-
-  tableConfig?: {
-    headers: string[];
-    rows: any[][];
-    rowStyle?: (row: any[], rowIndex: number) => {
-      fillColor?: [number, number, number];
-    };
-  };
+  beforeDownload?: () => void;
+  afterDownload?: () => void;
 }
+
 
 const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
   templateName,
-  tableConfig,
+  beforeDownload,
+  afterDownload,
 }) => {
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [loading, setLoading] = useState(false);
 
@@ -42,156 +39,102 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
   };
 
   const handleClose = () => setAnchorEl(null);
+  
 
-  // ---------- GENERIC TABLE PDF (ROW-BY-ROW, NO CUTTING) ----------
-  const generateTablePDF = (
-    headers: string[],
-    rows: any[][],
-    fileName: string
-  ) => {
-    try {
-      setLoading(true);
+  // ---------- PDF CORE ----------
+  const generatePDF = async (elements: HTMLElement[], fileName: string) => {
+  try {
+    setLoading(true);
+    const pdf = new jsPDF("p", "mm", "a4");
 
-      const pdf = new jsPDF("l", "mm", "a4");
+    elements.forEach((el, index) => {
+      const table = el.querySelector("table");
+      if (!table) return;
 
-      pdf.setFontSize(14);
-      pdf.text(templateName.replace(/_/g, " "), 14, 15);
+      /* ---------------- HEADERS ---------------- */
+      const head: string[][] = [
+        Array.from(table.querySelectorAll("thead th")).map(
+          (th) => th.textContent?.trim() || ""
+        ),
+      ];
+
+      /* ---------------- BODY ---------------- */
+      const body: string[][] = Array.from(
+  table.querySelectorAll("tbody tr")
+).map((tr) =>
+  Array.from(tr.querySelectorAll("td")).map((td) => {
+    // ✅ Always read from input/textarea/select FIRST
+    const input = td.querySelector(
+      "textarea, input, select"
+    ) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+
+    if (input) {
+      return input.value.trim(); // ✅ printed ONCE, no duplication
+    }
+
+    // fallback (for # column etc.)
+    return (td.textContent || "").trim();
+  })
+);
+
 
       autoTable(pdf, {
-        startY: 22,
-        head: [headers],
-        body: rows,
+        head,
+        body,
+        startY: index === 0 ? 20 : pdf.lastAutoTable.finalY + 15,
+        theme: "grid",
+        styles: {
+          fontSize: 8,
+          cellPadding: 3,
+          overflow: "linebreak",
+          valign: "top",
+        },
         headStyles: {
           fillColor: [11, 30, 38],
           textColor: 255,
           fontStyle: "bold",
         },
-        margin: { left: 10, right: 10 },
-        pageBreak: "auto",
-        showHead: "everyPage", // 🔥 fixes row cutting
-        didParseCell: (data) => {
-          if (
-            tableConfig?.rowStyle &&
-            data.section === "body"
-          ) {
-            const style = tableConfig.rowStyle(
-              tableConfig.rows[data.row.index],
-              data.row.index
-            );
-
-            if (style?.fillColor) {
-              data.cell.styles.fillColor = style.fillColor;
-            }
-          }
+        didDrawPage: () => {
+          pdf.setFontSize(14);
+          pdf.text(templateName.replace("_", " "), 14, 12);
         },
-
       });
+    });
 
-      pdf.save(fileName);
-    } catch (err) {
-      console.error(err);
-      alert("Unable to download table PDF. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    pdf.save(fileName);
+  } catch (err) {
+    console.error(err);
+    alert("Unable to download. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
+  const downloadCurrentTemplate = async () => {
+    beforeDownload?.();
+    await new Promise((r) => setTimeout(r, 300)); // allow DOM to re-render
+
+    const el = document.getElementById("template-to-download");
+    if (el) await generatePDF([el], `${templateName}.pdf`);
+
+    afterDownload?.();
   };
 
-  // ---------- SECTION / CARD PDF (IMAGE-BASED) ----------
-  const generatePDF = async (sections: HTMLElement[], fileName: string) => {
-    try {
-      setLoading(true);
 
-      const pdf = new jsPDF("l", "mm", "a4");
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const marginX = 15;
-      const marginTop = 15;
-      const marginBottom = 20;
-
-      const usableWidth = pageWidth - marginX * 2;
-
-      let cursorY = marginTop;
-
-      for (let i = 0; i < sections.length; i++) {
-        const canvas = await html2canvas(sections[i], {
-          scale: 2,
-          useCORS: true,
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-
-        const imgHeight =
-          (canvas.height * usableWidth) / canvas.width;
-
-        // 🚨 If section doesn't fit → move to next page
-        if (
-          cursorY !== marginTop &&
-          cursorY + imgHeight > pageHeight - marginBottom
-        ) {
-          pdf.addPage();
-          cursorY = marginTop;
-        }
-
-
-        pdf.addImage(
-          imgData,
-          "PNG",
-          marginX,
-          cursorY,
-          usableWidth,
-          imgHeight
-        );
-
-        cursorY += imgHeight + 6; // spacing between sections
-      }
-
-      pdf.save(fileName);
-    } catch (err) {
-      console.error(err);
-      alert("Unable to download. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // ---------- DOWNLOAD HANDLER ----------
-  const downloadCurrentTemplate = () => {
-    // 🔥 TABLE MODE (generic, row-by-row)
-    if (tableConfig) {
-      generateTablePDF(
-        tableConfig.headers,
-        tableConfig.rows,
-        `${templateName}.pdf`
-      );
-      return;
-    }
-
-    // 🔁 DEFAULT MODE (sections / cards)
-    const sections = Array.from(
-      document.querySelectorAll("#template-to-download .pdf-section")
+  const downloadAllTemplates = () => {
+    const els = Array.from(
+      document.querySelectorAll(".template-section")
     ) as HTMLElement[];
+    console.log("Templates found:", els.length);
 
-    if (sections.length) {
-      generatePDF(sections, `${templateName}.pdf`);
+    if (els.length) {
+      generatePDF(els, "Full_Account_Report.pdf");
     } else {
-      alert("No printable sections found");
+      alert("No templates found for full download");
     }
   };
-
-  // const downloadAllTemplates = () => {
-  //   const els = Array.from(
-  //     document.querySelectorAll(".template-section")
-  //   ) as HTMLElement[];
-  //   console.log("Templates found:", els.length);
-
-  //   if (els.length) {
-  //     generatePDF(els, "Full_Account_Report.pdf");
-  //   } else {
-  //     alert("No templates found for full download");
-  //   }
-  // };
 
   return (
     <>
@@ -231,7 +174,7 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
           <ListItemText primary="This Template (PDF)" />
         </MenuItem>
 
-        {/* <MenuItem
+        <MenuItem
           onClick={() => {
             handleClose();
             downloadAllTemplates();
@@ -242,7 +185,7 @@ const DownloadTemplates: React.FC<DownloadTemplatesProps> = ({
             <LayersIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Full Account Report (PDF)" />
-        </MenuItem> */}
+        </MenuItem>
       </Menu>
     </>
   );

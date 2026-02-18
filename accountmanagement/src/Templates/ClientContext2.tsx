@@ -1,5 +1,13 @@
 import React from "react";
 import {
+  PieChart as RePieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+import {
   Box,
   Button,
   Grid,
@@ -15,8 +23,7 @@ import {
   styled
 } from "@mui/material";
 import { useData } from "../context/DataContext";
-import duckCreekLogo from "../assets/duckCreek.png";
-import pegaLogo from "../assets/pega.png";
+
 import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 
@@ -50,26 +57,6 @@ type TechData = {
   };
 };
 
-const PieChart = styled("div")({
-  width: 160,
-  height: 160,
-  borderRadius: "50%",
-  background:
-    "conic-gradient(#0f172a 0% 40%, #06b6d4 40% 70%, #e2e8f0 70% 90%, #cbd5e1 90% 100%)",
-  position: "relative",
-  "&::after": {
-    content: '""',
-    position: "absolute",
-    width: 80,
-    height: 80,
-    background: "#ffffff",
-    borderRadius: "50%",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)"
-  }
-});
-
 const spendHeaderSx = {
   fontWeight: 600,
   fontSize: "0.75rem",
@@ -86,6 +73,14 @@ const spendCellSx = {
   border: "1px solid #ccc"
 };
 
+const logoStyle = {
+  width: 120,
+  height: 50,
+  objectFit: "contain" as const,
+};
+
+
+
 function depthColor(depth: number) {
   if (depth >= 5) return { bg: "#00B050", color: "#fff" };
   if (depth === 4) return { bg: "#92D050", color: "#000" };
@@ -94,10 +89,50 @@ function depthColor(depth: number) {
   return { bg: "#D9D9D9", color: "#000" };
 }
 
+const defaultContextData = {
+  top_business_priorities: [
+    "Improve customer experience across digital channels",
+    "Reduce operational cost by 15% via automation",
+    "Expand to new markets in APAC region"
+  ],
+  top_tech_priorities: [
+    "Cloud migration",
+    "AI automation",
+    "Cybersecurity enhancement"
+  ],
+  tech_spend_landscape: {
+    core_erp_platform: "Oracle",
+    preferred_hyperscaler_partners: "Azure, AWS",
+    other_isvs: "Salesforce, PEGA"
+  },
+  competitive_intel: {
+    share_of_wallet: {
+      client: 20,
+      competitor_1: 20,
+      competitor_2: 20,
+      competitor_3: 10
+    },
+    competition_overview: [
+      {
+        name: "Version 1",
+        share_of_wallet_percent: "20%",
+        depth_of_relationship: 4,
+        key_areas_of_engagement: "Cloud & ERP"
+      }
+    ]
+  }
+};
+
 const ClientContext2 = () => {
   // Access global data
   const { globalData, setGlobalData } = useData();
-  const contextData = globalData?.client_context_business_tech_priorities || null;
+  const companyLogos = globalData?.companyLogos;
+  console.log("Company Logos:", companyLogos);
+
+
+  const contextData =
+  globalData?.client_context_business_tech_priorities || defaultContextData;
+
   const editable = useEditableTable(contextData);
 
 
@@ -191,48 +226,95 @@ const ClientContext2 = () => {
   const hyperscalersList = techSpendData.preferred_hyperscaler_partners?.split(",").map((s: string) => s.trim()) || [];
   const isvsList = techSpendData.other_isvs?.split(",").map((s: string) => s.trim()) || [];
 
-  // Build tech data structure
+  //
+  //
+  //
+  // ================= LOGO DATA =================
+
   const techData: TechData = {
     spend: { overall: "€xx Mn", outsourced: "€xx Mn", rnd: "€xx Mn" },
     partners: {
-      erp: {
-        logo: techSpendData.core_erp_platform?.toLowerCase().includes("oracle")
-          ? "https://upload.wikimedia.org/wikipedia/commons/5/50/Oracle_logo.svg"
-          : "",
-        text: techSpendData.core_erp_platform || "ERP CLOUD"
-      },
-      hyperscalers: hyperscalersList.map((name: string) => {
-        if (name.toLowerCase().includes("azure")) {
-          return {
-            logo: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Microsoft_Azure.svg",
-            name: "Azure"
-          };
-        }
-        if (name.toLowerCase().includes("aws")) {
-          return {
-            logo: "https://upload.wikimedia.org/wikipedia/commons/9/93/Amazon_Web_Services_Logo.svg",
-            name: "AWS"
-          };
-        }
-        return { text: name, name };
-      }),
-      isvs: isvsList.map((name: string) => {
-        if (name.toLowerCase().includes("salesforce")) {
-          return {
-            logo: "https://upload.wikimedia.org/wikipedia/commons/f/f9/Salesforce.com_logo.svg",
-            name: "Salesforce"
-          };
-        }
-        if (name.toLowerCase().includes("pega")) {
-          return { logo: pegaLogo, name: "PEGA" };
-        }
-        if (name.toLowerCase().includes("duck")) {
-          return { logo: duckCreekLogo, name: "Duck Creek" };
-        }
-        return { text: name, name };
-      })
+      erp: companyLogos?.erp?.[0] || { name: "", logo: "", text: "" },
+      hyperscalers: companyLogos?.hyperscalers || [],
+      isvs: companyLogos?.isvs || []
     }
   };
+
+
+
+
+
+  const chartData = editable.isEditing
+    ? editable.draftData.competitive_intel.competition_overview.map((c: any) => ({
+      name: c.name,
+      value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
+    }))
+    : competitiveIntel.competition_overview.map((c: any) => ({
+      name: c.name,
+      value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
+    }));
+
+  const updateCompetitorName = (index: number, value: string) => {
+    const updated = [...editable.draftData.competitive_intel.competition_overview];
+    updated[index] = {
+      ...updated[index],
+      name: value,
+    };
+
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: {
+        ...editable.draftData.competitive_intel,
+        competition_overview: updated,
+      },
+    });
+  };
+
+  const updateShareOfWallet = (index: number, value: string) => {
+    const updated = [...editable.draftData.competitive_intel.competition_overview];
+    updated[index] = {
+      ...updated[index],
+      share_of_wallet_percent: `${value}%`,
+    };
+
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: {
+        ...editable.draftData.competitive_intel,
+        competition_overview: updated,
+      },
+    });
+  };
+  const pieData = (editable.isEditing
+    ? editable.draftData.competitive_intel?.competition_overview
+    : competitiveIntel.competition_overview
+  ).map((c: any) => ({
+    name: c.name,
+    value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
+  }));
+
+  const addCompetitionRow = () => {
+    const updated = [
+      ...editable.draftData.competitive_intel.competition_overview,
+      {
+        name: "New Competitor",
+        share_of_wallet_percent: "0%",
+        depth_of_relationship: 1,
+        key_areas_of_engagement: "",
+      },
+    ];
+
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: {
+        ...editable.draftData.competitive_intel,
+        competition_overview: updated,
+      },
+    });
+  };
+
+
+
 
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
@@ -419,7 +501,7 @@ const ClientContext2 = () => {
               Tech spend and landscape
             </Typography>
 
-            <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid container spacing={2} sx={{ mb: 3, alignItems: "flex-start" }}>
               <Grid item xs={12} md={4}>
                 <Paper
                   elevation={0}
@@ -468,117 +550,70 @@ const ClientContext2 = () => {
               </Grid>
 
               <Grid item xs={12} md={8}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 1,
-                    p: 3
-                  }}
-                >
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      mb: 2,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}
-                  >
-                    Core ERP Platform
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-                    {techData.partners.erp.logo && (
-                      <img
-                        src={techData.partners.erp.logo}
-                        alt="ERP"
-                        style={{ height: 45 }}
-                      />
-                    )}
-                    {techData.partners.erp.text && !techData.partners.erp.logo && (
-                      <Typography sx={{ fontSize: "1rem", fontWeight: 600 }}>
-                        {techData.partners.erp.text}
-                      </Typography>
-                    )}
-                  </Box>
+  <Grid container spacing={2}>
 
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      mb: 2,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}
-                  >
-                    Preferred Hyperscaler Partners
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 3,
-                      flexWrap: "wrap",
-                      alignItems: "center",
-                      mb: 3
-                    }}
-                  >
-                    {techData.partners.hyperscalers.map((partner, i) => (
-                      <Box key={i}>
-                        {partner.logo ? (
-                          <img
-                            src={partner.logo}
-                            alt={partner.name}
-                            style={{ height: 35 }}
-                          />
-                        ) : (
-                          <Typography sx={{ fontSize: "1rem", fontWeight: 600 }}>
-                            {partner.text || partner.name}
-                          </Typography>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
+    {/* Core ERP Platform */}
+    <Grid item xs={12} md={4}>
+      <Typography sx={{ fontWeight: 700, fontSize: "0.8rem", color: "#64748b", mb: 1 }}>
+        Core ERP Platform
+      </Typography>
 
-                  <Typography
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: "0.8rem",
-                      mb: 2,
-                      color: "#64748b",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px"
-                    }}
-                  >
-                    Other ISVs
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 3,
-                      flexWrap: "wrap",
-                      alignItems: "center"
-                    }}
-                  >
-                    {techData.partners.isvs.map((partner, i) => (
-                      <Box key={i}>
-                        {partner.logo ? (
-                          <img
-                            src={partner.logo}
-                            alt={partner.name}
-                            style={{ height: 30 }}
-                          />
-                        ) : (
-                          <Typography sx={{ fontSize: "1rem", fontWeight: 600 }}>
-                            {partner.text || partner.name}
-                          </Typography>
-                        )}
-                      </Box>
-                    ))}
-                  </Box>
-                </Paper>
-              </Grid>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {techData.partners.erp.logo && (
+          <img
+            src={techData.partners.erp.logo}
+            alt="Oracle"
+            style={logoStyle}
+
+          />
+        )}
+      </Box>
+    </Grid>
+
+    {/* Preferred Hyperscaler Partners */}
+    <Grid item xs={12} md={4}>
+      <Typography sx={{ fontWeight: 700, fontSize: "0.8rem", color: "#64748b", mb: 1 }}>
+        Preferred Hyperscaler Partners
+      </Typography>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {techData.partners.hyperscalers.map((partner, i) => (
+          <img
+            src={partner.logo}
+            alt={partner.name}
+            style={logoStyle}
+            onError={(e) => {
+              console.error("Logo failed:", partner.logo);
+              (e.target as HTMLImageElement).src = "/no-logo.png";
+            }}
+          />
+
+        ))}
+      </Box>
+    </Grid>
+
+    {/* Other ISVs */}
+    <Grid item xs={12} md={4}>
+      <Typography sx={{ fontWeight: 700, fontSize: "0.8rem", color: "#64748b", mb: 1 }}>
+        Other ISVs
+      </Typography>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {techData.partners.isvs.map((partner, i) => (
+          <img
+            key={i}
+            src={partner.logo}
+            alt={partner.name}
+            style={logoStyle}
+
+          />
+        ))}
+      </Box>
+    </Grid>
+
+  </Grid>
+</Grid>
+
             </Grid>
           </Box>
 
@@ -597,15 +632,8 @@ const ClientContext2 = () => {
 
             <Grid container spacing={3}>
               <Grid item xs={12} md={4}>
-                <Paper
-                  elevation={0}
-                  sx={{
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 1,
-                    p: 3,
-                    textAlign: "center"
-                  }}
-                >
+                <Box sx={{ p: 1 }}>
+
                   <Typography
                     sx={{
                       fontWeight: 700,
@@ -619,69 +647,64 @@ const ClientContext2 = () => {
                     Competitive Intel
                   </Typography>
 
-                  <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-                    <PieChart />
+                  <Box sx={{ width: 200, height: 200, mx: "auto", mb: 3 }}>
+                    <ResponsiveContainer>
+                      <RePieChart>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          innerRadius={60}
+                          outerRadius={80}
+                          paddingAngle={2}
+                        >
+                          {pieData.map((_, index) => (
+                            <Cell
+                              key={index}
+                              fill={["#0f172a", "#06b6d4", "#e2e8f0", "#cbd5e1"][index % 4]}
+                            />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </RePieChart>
+                    </ResponsiveContainer>
                   </Box>
+
 
                   <Box
                     sx={{
                       display: "flex",
                       flexDirection: "column",
                       gap: 1.5,
-                      alignItems: "flex-start",
-                      fontSize: "0.75rem",
-                      color: "#475569"
+                      mt: 2,
+                      fontSize: "0.8rem",
+                      color: "#475569",
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {pieData.map((entry, index) => (
                       <Box
-                        sx={{
-                          width: 14,
-                          height: 14,
-                          bgcolor: "#0f172a",
-                          borderRadius: "2px"
-                        }}
-                      />
-                      <span>Client</span>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: 14,
-                          height: 14,
-                          bgcolor: "#06b6d4",
-                          borderRadius: "2px"
-                        }}
-                      />
-                      <span>Competitor 1</span>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: 14,
-                          height: 14,
-                          bgcolor: "#e2e8f0",
-                          borderRadius: "2px"
-                        }}
-                      />
-                      <span>Competitor 2</span>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Box
-                        sx={{
-                          width: 14,
-                          height: 14,
-                          bgcolor: "#cbd5e1",
-                          borderRadius: "2px"
-                        }}
-                      />
-                      <span>Competitor 3</span>
-                    </Box>
+                        key={entry.name}
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Box
+                          sx={{
+                            width: 14,
+                            height: 14,
+                            bgcolor: ["#0f172a", "#06b6d4", "#e2e8f0", "#cbd5e1"][index % 4],
+                            borderRadius: "2px",
+                          }}
+                        />
+                        <span>{entry.name}</span>
+                      </Box>
+                    ))}
                   </Box>
-                </Paper>
+
+                </Box>
+
               </Grid>
 
-              <Grid item xs={12} md={8}>
+              <Grid item xs={12}>
+
                 <Paper
                   elevation={0}
                   sx={{
@@ -690,19 +713,38 @@ const ClientContext2 = () => {
                     overflow: "hidden"
                   }}
                 >
-                  <Box sx={{ p: 2, bgcolor: "#f8fafc" }}>
+                  <Box
+                    sx={{
+                      p: 2,
+                      bgcolor: "#f8fafc",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
                     <Typography
                       sx={{
                         fontWeight: 700,
                         fontSize: "0.8rem",
-                        color: "#64748b",
+                        color: "008080",
                         textTransform: "uppercase",
-                        letterSpacing: "0.5px"
+                        letterSpacing: "0.5px",
                       }}
                     >
                       Competition Overview
                     </Typography>
+
+                    {editable.isEditing && (
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={addCompetitionRow}
+                      >
+                        + Add Row
+                      </Button>
+                    )}
                   </Box>
+
 
                   <Table
                     size="small"
@@ -765,7 +807,11 @@ const ClientContext2 = () => {
                     </TableHead>
 
                     <TableBody>
-                      {dummyData.competition.map((row, i) => {
+                      {(editable.isEditing
+                        ? editable.draftData.competitive_intel.competition_overview
+                        : dummyData.competition
+                      ).map((row: any, i: number) => {
+
                         const { bg, color } = depthColor(row.depth);
                         return (
                           <TableRow
@@ -778,30 +824,39 @@ const ClientContext2 = () => {
                             }}
                           >
                             <TableCell sx={{ py: 1.5 }}>
-                              <Typography
-                                sx={{
-                                  fontWeight:
-                                    row.name === "Version 1" ? 700 : 500,
-                                  color: "#1B2B38"
-                                }}
-                              >
-                                {row.name}
-                              </Typography>
+                              {editable.isEditing ? (
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  value={
+                                    editable.draftData.competitive_intel
+                                      .competition_overview[i]?.name || ""
+                                  }
+                                  onChange={(e) => updateCompetitorName(i, e.target.value)}
+                                />
+                              ) : (
+                                <Typography sx={{ fontWeight: row.name === "Version 1" ? 700 : 500 }}>
+                                  {row.name}
+                                </Typography>
+                              )}
                             </TableCell>
                             <TableCell sx={{ py: 1.5 }}>
-                              <Chip
-                                label={row.share}
-                                sx={{
-                                  bgcolor: "#00C0B5",
-                                  color: "#ffffff",
-                                  fontSize: 11,
-                                  fontWeight: 700,
-                                  px: 1.5,
-                                  borderRadius: 999
-                                }}
-                                size="small"
-                              />
+                              {editable.isEditing ? (
+                                <TextField
+                                  type="number"
+                                  size="small"
+                                  inputProps={{ min: 0, max: 100 }}
+                                  value={
+                                    editable.draftData.competitive_intel
+                                      .competition_overview[i]?.share_of_wallet_percent?.replace("%", "") || ""
+                                  }
+                                  onChange={(e) => updateShareOfWallet(i, e.target.value)}
+                                />
+                              ) : (
+                                <Chip label={row.share_of_wallet_percent || row.share} />
+                              )}
                             </TableCell>
+
                             <TableCell align="center" sx={{ py: 1.5 }}>
                               <Box
                                 sx={{
@@ -818,7 +873,7 @@ const ClientContext2 = () => {
                                   color
                                 }}
                               >
-                                {row.depth}
+                                {row.depth_of_relationship || row.depth}
                               </Box>
                             </TableCell>
                             <TableCell>
@@ -833,7 +888,7 @@ const ClientContext2 = () => {
                                   onChange={(e) => updateKeyArea(i, e.target.value)}
                                 />
                               ) : (
-                                row.key
+                                row.key_areas_of_engagement || row.key
                               )}
                             </TableCell>
 

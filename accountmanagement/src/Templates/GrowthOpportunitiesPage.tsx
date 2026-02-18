@@ -44,14 +44,22 @@ const HeaderCell = styled(TableCell)({
   fontSize: 11,
   border: "1px solid #bdbdbd",
   padding: 6,
+  whiteSpace: "normal",        // ✅ allow wrapping
+  wordBreak: "break-word",     // ✅ wrap words, not letters
+  textAlign: "center",         // ✅ keeps layout same
+  verticalAlign: "middle",     // ✅ prevents header stretching
 });
+
 
 const BodyCell = styled(TableCell)({
   fontSize: 11,
   border: "1px solid #c9c9c9",
   padding: "5px 6px",
   verticalAlign: "top",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
 });
+
 
 const CenterCell = styled(BodyCell)({
   textAlign: "center",
@@ -88,11 +96,47 @@ const emptyRow = (id: number): OpportunityRow => ({
   support: "",
 });
 
+/* ---------- PRINT FIX (PDF ONLY) ---------- */
+const printStyles = `
+@media print {
+  #template-to-download {
+    width: 1800px !important;
+    max-width: 1800px !important;
+  }
+
+  table {
+    table-layout: fixed !important;
+    width: 1800px !important;
+  }
+
+  th, td {
+    white-space: normal !important;
+    overflow-wrap: break-word !important;
+    vertical-align: top !important;
+  }
+
+  /* 🚫 PREVENT LETTER-BY-LETTER BREAKING */
+  th {
+    word-break: keep-all !important;
+  }
+
+  /* 🔑 FIX Key Stakeholders column */
+  th:nth-child(10),
+  td:nth-child(10) {
+    min-width: 220px !important;
+  }
+}
+`;
+
 /* ---------------- MAIN ---------------- */
 export default function GrowthOpportunitiesPage() {
+
+  
   const { globalData, setGlobalData } = useData();
 
   const backendData = globalData?.key_growth_opportunities || [];
+
+  const [isPrinting, setIsPrinting] = React.useState(false);
 
   /* Map backend → table rows */
   const initialRows: OpportunityRow[] =
@@ -159,6 +203,9 @@ export default function GrowthOpportunitiesPage() {
     });
   };
 
+  /* ---------- PRINT FIX (DO NOT REMOVE) ---------- */
+
+
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
@@ -172,7 +219,12 @@ export default function GrowthOpportunitiesPage() {
           }}
         >
 
-          <DownloadTemplates templateName={TEMPLATE_NAME} />
+          <DownloadTemplates
+            templateName={TEMPLATE_NAME}
+            beforeDownload={() => setIsPrinting(true)}
+            afterDownload={() => setIsPrinting(false)}
+          />
+
 
           {!editable.isEditing ? (
             <Button variant="outlined" onClick={editable.startEdit} sx={{
@@ -207,29 +259,83 @@ export default function GrowthOpportunitiesPage() {
         </Box>
       
       <Box id="template-to-download" className="template-section" sx={{ mt: 2, mx: "auto" }}>
-      <Typography variant="h4" fontWeight={700} color="teal">
-        Summary of key growth opportunities
-      </Typography>
+
+  <style>{printStyles}</style>
+
+  <Typography variant="h4" fontWeight={700} color="teal">
+    Summary of key growth opportunities
+  </Typography>
+
 
       {/* TABLE */}
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
+      <TableContainer
+        component={Paper}
+        sx={{ overflowX: "hidden" }}
+      >
+
+        <Table
+          size="small"
+          sx={{
+  tableLayout: "fixed",
+  width: "100%",
+  pageBreakInside: "auto",   // ✅ allow breaking only BETWEEN rows
+}}
+
+        >
+
+          <colgroup>
+            <col style={{ width: "3%" }} />   {/* # */}
+            <col style={{ width: "8%" }} />   {/* Deal */}
+            <col style={{ width: "8%" }} />   {/* Deal Type */}
+            <col style={{ width: "7%" }} />   {/* Stage */}
+            <col style={{ width: "10%" }} />  {/* Service offerings */}
+            <col style={{ width: "6%" }} />   {/* TCV */}
+            <col style={{ width: "6%" }} />   {/* ACV */}
+            <col style={{ width: "8%" }} />   {/* Closure timeline */}
+            <col style={{ width: "4%" }} />   {/* Win */}
+            <col style={{ width: "12%" }} />  {/* Key Stakeholders */}
+
+            <col style={{ width: "8%" }} />   {/* Competition */}
+            <col style={{ width: "10%" }} />  {/* Differentiator */}
+            <col style={{ width: "12%" }} />  {/* Support */}
+          </colgroup>
+
+
+          <TableHead
+  sx={{
+    display: "table-header-group", // ✅ REQUIRED for repeated headers
+  }}
+>
+
             <TableRow>
-              {[
-                "#", "Deal", "Deal Type", "Stage", "Service offerings",
-                "TCV (€)", "ACV (€)", "Closure timeline", "Win",
-                "Key stakeholders", "Competition",
-                "Key differentiator", "Support required",
-              ].map((h) => (
-                <HeaderCell key={h}>{h}</HeaderCell>
-              ))}
+              <HeaderCell>#</HeaderCell>
+              <HeaderCell>Deal</HeaderCell>
+              <HeaderCell>Deal Type</HeaderCell>
+              <HeaderCell>Stage</HeaderCell>
+              <HeaderCell>Service Offerings</HeaderCell>
+              <HeaderCell>TCV (€)</HeaderCell>
+              <HeaderCell>ACV (€)</HeaderCell>
+              <HeaderCell>Closure Timeline</HeaderCell>
+              <HeaderCell>Win</HeaderCell>
+              <HeaderCell>Key Stakeholders</HeaderCell>
+              <HeaderCell>Competition</HeaderCell>
+              <HeaderCell>Key Differentiator</HeaderCell>
+              <HeaderCell>Support Required</HeaderCell>
             </TableRow>
+
+
+
           </TableHead>
 
           <TableBody>
             {editable.draftData.map((row) => (
-              <TableRow key={row.id}>
+              <TableRow
+  key={row.id}
+  sx={{
+    pageBreakInside: "avoid", // ✅ keeps full row on same page
+  }}
+>
+
                 <CenterCell>{row.id}</CenterCell>
 
                 {(
@@ -243,18 +349,44 @@ export default function GrowthOpportunitiesPage() {
                     <WinCell key={i} sx={{ bgcolor: getWinColor(row.winProb) }} />
                   ) : (
                     <BodyCell key={i}>
-                      {editable.isEditing ? (
+                      {editable.isEditing && !isPrinting ? (
                         <TextField
-                          size="small"
                           fullWidth
+                          multiline
+                          minRows={1}
+                          maxRows={6}
+                          size="small"
                           value={row[field]}
                           onChange={(e) =>
                             updateCell(row.id, field, e.target.value)
                           }
+                          InputProps={{
+                            style: {
+                              fontSize: 11,
+                              lineHeight: 1.4,
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                              overflow: "hidden",   // 🔑 no scrollbar
+                              resize: "none",       // 🔑 prevent manual resize
+                            },
+                          }}
                         />
+
                       ) : (
-                        row[field]
+                        <Box
+  data-pdf-value={row[field] || ""}
+  sx={{
+    whiteSpace: "pre-wrap",
+    wordBreak: "break-word",
+    fontSize: 11,
+    lineHeight: 1.4,
+  }}
+>
+  {row[field] || ""}
+</Box>
+
                       )}
+
                     </BodyCell>
                   )
                 )}
