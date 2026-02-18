@@ -509,20 +509,20 @@ def chat(request):
     # -----------------------------
     # 3) Final context → AOAI answer
     # -----------------------------
-        context_text = "\n\n".join(
-            [t for t in [fabric_text, search_text] if t]
-        ).strip()
+    context_text = "\n\n".join(
+        [t for t in [fabric_text, search_text] if t]
+    ).strip()
 
-        if not context_text:
-            answer = "No relevant data found."
+    if not context_text:
+        answer = "No relevant data found."
 
-            if chat:
-                save_message(chat, "bot", answer)
+        if chat:
+            save_message(chat, "bot", answer)
 
-            return JsonResponse(
-                {"message": answer, "payload": None},
-                json_dumps_params={"ensure_ascii": False}
-            )
+        return JsonResponse(
+            {"message": answer, "payload": None},
+            json_dumps_params={"ensure_ascii": False}
+        )
 
 
 

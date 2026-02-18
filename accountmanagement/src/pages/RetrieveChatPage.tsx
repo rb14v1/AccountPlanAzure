@@ -1,5 +1,5 @@
 // src/Components/ChatPage.tsx
-
+ 
 import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, IconButton } from "@mui/material";
 import { useNavigate } from "react-router-dom";
@@ -13,7 +13,7 @@ import PromptModal from "../components/PromptModal";
 import { useData } from "../context/DataContext";
 import { useTab } from "../context/TabContext";
 import { STARTER_PROMPTS } from "../components/constants";
-
+ 
 const ALLOWED_TEMPLATES = [
   "growth_strategy",
   "strategic_partnerships",
@@ -25,7 +25,7 @@ const ALLOWED_TEMPLATES = [
   "investment_plan",
   "account_dashboard",
 ] as const;
-
+ 
 const RetrieveChatPage: React.FC = () => {
   const { setGlobalData } = useData();
   const [input, setInput] = useState("");
@@ -37,7 +37,7 @@ const RetrieveChatPage: React.FC = () => {
   const [chatList, setChatList] = useState<any[]>([]);
   const navigate = useNavigate();
   const { navigateTo } = useTab();
-  
+ 
   const getUser = () => {
   try {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -50,11 +50,11 @@ const RetrieveChatPage: React.FC = () => {
     return null;
   }
 };
-
+ 
   const fetchChats = async () => {
   const user = getUser();
   if (!user) return;
-
+ 
   try {
     const res = await api.get("/chats", {
       params: { user_id: user.id },
@@ -64,28 +64,28 @@ const RetrieveChatPage: React.FC = () => {
     console.error("Error fetching chats", err);
   }
 };
-
-
-
+ 
+ 
+ 
   useEffect(() => {
     const user = getUser();
     if (!user) return;
-
+ 
     const storedChatId = localStorage.getItem("activeChatId");
-
+ 
     // Load chat list
     api.get("/chats", {
       params: { user_id: user.id },
     }).then(res => {
       setChatList(res.data);
     });
-
+ 
     // 🔥 Restore last active chat
     if (storedChatId) {
       const chatIdNum = Number(storedChatId);
       setCurrentChatId(chatIdNum);
-
-
+ 
+ 
       api.get(`/chats/${chatIdNum}`).then(res => {
         setMessages(
           res.data.map((m: any) => ({
@@ -98,39 +98,39 @@ const RetrieveChatPage: React.FC = () => {
       });
     }
   }, []);
-
+ 
   // Modal State
   const [openModal, setOpenModal] = useState(false);
-  const [activePrompt, setActivePrompt] = useState<PromptDefinition | null>(null);
-
+  const [activePrompt, setActivePrompt] = useState<any>(null);
+ 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const textInputRef = React.useRef<HTMLInputElement>(null);
-
+ 
   // --- Handlers ---
   const openChat = async (id: number) => {
   try {
     setCurrentChatId(id);
     localStorage.setItem("activeChatId", id.toString());
-
+ 
     const res = await api.get(`/chats/${id}`);
-
+ 
     const formatted = res.data.map((m: any) => ({
       id: m.id,
       sender: m.sender,
       text: m.text,
       timestamp: new Date(m.timestamp).toLocaleTimeString(),
     }));
-
+ 
     setMessages(formatted);
-
+ 
     await fetchChats(); // optional refresh
   } catch (err) {
     console.error("Error opening chat", err);
   }
 };
-
-
-  
+ 
+ 
+ 
   const toDisplayText = (val: any): string => {
     if (val === null || val === undefined) return "";
     if (typeof val === "string") return val;
@@ -141,37 +141,37 @@ const RetrieveChatPage: React.FC = () => {
       return String(val);
     }
   };
-
+ 
   // --- Handlers ---
   const handleNewChat = async () => {
   try {
     const user = getUser();
     if (!user) return;
-
+ 
     const res = await api.post("/chats/new", {
       user_id: user.id,
     });
-
+ 
     const newChat = res.data;
-
+ 
     setCurrentChatId(newChat.id);
     localStorage.setItem("activeChatId", newChat.id.toString());
-
+ 
     setMessages([]);
-
+ 
     await fetchChats(); // refresh sidebar
-
+ 
   } catch (err) {
     console.error("Error creating chat", err);
   }
 };
-
-
+ 
+ 
   const handleCardClick = (promptObj: any) => {
     setActivePrompt(promptObj);
     setOpenModal(true);
   };
-
+ 
   const handleModalSubmit = (finalText: string) => {
     setInput(finalText);
     setOpenModal(false);
@@ -181,11 +181,14 @@ const RetrieveChatPage: React.FC = () => {
       }
     }, 100);
   };
-
-    const handleSend = async (textOverride?: string) => {
-    const textToSend = textOverride !== undefined ? textOverride : input;
+ 
+  const handleSend = async (overrideText?: string) => {
+    const textToSend = overrideText || input;
     if (!textToSend.trim() && !selectedFile) return;
  
+    const fileName = selectedFile ? selectedFile.name : undefined;
+ 
+    // --- UI UPDATE (Show User Message) ---
     const newUserMsg: Message = {
       id: Date.now().toString(),
       text: textToSend,
@@ -194,20 +197,24 @@ const RetrieveChatPage: React.FC = () => {
       attachment: selectedFile ? selectedFile.name : undefined,
     };
  
+ 
     setMessages((prev) => [...prev, newUserMsg]);
     setInput("");
     setSelectedFile(null);
     setIsTyping(true);
  
     try {
-      // ✅ Template Fill Logic
+      // ✅ If user types: "<template_name> <company_name>"
       const parts = textToSend.trim().split(/\s+/);
       const maybeTemplate = parts[0] || "";
       const companyName = parts.slice(1).join(" ").trim();
  
       if ((ALLOWED_TEMPLATES as readonly string[]).includes(maybeTemplate) && companyName) {
+          const user = getUser();
+          if (!user) return;
+ 
         const fillRes = await api.post("/template/fill", {
-          user_id: "101",
+          user_id: user.id,
           template_name: maybeTemplate,
           company_name: companyName,
         });
@@ -219,7 +226,6 @@ const RetrieveChatPage: React.FC = () => {
             ...prev,
             [parsedData.template_type]: parsedData.data,
           }));
- 
           // ✅ Store any detected template as a route-friendly key
           const routeName = parsedData.template_type.toLowerCase().replace(/_/g, "-");
           localStorage.setItem("last_detected_template", routeName);
@@ -229,7 +235,10 @@ const RetrieveChatPage: React.FC = () => {
           id: crypto.randomUUID(),
           text: `✅ Filled template "${maybeTemplate}" for "${companyName}".`,
           sender: "bot",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         };
  
         setMessages((prev) => [...prev, assistantMsg]);
@@ -238,55 +247,108 @@ const RetrieveChatPage: React.FC = () => {
       }
  
       // --- Normal Chat ---
-      const response = await api.post("/chat", {
-        user_id: "101",
-        query: textToSend,
-      });
+      const user = getUser();
+if (!user) return;
  
+if (!currentChatId) {
+  alert("Please create a chat first");
+  return;
+}
+ 
+const response = await api.post("/chat", {
+  user_id: user.id,
+  chat_id: currentChatId,
+  query: textToSend,
+});
+      // IMPORTANT: response.data can be STRING or OBJECT
       const respData = response.data;
  
-      if (respData && typeof respData === "object" && respData.message) {
-        // ✅ messageText declaration fixed
-        const messageText = String(respData.message || "");
+        // ✅ NEW: backend returns { message, payload }
+        if (respData && typeof respData === "object" && respData.message) {
+          // messageText declaration fixed
+          const messageText = String(respData.message || "");
  
-        // ✅ UNIVERSAL MAPPING: Capture any template type and normalize for the Data button
-        const rawType = respData.template_type || respData.payload?.template_type;
-        if (rawType) {
-          const routeName = rawType.toLowerCase().replace(/_/g, "-");
-          localStorage.setItem("last_detected_template", routeName);
+          // ✅ UNIVERSAL MAPPING: Capture any template type and normalize for the Data button
+          const rawType = respData.template_type || respData.payload?.template_type;
+          if (rawType) {
+            const routeName = rawType.toLowerCase().replace(/_/g, "-");
+            localStorage.setItem("last_detected_template", routeName);
+          }
+ 
+          const payload = respData.payload;
+          if (payload?.template_type && payload?.data) {
+            setGlobalData((prev: any) => ({
+              ...prev,
+              [payload.template_type]: payload.data,
+            }));
+          }
+ 
+          const botResponse: Message = {
+            id: crypto.randomUUID(),
+            text: messageText,
+            sender: "bot",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
+ 
+          setMessages((prev) => [...prev, botResponse]);
+          setIsTyping(false);
+          return;
         }
  
-        const payload = respData.payload;
-        if (payload?.template_type && payload?.data) {
+      const logosHeader = response.headers["x-company-logos"];
+ 
+      if (logosHeader) {
+        try {
+          const parsedLogos = JSON.parse(logosHeader);
+ 
+          console.log("🖼️ Logos from backend:", parsedLogos);
+ 
           setGlobalData((prev: any) => ({
             ...prev,
-            [payload.template_type]: payload.data,
+            companyLogos: parsedLogos,
           }));
+        } catch (err) {
+          console.error("❌ Failed to parse company logos header", err);
         }
+      }
  
-        const botResponse: Message = {
-          id: crypto.randomUUID(),
-          text: messageText,
-          sender: "bot",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
+      // Existing header based logic (keep, but safe)
+      const templateDataHeader = response.headers["x-template-data"];
+      const templateTypeHeader = response.headers["x-template-type"];
  
-        setMessages((prev) => [...prev, botResponse]);
-        setIsTyping(false);
-        return;
+      const textAnswer = response.data;
+ 
+      console.log("📝 Text Answer:", textAnswer);
+      console.log("📋 Template Type:", templateTypeHeader);
+ 
+      if (templateDataHeader && templateTypeHeader) {
+        try {
+          const parsedHeader = JSON.parse(templateDataHeader);
+          setGlobalData((prev: any) => ({
+            ...prev,
+            [parsedHeader.template_type]: parsedHeader.data,
+          }));
+        } catch (err) {
+          console.error("❌ Template parse error:", err);
+        }
       }
  
       const botResponse: Message = {
         id: crypto.randomUUID(),
-        text: toDisplayText(respData),
+        text: toDisplayText(respData), // ✅ ALWAYS STRING
         sender: "bot",
-        timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
  
       setMessages((prev) => [...prev, botResponse]);
     } catch (error: any) {
       let errorText = "❌ Could not connect to backend. ";
+ 
       if (error.response) {
+        // also try to show backend body
         const body = error.response?.data;
         errorText += `Server error: ${error.response.status}. `;
         if (body) errorText += `\n${toDisplayText(body).slice(0, 1200)}`;
@@ -302,20 +364,20 @@ const RetrieveChatPage: React.FC = () => {
         sender: "bot",
         timestamp: new Date().toLocaleTimeString(),
       };
+ 
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
       setIsTyping(false);
     }
   };
  
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-
+ 
   const handleTopRightAction = () => {
     const lastTemplate = localStorage.getItem("last_detected_template");
  
@@ -330,14 +392,14 @@ const RetrieveChatPage: React.FC = () => {
       navigate("/app/customer-profile");
     }
   };
-
+ 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f5f5" }}>
       <Header
         onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         onNewChat={handleNewChat}
       />
-
+ 
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Sidebar
   open={isSidebarOpen}
@@ -345,9 +407,9 @@ const RetrieveChatPage: React.FC = () => {
   onOpenChat={openChat}
   onNewChat={handleNewChat}
 />
-
-
-
+ 
+ 
+ 
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
           <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
             <Button
@@ -363,7 +425,7 @@ const RetrieveChatPage: React.FC = () => {
               Data
             </Button>
           </Box>
-
+ 
           <ChatArea
             messages={messages}
             isTyping={isTyping}
@@ -376,7 +438,7 @@ const RetrieveChatPage: React.FC = () => {
               }
             }}
           />
-
+ 
           <Box sx={{ p: 2, bgcolor: "#fff", borderTop: "1px solid #ddd" }}>
             <Box sx={{ maxWidth: 900, mx: "auto", display: "flex", gap: 1, alignItems: "center" }}>
               <input
@@ -385,9 +447,9 @@ const RetrieveChatPage: React.FC = () => {
                 style={{ display: "none" }}
                 onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])}
               />
-
-              
-
+ 
+             
+ 
               <TextField
                 fullWidth
                 multiline
@@ -398,7 +460,7 @@ const RetrieveChatPage: React.FC = () => {
                 onKeyDown={handleKeyPress}
                 inputRef={textInputRef}
               />
-
+ 
               <Button
                 onClick={() => handleSend()}
                 sx={{
@@ -414,14 +476,14 @@ const RetrieveChatPage: React.FC = () => {
                 ➤
               </Button>
             </Box>
-
+ 
             <Box sx={{ textAlign: "center", mt: 1, fontSize: "0.75rem", color: "#999" }}>
               © 2025 Sales App. All rights reserved. @Version1
             </Box>
           </Box>
         </Box>
       </Box>
-
+ 
       <PromptModal
         open={openModal}
         activePrompt={activePrompt}
@@ -434,5 +496,7 @@ const RetrieveChatPage: React.FC = () => {
     </Box>
   );
 };
-
+ 
 export default RetrieveChatPage;
+ 
+ 
