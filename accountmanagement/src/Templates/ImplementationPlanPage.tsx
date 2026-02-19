@@ -19,7 +19,7 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-const TEMPLATE_NAME = "Implementation_Plan_For_Growth";
+const TEMPLATE_NAME = "implementation_plan";
 const STATUS_OPTIONS = [
   "Completed",
   "On-track",
@@ -128,7 +128,7 @@ interface ImplementationPlanData {
 
 export default function ImplementationPlanPage() {
   const { globalData, setGlobalData } = useData();
-  const contextData = globalData?.implementation_plan_for_growth || null;
+  const contextData = globalData?.implementation_plan || null;
 
   const [isPrinting, setIsPrinting] = React.useState(false);
 
@@ -268,7 +268,7 @@ export default function ImplementationPlanPage() {
                   editable.saveEdit((updatedData) => {
                     setGlobalData((prev: any) => ({
                       ...prev,
-                      implementation_plan_for_growth: updatedData,
+                      implementation_plan: updatedData,
                     }));
                   })
                 }

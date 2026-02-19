@@ -30,7 +30,7 @@ interface OperationalExcellenceData {
   commercial_transformation_plan: string;
 }
 
-const TEMPLATE_NAME = "Operational_Excellence_Strategy";
+const TEMPLATE_NAME = "operational_excellence_strategy";
 
 const MetricHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: "#022D36",
@@ -72,7 +72,7 @@ export default function OperationalExcellencePage() {
   const { globalData, setGlobalData } = useData();
 
   const operationalData: OperationalExcellenceData =
-    globalData?.Operational_Excellence_Strategy || {
+    globalData?.operational_excellence_strategy || {
       current_gp_percent: "",
       gp_ambition_percent: "",
       priority_levers_for_margin_uplift: [],
@@ -95,10 +95,10 @@ export default function OperationalExcellencePage() {
 
   // Update draft when data changes from chatbot
   useEffect(() => {
-    if (globalData?.Operational_Excellence_Strategy && !editable.isEditing) {
-      editable.updateDraft(globalData.Operational_Excellence_Strategy);
+    if (globalData?.operational_excellence_strategy && !editable.isEditing) {
+      editable.updateDraft(globalData.operational_excellence_strategy);
     }
-  }, [globalData?.Operational_Excellence_Strategy]);
+  }, [globalData?.operational_excellence_strategy]);
 
   // STEP 1: Load data from database when component mounts
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function OperationalExcellencePage() {
           if (dbData && Object.keys(dbData).length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Operational_Excellence_Strategy: dbData,
+              operational_excellence_strategy: dbData,
             }));
             dataLoadedFromDB.current = true;
           } else {
@@ -181,7 +181,7 @@ export default function OperationalExcellencePage() {
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Operational_Excellence_Strategy: result.data,
+              operational_excellence_strategy: result.data,
             }));
 
             setSnackbar({
@@ -252,7 +252,7 @@ export default function OperationalExcellencePage() {
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
-          Operational_Excellence_Strategy: result.data,
+          operational_excellence_strategy: result.data,
         }));
 
         editable.saveEdit(() => {

@@ -97,7 +97,7 @@ const InsightInput = styled(TextField)({
   },
 });
 const API_BASE_URL = "http://localhost:8000/api";
-const TEMPLATE_NAME = "Talent_Excellence_Overview";
+const TEMPLATE_NAME = "talent_excellence_overview";
 
 const TalentExcellenceOverview: React.FC = () => {
   const { globalData, setGlobalData } = useData();
@@ -126,7 +126,7 @@ const TalentExcellenceOverview: React.FC = () => {
     insights: "Key insights & Actions\n\nInstructions:\nPlease list all the metrics in red here, with a brief explanation of why it is red. Please provide all key drivers that impact each metric, as well as rationale for each of those drivers."
   };
 
-  const talentData = globalData?.Talent_Excellence_Overview || defaultData;
+  const talentData = globalData?.talent_excellence_overview || defaultData;
   const editable = useEditableTable(talentData);
 
   useEffect(() => {
@@ -153,7 +153,7 @@ const TalentExcellenceOverview: React.FC = () => {
           editable.updateDraft(mergedData);
           setGlobalData((prev: any) => ({
             ...prev,
-            Talent_Excellence_Overview: mergedData,
+            talent_excellence_overview: mergedData,
           }));
         }
       } catch (e) {
@@ -171,7 +171,7 @@ const TalentExcellenceOverview: React.FC = () => {
     editable.updateDraft({ ...editable.draftData, [section]: updated });
   };
 
-  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+  const userId = globalData?.user_id || localStorage.getItem("user_id");
 
   const handleSave = async () => {
     try {
@@ -195,7 +195,7 @@ const TalentExcellenceOverview: React.FC = () => {
 
       setGlobalData((prev: any) => ({
         ...prev,
-        Talent_Excellence_Overview: payload
+        talent_excellence_overview: payload
       }));
 
       editable.saveEdit(() => { });

@@ -53,7 +53,7 @@ const STRATEGY_DATA: StrategyRow[] = [
 
 const InnovationStrategy: React.FC = () => {
   const { globalData, setGlobalData } = useData();
-  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+  const userId = globalData?.user_id || localStorage.getItem("user_id");
   const dataLoaded = useRef(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
 

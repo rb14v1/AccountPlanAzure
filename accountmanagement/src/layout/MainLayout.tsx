@@ -52,7 +52,7 @@ import ServiceLinePenetration from "../Templates/ServiceLinePenetration";
 import PlannedActionGenAI from "../Templates/PlannedActionGenAI";
 import MarginImprovementPlan from "../Templates/MarginImprovementPlan";
 import TalentExcellenceOverview from "../Templates/TalentExcellenceOverview";
-
+import AccountPerformanceAnnualPlan from "../Templates/AccountPerformanceAnnualPlan";
 import profileIcon from "../assets/profileIcon.png";
 
 const EXPANDED_WIDTH = 220;
@@ -97,10 +97,7 @@ export default function MainLayout() {
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
     { id: "talent-excellence", label: "Talent Excellence", icon: "bi-people-fill" },
- 
- 
- 
- 
+    { id: "account-performance-annual-plan", label: "Account Performance Annual Plan", icon: "bi-calendar-check" },
  
   ];
 
@@ -130,13 +127,7 @@ export default function MainLayout() {
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;
       case "talent-excellence": return <TalentExcellenceOverview />;
- 
- 
- 
- 
- 
- 
-
+      case "account-performance-annual-plan": return <AccountPerformanceAnnualPlan />;
       default: return <AccountTeamPod />;
     }
   };
@@ -178,7 +169,11 @@ export default function MainLayout() {
                 >
                   <ListItemButton
                     selected={activeTab === item.id}
-                    onClick={() => navigateTo(item.id)}
+                    onClick={() => {
+                      navigateTo(item.id);
+                      // Assuming your app routes are prefixed with /app/
+                      navigate(`/app/${item.id}`); 
+            }}
                     sx={{
   justifyContent: collapsed ? "center" : "flex-start",
   px: collapsed ? 0 : 2,

@@ -169,7 +169,7 @@ function EditableSection({
 /* ---------- MAIN COMPONENT ---------- */
 export default function CustomerProfile() {
   const { globalData, setGlobalData } = useData();
-  const data = globalData?.customer_and_version_1;
+  const data = globalData?.customer_profile;
   const TEMPLATE_NAME = "Customer Profile";
 
   const [loading, setLoading] = useState(false);
@@ -208,7 +208,7 @@ export default function CustomerProfile() {
           if (dbData && Object.keys(dbData).length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
-              customer_and_version_1: dbData,
+              customer_profile: dbData,
             }));
             dataLoadedFromDB.current = true;
           } else {
@@ -269,7 +269,7 @@ export default function CustomerProfile() {
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
-              customer_and_version_1: result.data,
+              customer_profile: result.data,
             }));
 
             setSnackbar({
@@ -322,7 +322,7 @@ export default function CustomerProfile() {
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
-          customer_and_version_1: result.data,
+          customer_profile: result.data,
         }));
 
         editable.saveEdit(() => {

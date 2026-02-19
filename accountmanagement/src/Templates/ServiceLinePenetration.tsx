@@ -223,8 +223,7 @@ const ServiceLinePenetration: React.FC = () => {
   const userId =
     globalData?.user_id ||
     localStorage.getItem("user_id") ||
-    localStorage.getItem("userid") ||
-    "101";
+    localStorage.getItem("userid");
 
   const companyName =
     globalData?.company_name ||

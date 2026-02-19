@@ -119,7 +119,7 @@ const AccountDashboard: React.FC = () => {
 
   // ✅ Manual Auto-Fill (calls backend fill-template directly)
   const handleAutoFill = async () => {
-    const userId = (localStorage.getItem("user_id") || "").trim() || "101";
+    const userId = (localStorage.getItem("user_id") || "").trim();
     const company = companyName.trim();
     if (!company) {
       alert("Please enter Company Name (e.g., NatWest)");

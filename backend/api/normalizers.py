@@ -208,8 +208,13 @@ def normalize_investment_plan(obj: dict) -> dict:
             "timeline_status": str(match.get("timeline_status") or "To be discussed"), "remarks": str(match.get("remarks") or "")
         })
 
-    return {"template_type": "investment_plan", "data": {"data": final_list, "total_investment_value": str(raw_data.get("total_investment_value") or "XX")}}
-
+    return {
+        "template_type": "investment_plan", 
+        "data": {
+            "investments": final_list, 
+            "total_investment_value": str(raw_data.get("total_investment_value") or "XX")
+        }
+    }
 def normalize_implementation_plan(obj: dict) -> dict:
     raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
     rows = raw.get("actions") or []
@@ -274,8 +279,11 @@ def get_normalized_payload(template_type: str, raw_data: dict) -> dict:
     normalizer_fn = NORMALIZER_REGISTRY.get(template_type)
     if normalizer_fn:
         return normalizer_fn(raw_data)
-    # Default fallback if no specific normalizer exists
-    return {"template_type": template_type, "data": raw_data.get("data", raw_data)}
+        
+    # FIX: Prevent {"data": {"data": {...}}}
+    extracted_data = raw_data.get("data", raw_data)
+    return {"template_type": template_type, "data": extracted_data}
+
 
 def get_humanized_message(template_type: str, safe_payload: dict) -> str:
     """Returns custom human-readable chat strings for specific templates."""

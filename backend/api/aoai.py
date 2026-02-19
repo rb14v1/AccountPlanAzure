@@ -382,10 +382,14 @@ def fill_template_json_only(template: Dict[str, Any], context_text: str) -> Dict
     )
 
     raw = (resp.choices[0].message.content or "").strip()
+    
+    # FIX: Strip markdown code blocks before parsing
+    clean_json = re.sub(r"^```(?:json)?|```$", "", raw, flags=re.MULTILINE).strip()
+    
     try:
-        out = json.loads(raw)
+        out = json.loads(clean_json)
     except Exception:
-        raise RuntimeError(f"Model did not return valid JSON. Raw:\n{raw}")
+        raise RuntimeError(f"Model did not return valid JSON. Cleaned attempt:\n{clean_json}")
 
     return out
 
@@ -406,23 +410,45 @@ def enforce_tbd(template: Dict[str, Any], filled: Dict[str, Any]) -> Dict[str, A
     filled_data = (filled or {}).get("data") or {}
 
     def _coerce(schema_node: Any, filled_node: Any) -> Any:
+        # Handle Arrays
         if isinstance(schema_node, list):
             if not isinstance(filled_node, list):
-                return ["TBD"]
-            cleaned = [str(x).strip() for x in filled_node if str(x).strip()]
-            return cleaned if cleaned else ["TBD"]
+                filled_node = [filled_node] if filled_node else []
+            
+            # SCALABILITY FIX: If the schema expects a list of dictionaries (Tabular Data)
+            if len(schema_node) > 0 and isinstance(schema_node[0], dict):
+                base_dict_schema = schema_node[0]
+                out_list = []
+                for item in filled_node:
+                    if isinstance(item, dict):
+                        out_list.append(_coerce(base_dict_schema, item))
+                # Ensure at least one empty mapped row is returned if LLM failed
+                return out_list if out_list else [_coerce(base_dict_schema, {})]
+            else:
+                # Simple list of strings
+                cleaned = [str(x).strip() for x in filled_node if str(x).strip() and str(x) != "None"]
+                return cleaned if cleaned else ["TBD"]
 
+        # Handle Objects
         if isinstance(schema_node, dict):
             out: Dict[str, Any] = {}
             if not isinstance(filled_node, dict):
                 filled_node = {}
+                
+            # SCALABILITY FIX: Case-insensitive key mapping
+            filled_lower = {str(k).lower(): v for k, v in filled_node.items()}
+
             for k, child_schema in schema_node.items():
-                out[k] = _coerce(child_schema, filled_node.get(k))
+                matched_val = filled_node.get(k)
+                if matched_val is None:
+                    matched_val = filled_lower.get(str(k).lower())
+                out[k] = _coerce(child_schema, matched_val)
             return out
 
+        # Handle Primitives
         if filled_node is None:
             return "TBD"
         s = str(filled_node).strip()
-        return s if s else "TBD"
+        return s if s and s.lower() != "none" else "TBD"
 
     return {"template_type": template_type, "data": _coerce(schema_data, filled_data)}

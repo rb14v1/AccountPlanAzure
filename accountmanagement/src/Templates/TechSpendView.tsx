@@ -22,7 +22,7 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
 
 const API_BASE_URL = "http://localhost:8000/api";
-const TEMPLATE_NAME = "Tech_Spend_Breakdown";
+const TEMPLATE_NAME = "tech_spend_view";
 
 // --- STYLED COMPONENTS ---
 
@@ -124,7 +124,7 @@ const PRESENCE_OPTIONS = [
 
 const TechSpendView: React.FC = () => {
   const { globalData, setGlobalData } = useData();
-  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+  const userId = globalData?.user_id || localStorage.getItem("user_id");
   const dataLoaded = useRef(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
 
@@ -185,7 +185,7 @@ const TechSpendView: React.FC = () => {
     ]
   };
 
-  const techData = globalData?.Tech_Spend_Breakdown || defaultData;
+  const techData = globalData?.tech_spend_view || defaultData;
   const editable = useEditableTable(techData);
 
   const getGraphData = () => {
@@ -208,7 +208,7 @@ const TechSpendView: React.FC = () => {
 
         if (dbData && dbData.rows) {
           editable.updateDraft(dbData);
-          setGlobalData((prev: any) => ({ ...prev, Tech_Spend_Breakdown: dbData }));
+          setGlobalData((prev: any) => ({ ...prev, tech_spend_view: dbData }));
           dataLoaded.current = true;
         }
       } catch (err) {

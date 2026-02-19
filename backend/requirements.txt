@@ -10,10 +10,9 @@ azure-search-documents
 openai
 python-pptx
 psycopg2
-
+duckduckgo_search
 python-docx
 pypdf
-
 # --- PDF ---
 pymupdf
 pytesseract

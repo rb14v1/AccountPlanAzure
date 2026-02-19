@@ -22,7 +22,7 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
 const API_BASE_URL = "http://localhost:8000/api";
-const TEMPLATE_NAME = "Investment_Plan";
+const TEMPLATE_NAME = "investment_plan";
 
 // Define interfaces
 interface InvestmentItem {
@@ -111,7 +111,7 @@ const headers = [
 
 const InvestmentPlan: React.FC = () => {
   const { globalData, setGlobalData } = useData();
-  const investmentData = globalData?.Investment_Plan || null;
+  const investmentData = globalData?.investment_plan || null;
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -257,7 +257,7 @@ const InvestmentPlan: React.FC = () => {
           if (dbData && Object.keys(dbData).length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Investment_Plan: dbData,
+              investment_plan: dbData,
             }));
             dataLoadedFromDB.current = true;
           } else {
@@ -310,7 +310,7 @@ const InvestmentPlan: React.FC = () => {
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Investment_Plan: result.data,
+              investment_plan: result.data,
             }));
 
             setSnackbar({
@@ -407,7 +407,7 @@ const InvestmentPlan: React.FC = () => {
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
-          Investment_Plan: result.data,
+          investment_plan: result.data,
         }));
 
         editable.saveEdit(() => {

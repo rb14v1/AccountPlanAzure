@@ -131,7 +131,7 @@ const ClientContext2 = () => {
 
 
   const contextData =
-  globalData?.client_context_business_tech_priorities || defaultContextData;
+  globalData?.client_context_2 || defaultContextData;
 
   const editable = useEditableTable(contextData);
 

@@ -77,7 +77,7 @@ const AccountPerformanceAnnualPlan: React.FC = () => {
     // ✅ FIX: Use Global Data Context, NOT useOutletContext
     const { globalData, setGlobalData } = useData();
     const [loading, setLoading] = useState(false);
-    const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+    const userId = globalData?.user_id || localStorage.getItem("user_id");
     const dataLoaded = useRef(false);
 
 
@@ -106,7 +106,7 @@ const AccountPerformanceAnnualPlan: React.FC = () => {
     };
 
     // Safely access data or fallback to default
-    const annualData = globalData?.Account_Performance_Annual_Plan || defaultData;
+    const annualData = globalData?.account_performance_annual_plan || defaultData;
 
     // Hook for handling edits
     const editable = useEditableTable(annualData);
@@ -130,7 +130,7 @@ const AccountPerformanceAnnualPlan: React.FC = () => {
 
                     // Update Table and Global Store
                     editable.updateDraft(mappedData);
-                    setGlobalData((prev: any) => ({ ...prev, Account_Performance_Annual_Plan: mappedData }));
+                    setGlobalData((prev: any) => ({ ...prev, account_performance_annual_plan: mappedData }));
                     dataLoaded.current = true;
                 }
             } catch (err) {
