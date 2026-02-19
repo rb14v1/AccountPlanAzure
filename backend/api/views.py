@@ -17,7 +17,7 @@ from .aoai import (
     detect_template_type_from_query
 )
 from .template_schemas import get_template_schema
-from .azure_sql import fetch_fabric_bundle, fetch_account_bundle
+from .azure_sql import fetch_fabric_bundle
 from .models import TemplatePayload
 from .logo_fetcher import fetch_company_logo
 
@@ -227,6 +227,8 @@ def ingest_status(request):
 # AI CHATBOT (Unified Logic)
 # =========================================================
 
+# In backend/api/views.py
+
 @csrf_exempt
 def chat(request):
     """
@@ -249,7 +251,9 @@ def chat(request):
     if not user_id: return JsonResponse({"error": "user_id required"}, status=400)
     if not raw_query: return JsonResponse({"error": "query required"}, status=400)
 
-    # --- Chat Session Handling (from HEAD) ---
+    print(f"\n💬 [Chat] Incoming Query: '{raw_query}'")
+
+    # --- Chat Session Handling ---
     chat_session = None
     if chat_id:
         try:
@@ -261,10 +265,29 @@ def chat(request):
                 chat_session.title = raw_query[:50]
                 chat_session.save()
         except ChatSession.DoesNotExist:
-            pass # Continue without saving if invalid chat_id
+            pass 
 
     # --- Query Parsing ---
-    company_name, question = str(body.get("company_name") or body.get("account_name") or "").strip(), raw_query
+    # --- Query Parsing (Improved) ---
+    company_name = str(body.get("company_name") or body.get("account_name") or "").strip()
+    question = raw_query
+
+    # If company_name wasn't sent explicitly in the JSON body, try to find it in the text
+    if not company_name:
+        # 1. Try Regex for Company="Name" (Handles both single ' and double " quotes)
+        if m := re.search(r'Company\s*=\s*["\']([^"\']+)["\']', raw_query, re.IGNORECASE):
+            company_name = m.group(1).strip()
+            # Remove the company declaration from the question to clean it up
+            question = raw_query.replace(m.group(0), "").strip()
+
+        # 2. Fallback: Split on Colon (ONLY if it doesn't look like a JSON object)
+        elif ":" in raw_query and "{" not in raw_query: 
+            left, right = raw_query.split(":", 1)
+            # Sanity check: Company names are usually short (< 50 chars)
+            if left.strip() and right.strip() and len(left) < 50: 
+                company_name, question = left.strip(), right.strip()
+
+    print(f"🔍 [Chat] Extracted Company: '{company_name}'")
 
     if not company_name:
         if m := re.search(r'Company\s*=\s*"([^"]+)"', raw_query, re.IGNORECASE): company_name = m.group(1).strip()
@@ -273,40 +296,54 @@ def chat(request):
         elif ":" in raw_query: 
             left, right = raw_query.split(":", 1)
             if left.strip() and right.strip(): company_name, question = left.strip(), right.strip()
+    
+    print(f"🔍 [Chat] Extracted Company: '{company_name}' | Question: '{question}'")
 
     # --- Context Retrieval ---
     fabric_text, fabric_ok = "", False
     if company_name:
         try:
+            print("🚀 [Chat] Attempting Fabric Fetch...")
             bundle = fetch_fabric_bundle(company_name, top_n=50)
             parts = []
             if ap := bundle.get("account_plan"): parts.append("FABRIC_ACCOUNT_PLAN:\n" + json.dumps(ap, ensure_ascii=False, default=str))
             for k in ["targets", "tcv_crm", "revenue_kantata", "forecast", "csat", "unified_metrics", "revenue_employee_margin"]:
                 if rows := bundle.get(k): parts.append(f"FABRIC_{k.upper()}:\n" + json.dumps(rows[:30], ensure_ascii=False, default=str))
             fabric_text = "\n\n".join(parts).strip()
-            fabric_ok = len(fabric_text) >= int(os.getenv("SQL_FIRST_MIN_CHARS", "800"))
-        except Exception as e: print(f"⚠️ Fabric fetch failed: {e}")
+            
+            if fabric_text:
+                fabric_ok = True
+                print(f"✅ [Chat] Fabric Data Retrieved. Length: {len(fabric_text)} chars")
+            else:
+                print("⚠️ [Chat] Fabric returned empty text (Account not found or no data).")
+                
+        except Exception as e: 
+            print(f"⚠️ [Chat] Fabric Fetch Failed: {e}")
 
     search_text = ""
     if not fabric_ok:
+        print("🔎 [Chat] Falling back to Azure Search...")
         chunks = search_chunks(user_id=user_id, query=raw_query, top_k=top_k)
         search_text = "\n".join(c.get("chunk_text", "").strip() for c in chunks if c.get("chunk_text", "").strip())
+        print(f"✅ [Chat] Search Retrieved {len(chunks)} chunks.")
 
     context_text = "\n\n".join([t for t in [fabric_text, search_text] if t]).strip()
     
     if not context_text:
         msg = "No relevant data found."
+        print("❌ [Chat] No context found from Fabric or Search. Returning default.")
         if chat_session: save_message(chat_session, "bot", msg)
         return JsonResponse({"message": msg, "payload": None}, json_dumps_params={"ensure_ascii": False})
 
     # --- Template Logic ---
     template_type = detect_template_type_from_query(question)
+    print(f"📋 [Chat] Detected Template Type: {template_type}")
 
     if template_type and template_type != "unknown":
         schema = get_template_schema(template_type)
         filled = fill_template_json_only(template=schema, context_text=context_text)
         
-        # Normalize (using Clean branch logic)
+        # Normalize
         filled = enforce_tbd(schema, filled)
         safe_payload = get_normalized_payload(template_type, filled)
         
@@ -319,15 +356,13 @@ def chat(request):
         return JsonResponse({"message": message, "payload": safe_payload}, json_dumps_params={"ensure_ascii": False})
 
     # --- Q&A Fallback ---
+    print("🤖 [Chat] Generative Q&A...")
     answer = answer_only_from_context(query=question, context_text=context_text) or "TBD"
     
     if chat_session: save_message(chat_session, "bot", answer)
     
     return JsonResponse({"message": answer, "payload": None}, json_dumps_params={"ensure_ascii": False})
 
-# =========================================================
-# TEMPLATE FILLING (Clean Version)
-# =========================================================
 
 @csrf_exempt
 def fill_template(request):

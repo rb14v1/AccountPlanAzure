@@ -116,6 +116,146 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     ]
   }
 }`
+  },
+
+  {
+    id: "operational_excellence_strategy",
+    title: "Operational Excellence",
+    description: "Generate an operational excellence strategy.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "operational_excellence_strategy",
+  "data": {
+    "current_gp_percentage": "string",
+    "gp_percentage_ambition": "string",
+    "priority_levers_to_drive_margin_uplift": [
+      "string"
+    ],
+    "plan_for_commercial_model_transformation": [
+      "string"
+    ]
   }
+}`
+  },
+  {
+    id: "investment_plan",
+    title: "Investment Plan",
+    description: "Generate an investment plan overview.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "investment_plan",
+  "data": {
+    "investments": [
+      { "investment_number": 1, "investment_type": "Billing investment", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 2, "investment_type": "Buffers", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 3, "investment_type": "Innovation", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 4, "investment_type": "Free resources", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 5, "investment_type": "Marketing investments / relationship building", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 6, "investment_type": "Travel investments", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" }
+    ],
+    "total_investment_value": "string"
+  }
+}`
+  },
+
+    {
+    id: "innovation_strategy",
+    title: "Innovation Strategy",
+    description: "Outline the innovation and GenAI strategy.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "innovation_strategy",
+  "data": {
+    "current_outlook_on_ai": "string",
+    "top_motivations_for_genai": "string",
+    "top_genai_projects": "string",
+    "other_innovation_projects": "string",
+    "high_value_use_cases": "string"
+  }
+}`
+  },
+  {
+    id: "tech_spend_view",
+    title: "Tech Spend View",
+    description: "Map out the technology spend and priorities.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "tech_spend_view",
+  "data": {
+    "rows": [
+      { "id": 1, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 2, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 3, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 4, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 5, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 6, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" }
+    ],
+    "geoRevenue": [
+      { "l": "Americas", "v": "string" },
+      { "l": "EMEA", "v": "string" },
+      { "l": "APAC", "v": "string" },
+      { "l": "Others", "v": "string" }
+    ],
+    "geoTalent": [
+      { "geo": "Americas", "val": "string" },
+      { "geo": "EMEA", "val": "string" },
+      { "geo": "APAC", "val": "string" }
+    ],
+    "geoPriorities": [
+      { "geo": "Americas", "val": "string" },
+      { "geo": "EMEA", "val": "string" },
+      { "geo": "APAC", "val": "string" }
+    ]
+  }
+}`
+  },
+  {
+    id: "talent_excellence_overview",
+    title: "Talent Excellence",
+    description: "Generate a talent excellence overview.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+   "template_type": "talent_excellence_overview",
+   "data": {
+    "overviewRows": [
+      { "id": 1, "metric": "Overall headcount", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 2, "metric": "% gender representation", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 3, "metric": "Attrition % LTM", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 4, "metric": "Average tenure (no. of years)", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 5, "metric": "# of associates with tenure >18 months", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 6, "metric": "ESAT", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
+    ],
+    "demandRows": [
+      { "id": 1, "metric": "Total open demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 2, "metric": "Overdue demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 3, "metric": "Fulfilment % ONS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 4, "metric": "Fulfilment % OFS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 5, "metric": "% external fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 6, "metric": "Fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 7, "metric": "Delivery on time %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 8, "metric": "SLA %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 9, "metric": "Average time to billability", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 10, "metric": "Client interview %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
+    ],
+    "insights": "string"
+   }
+}`
+  }
+
 ];
  

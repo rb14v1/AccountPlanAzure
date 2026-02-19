@@ -21,6 +21,7 @@ const ALLOWED_TEMPLATES = [
   "service_line_growth",
   "operational_excellence",
   "service_line_penetration",
+  
   "customer_profile",
   "investment_plan",
   "account_dashboard",

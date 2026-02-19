@@ -11,7 +11,6 @@ from .views import (
     get_chat_messages,
 )
 
-
 router = DefaultRouter()
 
 urlpatterns = [
@@ -32,8 +31,6 @@ urlpatterns = [
     path("chats", list_chats),
     path("chats/<int:chat_id>", get_chat_messages),
 
-    # path("relationship-heatmap/", views.relationship_heatmap_get),
-    # path("relationship-heatmap/save_heatmap/", views.relationship_heatmap_save),
     # =========================================================================
     # ALL TEMPLATES - Mapped to the single dynamic view using kwargs!
     # =========================================================================
@@ -82,16 +79,15 @@ urlpatterns = [
     path("implementation-plan/", views.template_payload_detail, kwargs={"template_type": "implementation_plan"}),
     path("implementation-plan/save/", views.template_payload_detail, kwargs={"template_type": "implementation_plan"}),
 
-    # path("implementation-plan/", views.implementation_plan_get),
-    # path("implementation-plan/save/", views.implementation_plan_save),
-
-    path("operational-implementation-plan/", views.operational_implementation_plan_get),
-    path("operational-implementation-plan/save/", views.operational_implementation_plan_save),
+    # 12. Operational Implementation Plan (FIXED THIS SECTION)
+    path("operational-implementation-plan/", views.template_payload_detail, kwargs={"template_type": "operational_implementation_plan"}),
+    path("operational-implementation-plan/save/", views.template_payload_detail, kwargs={"template_type": "operational_implementation_plan"}),
     
-    # 12. Service Line Penetration
+    # 13. Service Line Penetration
     path("service-line-penetration/", views.template_payload_detail, kwargs={"template_type": "service_line_penetration"}),
     path("service-line-penetration/save/", views.template_payload_detail, kwargs={"template_type": "service_line_penetration"}),
-    # 13. Account Team Pod
+
+    # 14. Account Team Pod
     path("account-team-pod/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
     path("account-team-pod/save/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
 ]
