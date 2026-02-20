@@ -1,6 +1,38 @@
 # backend/api/normalizers.py
 import ast
 
+def normalize_account_team_pod(obj: dict) -> dict:
+    raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
+    if not isinstance(raw_data, dict):
+        raw_data = {}
+
+    def _clean_section(section_name, expected_keys):
+        section_data = raw_data.get(section_name) or {}
+        if not isinstance(section_data, dict):
+            section_data = {}
+        
+        clean_section = {}
+        for key in expected_keys:
+            row = section_data.get(key) or {}
+            if not isinstance(row, dict):
+                row = {}
+            clean_section[key] = {
+                "Accountable_POC": str(row.get("Accountable_POC") or "TBD"),
+                "Time_Commitment": str(row.get("Time_Commitment") or "TBD")
+            }
+        return clean_section
+
+    sales_keys = ["Client_Partner", "Delivery_Manager", "Digital_and_Cloud_POC", "SRG_POC", "EA_POC", "Data_POC"]
+    functional_keys = ["Presales_Lead", "Marketing_POC", "Partnerships_POC", "AI_and_Innovation_Lead", "Delivery_Excellence_Lead", "Talent_Supply_Chain_POC", "L_and_D_Lead"]
+
+    return {
+        "template_type": "account_team_pod",
+        "data": {
+            "Sales_and_Delivery_Leads": _clean_section("Sales_and_Delivery_Leads", sales_keys),
+            "Functional_POCs": _clean_section("Functional_POCs", functional_keys)
+        }
+    }
+
 def normalize_customer_profile(obj: dict) -> dict:
     raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else obj
     if not isinstance(raw_data, dict):
@@ -262,6 +294,7 @@ def normalize_tech_spend(obj: dict) -> dict:
 
 # Registry mapping string names to normalizer functions
 NORMALIZER_REGISTRY = {
+    "account_team_pod": normalize_account_team_pod,
     "customer_profile": normalize_customer_profile,
     "innovation_strategy": normalize_innovation_strategy,
     "talent_excellence_overview": normalize_talent_excellence,

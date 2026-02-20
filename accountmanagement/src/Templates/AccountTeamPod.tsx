@@ -73,7 +73,7 @@ const HEADER_BG = "#000000";
 const HEADER_TEXT = "#FFFFFF";
 const SUB_HEADER_BG = "#E0E0E0";
 
-const TEMPLATE_NAME = "Account_Team_POD";
+const TEMPLATE_NAME = "account_team_pod";
 
 const RoleCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: TEAL_COLOR,
@@ -150,12 +150,19 @@ const PodTable: React.FC<PodTableProps> = ({
         <NumberCell align="center">{row.id}</NumberCell>
         <RoleCell>{row.role}</RoleCell>
         <TableCell
-          sx={{ borderRight: "1px solid #ddd", borderBottom: "1px solid #ddd" }}
+          sx={{
+            borderRight: "1px solid #ddd",
+            borderBottom: "1px solid #ddd",
+            verticalAlign: "top",
+            overflow: "hidden",
+          }}
         >
           {isEditing ? (
             <TextField
               size="small"
               fullWidth
+              multiline
+              minRows={1}
               value={poc}
               onChange={(e) =>
                 onChange(
@@ -167,14 +174,24 @@ const PodTable: React.FC<PodTableProps> = ({
               }
             />
           ) : (
-            poc
+            <Typography sx={{ fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+              {poc}
+            </Typography>
           )}
         </TableCell>
-        <TableCell sx={{ borderBottom: "1px solid #ddd" }}>
+        <TableCell
+          sx={{
+            borderBottom: "1px solid #ddd",
+            verticalAlign: "top",
+            overflow: "hidden",
+          }}
+        >
           {isEditing ? (
             <TextField
               size="small"
               fullWidth
+              multiline
+              minRows={1}
               value={commitment}
               onChange={(e) =>
                 onChange(
@@ -186,7 +203,9 @@ const PodTable: React.FC<PodTableProps> = ({
               }
             />
           ) : (
-            commitment
+            <Typography sx={{ fontSize: 13, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+              {commitment}
+            </Typography>
           )}
         </TableCell>
       </TableRow>
@@ -204,12 +223,20 @@ const PodTable: React.FC<PodTableProps> = ({
       <TableContainer
         component={Paper}
         elevation={0}
-        sx={{ border: "1px solid #ccc", overflowX: "auto" }}
+        sx={{ border: "1px solid #ccc", width: "max-content" }}
       >
         <Table
           size="small"
-          sx={{ minWidth: 520, borderCollapse: "separate", borderSpacing: 0 }}
+          sx={{ width: "520px", tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}
         >
+          {/* 🔥 STRENGTHENS THE TABLE WIDTHS SO IT CANNOT STRETCH */}
+          <colgroup>
+            <col style={{ width: "48px" }} />
+            <col style={{ width: "150px" }} />
+            <col style={{ width: "161px" }} />
+            <col style={{ width: "161px" }} />
+          </colgroup>
+
           <TableHead>
             <TableRow>
               <NumberCell>#</NumberCell>
@@ -246,7 +273,7 @@ const PodTable: React.FC<PodTableProps> = ({
 const AccountTeamPod: React.FC = () => {
   const { globalData, setGlobalData } = useData();
 
-  const podData = globalData?.Account_Team_POD;
+  const podData = globalData?.account_team_pod;
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -261,6 +288,12 @@ const AccountTeamPod: React.FC = () => {
 
   const editable = useEditableTable(podData || {});
 
+  useEffect(() => {
+    if (podData && !editable.isEditing) {
+      editable.updateDraft(podData);
+    }
+  }, [podData]);
+
   // STEP 1: Load data from database when component mounts
   useEffect(() => {
     const loadDataFromDB = async () => {
@@ -270,7 +303,6 @@ const AccountTeamPod: React.FC = () => {
       setInitialLoading(true);
 
       try {
-        // 🚨 FIX 1: Send user_id so it fetches correct data from DB
         const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
         const response = await fetch(`${API_BASE_URL}/account-team-pod/?user_id=${userId}`, {
           method: "GET",
@@ -286,7 +318,7 @@ const AccountTeamPod: React.FC = () => {
           if (dbData && Object.keys(dbData).length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Account_Team_POD: dbData,
+              account_team_pod: dbData,
             }));
             dataLoadedFromDB.current = true;
           } else {
@@ -306,19 +338,16 @@ const AccountTeamPod: React.FC = () => {
   // STEP 2: Auto-save when NEW data arrives from chatbot
   useEffect(() => {
     const autoSaveToDatabase = async () => {
-      // Skip if data was loaded from DB
       if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
         console.log("Account team POD already in DB, skipping auto-save");
         return;
       }
 
-      // Check if we have valid data
       const hasValidData =
         podData &&
         (podData.Sales_and_Delivery_Leads ||
           podData.Functional_POCs);
 
-      // Check if data is NEW (no ID means fresh from chatbot)
       const isNewDataFromChatbot = podData && !podData.id;
 
       if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
@@ -328,7 +357,6 @@ const AccountTeamPod: React.FC = () => {
         try {
           console.log("Sending account team POD to backend:", podData);
 
-          // 🚨 FIX 2: Wrap payload and correct URL to save/
           const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
           const payload = {
             user_id: userId,
@@ -352,7 +380,7 @@ const AccountTeamPod: React.FC = () => {
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
-              Account_Team_POD: result.data,
+              account_team_pod: result.data,
             }));
 
             setSnackbar({
@@ -388,7 +416,6 @@ const AccountTeamPod: React.FC = () => {
     try {
       console.log("Manual save - sending account team POD:", editable.draftData);
 
-      // 🚨 FIX 3: Wrap payload and correct URL to save/
       const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
       const payload = {
         user_id: userId,
@@ -412,7 +439,7 @@ const AccountTeamPod: React.FC = () => {
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
-          Account_Team_POD: result.data,
+          account_team_pod: result.data,
         }));
 
         editable.saveEdit(() => {
@@ -557,7 +584,6 @@ const AccountTeamPod: React.FC = () => {
           className="template-section"
           sx={{ mt: 2, mx: "auto" }}
         >
-          {/* 🚨 Added pdf-section wrapper so download works */}
           <Box className="pdf-section">
             <Typography variant="h4" sx={{ fontWeight: 700, color: "#008080", mb: 3 }}>
               Account Team POD

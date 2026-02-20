@@ -264,9 +264,23 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "account_team_pod": {
         "template_type": "account_team_pod",
         "data": {
-            "team_structure": [""],
-            "roles_and_responsibilities": [""],
-            "key_contacts": [""],
+            "Sales_and_Delivery_Leads": {
+                "Client_Partner": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Delivery_Manager": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Digital_and_Cloud_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "SRG_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "EA_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Data_POC": {"Accountable_POC": "", "Time_Commitment": ""}
+            },
+            "Functional_POCs": {
+                "Presales_Lead": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Marketing_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Partnerships_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "AI_and_Innovation_Lead": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Delivery_Excellence_Lead": {"Accountable_POC": "", "Time_Commitment": ""},
+                "Talent_Supply_Chain_POC": {"Accountable_POC": "", "Time_Commitment": ""},
+                "L_and_D_Lead": {"Accountable_POC": "", "Time_Commitment": ""}
+            }
         },
     },
 

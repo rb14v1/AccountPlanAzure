@@ -110,14 +110,15 @@ def detect_template_type_from_query(query: str) -> str:
             "driving growth", "improve quality", "sustainability",
             "inorganic opportunities"
         ],
-        "strategic_partnerships": [
-            "strategic partnership", "partner", "sell with revenue",
-            "key engagement", "support needed"
-        ],
         "account_team_pod": [
             "account team", "pod", "sales lead", "delivery lead",
-            "functional poc", "team structure"
+            "functional poc", "team structure", "client partner"
         ],
+        "strategic_partnerships": [
+            "strategic partnership", "strategic partner", "sell with revenue",
+            "key engagement", "support needed"
+        ],
+        
         "service_line_growth_actions": [
             "service line", "growth actions", "growth plan", "cloud transformation",
             "data modernization", "ai capabilities", "managed services", "srg"
