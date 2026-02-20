@@ -3,13 +3,15 @@ import { Box, Typography, Button, IconButton } from "@mui/material";
 import { SIDEBAR_WIDTH, COLLAPSED_WIDTH } from "./constants";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
- 
+import DeleteIcon from "@mui/icons-material/Delete";
+
 interface SidebarProps {
   open: boolean;
   chatList?: any[];
   activeChatId: number | null;
   onOpenChat: (id: number) => void;
   onNewChat: () => void;
+  onDeleteChat: (id: number) => void;
 }
  
 const Sidebar: React.FC<SidebarProps> = ({
@@ -18,6 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   activeChatId,
   onOpenChat,
   onNewChat,
+  onDeleteChat,   // ✅ ADD THIS
 }) => {
  
   const [isOpen, setIsOpen] = useState(false);
@@ -146,40 +149,71 @@ const Sidebar: React.FC<SidebarProps> = ({
             </Typography>
  
             {chatList.map((chat) => (
-              <Button
-  key={chat?.id}
-  fullWidth
-  onClick={() => onOpenChat(chat.id)}
-  sx={{
-    justifyContent: "flex-start",
-    textTransform: "none",
-    mb: 0.5,
-    px: 1.5,
-    py: 1,
-    borderRadius: 2,
-    transition: "all 0.2s ease",
- 
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
- 
-    backgroundColor:
-      activeChatId === chat.id ? "#14b8a6" : "transparent",
-    color:
-      activeChatId === chat.id ? "#ffffff" : "#134e4a",
- 
-    "&:hover": {
+              <Box
+    key={chat?.id}
+    sx={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      mb: 0.5,
+      borderRadius: 2,
+
       backgroundColor:
-        activeChatId === chat.id
-          ? "#14b8a6"
-          : "#ccfbf1",
-    },
-  }}
->
-  {getShortTitle(chat.title)}
-</Button>
- 
-            ))}
+        activeChatId === chat.id ? "#14b8a6" : "transparent",
+
+      "&:hover": {
+        backgroundColor:
+          activeChatId === chat.id
+            ? "#14b8a6"
+            : "#ccfbf1",
+      },
+    }}
+  >
+    {/* Chat Button (UNCHANGED LOGIC) */}
+    <Button
+      fullWidth
+      onClick={() => onOpenChat(chat.id)}
+      sx={{
+        flex: 1,
+        justifyContent: "flex-start",
+        textTransform: "none",
+        px: 1.5,
+        py: 1,
+        borderRadius: 2,
+
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+
+        color:
+          activeChatId === chat.id ? "#ffffff" : "#134e4a",
+      }}
+    >
+      {getShortTitle(chat.title)}
+    </Button>
+
+    {/* DELETE ICON (NEW FEATURE) */}
+    <IconButton
+      size="small"
+      onClick={(e) => {
+        e.stopPropagation();   // 🚨 prevents opening chat
+        onDeleteChat(chat.id);
+      }}
+      sx={{
+        mr: 1,
+        color:
+          activeChatId === chat.id ? "#ffffff" : "#134e4a",
+
+        "&:hover": {
+          color: "#ef4444",
+        },
+      }}
+    >
+      <DeleteIcon fontSize="small" />
+    </IconButton>
+  </Box>
+))}
+
           </>
         )}
       </Box>

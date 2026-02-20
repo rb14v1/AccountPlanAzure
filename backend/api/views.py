@@ -70,6 +70,18 @@ def _save_payload(user_id: str, company_name: str, template_type: str, payload: 
     )
     return obj
 
+@csrf_exempt
+def delete_chat(request, chat_id):
+    if request.method != "DELETE":
+        return JsonResponse({"error": "DELETE only"}, status=405)
+
+    try:
+        chat = ChatSession.objects.get(id=chat_id)
+        chat.delete()
+        return JsonResponse({"success": True})
+    except ChatSession.DoesNotExist:
+        return JsonResponse({"error": "Chat not found"}, status=404)
+
 def save_message(chat, sender, text):
     """Helper to save chat history."""
     if chat:

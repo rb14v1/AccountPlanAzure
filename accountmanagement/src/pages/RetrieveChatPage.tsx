@@ -130,7 +130,29 @@ const RetrieveChatPage: React.FC = () => {
   }
 };
  
- 
+// DELETE CHAT FUNCTION
+const handleDeleteChat = async (id: number) => {
+  try {
+    console.log("Deleting chat:", id);
+
+    // Call backend API
+    await api.delete(`/chats/${id}/delete`);
+
+
+    // Remove from UI
+    setChatList((prev) => prev.filter((chat) => chat.id !== id));
+
+    // If current chat is deleted → reset
+    if (currentChatId === id) {
+      setCurrentChatId(null);
+      setMessages([]);
+      localStorage.removeItem("activeChatId");
+    }
+
+  } catch (err) {
+    console.error("Error deleting chat", err);
+  }
+};
  
   const toDisplayText = (val: any): string => {
     if (val === null || val === undefined) return "";
@@ -405,10 +427,13 @@ const response = await api.post("/chat", {
         <Sidebar
   open={isSidebarOpen}
   chatList={chatList}
+  activeChatId={currentChatId}   // ⭐ REQUIRED
   onOpenChat={openChat}
   onNewChat={handleNewChat}
+  onDeleteChat={handleDeleteChat}   // ⭐ REQUIRED
 />
  
+
  
  
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -465,14 +490,24 @@ const response = await api.post("/chat", {
               <Button
                 onClick={() => handleSend()}
                 sx={{
-                  bgcolor: PRIMARY_TEAL,
-                  borderRadius: 4,
-                  minWidth: "40px",
-                  width: "40px",
-                  height: "40px",
-                  p: 0,
-                  "&:hover": { bgcolor: "#006b30" },
-                }}
+  background: "linear-gradient(135deg, #14b8a6, #0f766e)",
+  color: "#ffffff",
+  borderRadius: "50%",
+  minWidth: "42px",
+  width: "42px",
+  height: "42px",
+  p: 0,
+  boxShadow: "0 2px 6px rgba(20,184,166,0.4)",
+ 
+  "&:hover": {
+    background: "linear-gradient(135deg, #0f766e, #115e59)",
+  },
+ 
+  "&:active": {
+    transform: "scale(0.95)",
+  },
+}}
+ 
               >
                 ➤
               </Button>

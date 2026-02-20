@@ -29,7 +29,8 @@ urlpatterns = [
 
     path("chats/new", create_chat),
     path("chats", list_chats),
-    path("chats/<int:chat_id>", get_chat_messages),
+    path("chats/<int:chat_id>", views.get_chat_messages),  # GET
+    path("chats/<int:chat_id>/delete", views.delete_chat),
 
     # =========================================================================
     # ALL TEMPLATES - Mapped to the single dynamic view using kwargs!
