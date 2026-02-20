@@ -24,6 +24,8 @@ const ALLOWED_TEMPLATES = [
   "customer_profile",
   "investment_plan",
   "account_dashboard",
+  "tech_spend_view", // ✅ ADDED THIS
+  "relationship_heatmap" // ✅ ADDED THIS FOR YOUR OTHER TEMPLATE
 ] as const;
  
 const RetrieveChatPage: React.FC = () => {
@@ -293,7 +295,13 @@ const response = await api.post("/chat", {
           // ✅ UNIVERSAL MAPPING: Capture any template type and normalize for the Data button
           const rawType = respData.template_type || respData.payload?.template_type;
           if (rawType) {
-            const routeName = rawType.toLowerCase().replace(/_/g, "-");
+            let routeName = rawType.toLowerCase().replace(/_/g, "-");
+            
+            // 🚀 FIX: Map backend names to your exact frontend MainLayout tab IDs
+            if (routeName === "tech-spend-view") routeName = "tech-spend";
+            // Add other fixes here if needed, e.g.:
+            // if (routeName === "relationship-heatmap-view") routeName = "relationship-heatmap";
+
             localStorage.setItem("last_detected_template", routeName);
           }
  
@@ -477,15 +485,43 @@ const response = await api.post("/chat", {
              
  
               <TextField
-                fullWidth
-                multiline
-                maxRows={4}
-                placeholder="Type your query..."
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={handleKeyPress}
-                inputRef={textInputRef}
-              />
+  fullWidth
+  multiline
+  maxRows={4}
+  placeholder="Type your query..."
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+  onKeyDown={handleKeyPress}
+  inputRef={textInputRef}
+  sx={{
+    "& .MuiInputBase-root": {
+      maxHeight: "120px",   // ensures scroll appears
+      overflowY: "auto",
+
+      /* ===== SCROLLBAR ===== */
+
+      /* Chrome, Edge, Safari */
+      "&::-webkit-scrollbar": {
+        width: "6px",
+      },
+      "&::-webkit-scrollbar-track": {
+        background: "transparent",
+      },
+      "&::-webkit-scrollbar-thumb": {
+        background: "transparent",
+        borderRadius: "10px",
+      },
+      "&:hover::-webkit-scrollbar-thumb": {
+        background: "rgba(0,0,0,0.2)",
+      },
+
+      /* Firefox */
+      scrollbarWidth: "thin",
+      scrollbarColor: "transparent transparent",
+    },
+  }}
+/>
+
  
               <Button
                 onClick={() => handleSend()}

@@ -20,12 +20,12 @@ import {
 import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
-
+ 
 const API_BASE_URL = "http://localhost:8000/api";
 const TEMPLATE_NAME = "tech_spend_view";
-
+ 
 // --- STYLED COMPONENTS ---
-
+ 
 const PageWrapper = styled(Box)({
   display: "flex",
   flexDirection: "column",
@@ -38,14 +38,14 @@ const PageWrapper = styled(Box)({
   width: "100%",
   paddingBottom: "50px"
 });
-
+ 
 const SectionTitle = styled(Typography)({
   color: "#00a99d",
   fontWeight: 800,
   fontSize: "1.4rem",
   marginBottom: "16px",
 });
-
+ 
 const StyledTableCell = styled(TableCell)<{ head?: boolean }>(({ head }) => ({
   border: "1px solid #333",
   // ✅ FIX: padding set to 0 for body cells to allow color fill to touch borders
@@ -57,7 +57,7 @@ const StyledTableCell = styled(TableCell)<{ head?: boolean }>(({ head }) => ({
   textAlign: "center",
   lineHeight: 1.1,
 }));
-
+ 
 // ✅ FIX: Updated to fill the whole box height/width
 const StatusCell = styled(Box)<{ color: string }>(({ color }) => ({
   width: "100%",
@@ -68,7 +68,7 @@ const StatusCell = styled(Box)<{ color: string }>(({ color }) => ({
   alignItems: "center",
   justifyContent: "center",
 }));
-
+ 
 const FormatLockedInput = styled(TextField)({
   width: '100%',
   '& .MuiInputBase-input': {
@@ -90,7 +90,7 @@ const FormatLockedInput = styled(TextField)({
     backgroundColor: '#f5f5f5',
   }
 });
-
+ 
 // --- NEW STYLED COMPONENTS FOR LEGEND ---
 const LegendWrapper = styled(Box)({
   display: "flex",
@@ -99,7 +99,7 @@ const LegendWrapper = styled(Box)({
   paddingLeft: "10px",
   alignItems: "center"
 });
-
+ 
 const LegendItem = styled(Box)({
   display: "flex",
   alignItems: "center",
@@ -115,23 +115,24 @@ const LegendItem = styled(Box)({
     fontWeight: 500
   }
 });
-
+ 
 const PRESENCE_OPTIONS = [
   { label: 'Deep presence', color: '#92d050' },
   { label: 'Focus area for growth', color: '#e5a51a' },
   { label: 'Not a priority / synergistic with client focus', color: '#e05a6d' },
 ];
-
+ 
 const TechSpendView: React.FC = () => {
+ 
   const { globalData, setGlobalData } = useData();
   const userId = globalData?.user_id || localStorage.getItem("user_id");
   const dataLoaded = useRef(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
-
+ 
   const [graphDialogOpen, setGraphDialogOpen] = useState(false);
   const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [tempGraphValue, setTempGraphValue] = useState({ l: "", v: "" });
-
+ 
   const handleBarClick = (index: number) => {
     if (!editable.isEditing) return;
     const bar = editable.draftData.geoRevenue[index];
@@ -139,25 +140,25 @@ const TechSpendView: React.FC = () => {
     setTempGraphValue({ l: bar.l, v: bar.v });
     setGraphDialogOpen(true);
   };
-
+ 
   const handleGraphSave = () => {
     if (selectedBarIndex === null) return;
-
+ 
     const updated = [...editable.draftData.geoRevenue];
     updated[selectedBarIndex] = {
       ...updated[selectedBarIndex],
       l: tempGraphValue.l,
       v: tempGraphValue.v,
     };
-
+ 
     editable.updateDraft({
       ...editable.draftData,
       geoRevenue: updated,
     });
-
+ 
     setGraphDialogOpen(false);
   };
-
+ 
   const defaultData = {
     rows: [
       { id: 1, name: "BU1", desc: "", size: "", growth: "", spend: "", priorities: "", presence: "#92d050", incumbent: "" },
@@ -184,28 +185,28 @@ const TechSpendView: React.FC = () => {
       { geo: "APAC", val: "• XX" },
     ]
   };
-
+ 
   const techData = globalData?.tech_spend_view || defaultData;
   const editable = useEditableTable(techData);
-
+ 
   const getGraphData = () => {
     const data = editable.draftData.geoRevenue || [];
     const values = data.map((d: any) => parseFloat(d.v) || 0);
     const max = Math.max(...values, 10);
-
+ 
     return data.map((d: any) => ({
       ...d,
       heightPercent: `${((parseFloat(d.v) || 0) / max) * 100}%`
     }));
   };
-
+ 
   useEffect(() => {
     const fetchData = async () => {
       if (dataLoaded.current) return;
       try {
         const res = await fetch(`${API_BASE_URL}/tech-spend/?user_id=${userId}`);
         const dbData = await res.json();
-
+ 
         if (dbData && dbData.rows) {
           editable.updateDraft(dbData);
           setGlobalData((prev: any) => ({ ...prev, tech_spend_view: dbData }));
@@ -217,7 +218,7 @@ const TechSpendView: React.FC = () => {
     };
     fetchData();
   }, [userId]);
-
+ 
   const EditableOutlinedBox = styled(Box)<{ editing?: boolean }>(({ editing }) => ({
     border: editing ? "1px solid #cfcfcf" : "none",
     borderRadius: 6,
@@ -225,28 +226,28 @@ const TechSpendView: React.FC = () => {
     backgroundColor: "#fff",
     transition: "all 0.2s ease",
   }));
-
-
+ 
+ 
   const handleSave = async () => {
     try {
       const payload = {
         user_id: userId,
         ...editable.draftData
       };
-
+ 
       const response = await fetch(`${API_BASE_URL}/tech-spend/save/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
+ 
       if (!response.ok) throw new Error("Failed to save");
-
+ 
       setGlobalData((prev: any) => ({
         ...prev,
         [TEMPLATE_NAME]: editable.draftData
       }));
-
+ 
       editable.saveEdit(() => { });
       setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
     } catch (e) {
@@ -254,27 +255,27 @@ const TechSpendView: React.FC = () => {
       setSnackbar({ open: true, message: "❌ Failed to save", severity: "error" });
     }
   };
-
+ 
   const handleRowChange = (index: number, field: string, value: string) => {
     const updated = [...editable.draftData.rows];
     updated[index] = { ...updated[index], [field]: value };
     editable.updateDraft({ ...editable.draftData, rows: updated });
   };
-
+ 
   const handleGeoChange = (section: string, index: number, field: string, value: string) => {
     const updated = [...editable.draftData[section]];
     updated[index] = { ...updated[index], [field]: value };
     editable.updateDraft({ ...editable.draftData, [section]: updated });
   };
-
+ 
   const graphData = getGraphData();
-
+ 
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
       <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
         <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
       </Snackbar>
-
+ 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', p: 1, gap: 2 }}>
         <DownloadTemplates templateName={TEMPLATE_NAME} />
         {!editable.isEditing ? (
@@ -318,25 +319,25 @@ const TechSpendView: React.FC = () => {
           </>
         )}
       </Box>
-
+ 
       <PageWrapper id="template-to-download">
         <Box className="pdf-section">
         <SectionTitle>Tech spend breakdown by client BU and Geography</SectionTitle>
-
+ 
         <Box sx={{ display: "flex", flexDirection: "row", width: "100%", gap: 2, alignItems: "flex-start" }}>
-
+ 
           <Box sx={{ width: "70%", display: "flex", flexDirection: "column" }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 1 }}>Business unit view: Key highlights</Typography>
-
+ 
             <TableContainer component={Paper} elevation={0} sx={{ border: "1px solid #333", borderRadius: 0, overflow: "visible" }}>
               <Table size="small" sx={{ tableLayout: 'fixed' }}>
                 <TableHead>
                   <TableRow>
                     <StyledTableCell head sx={{ width: "40px" }}>#</StyledTableCell>
-                    <StyledTableCell head sx={{ width: "18%" }}>Business unit</StyledTableCell>
+                    <StyledTableCell head sx={{ width: "12%" }}>Business unit</StyledTableCell>
                     <StyledTableCell head>Description</StyledTableCell>
                     <StyledTableCell head sx={{ width: "8%" }}>Size (€Mn)</StyledTableCell>
-                    <StyledTableCell head sx={{ width: "8%" }}>Growth (%)</StyledTableCell>
+                    <StyledTableCell head sx={{ width: "12%" }}>Growth (%)</StyledTableCell>
                     <StyledTableCell head sx={{ width: "12%" }}>O/S Services spend</StyledTableCell>
                     <StyledTableCell head>Priorities</StyledTableCell>
                     <StyledTableCell head sx={{ width: "10%" }}>client presence</StyledTableCell>
@@ -364,7 +365,7 @@ const TechSpendView: React.FC = () => {
                       <StyledTableCell sx={{ px: "4px" }}>{editable.isEditing ? (<EditableOutlinedBox editing> <FormatLockedInput value={row.growth} onChange={(e) => handleRowChange(i, 'growth', e.target.value)} /> </EditableOutlinedBox>) : row.growth}</StyledTableCell>
                       <StyledTableCell sx={{ px: "4px" }}>{editable.isEditing ? (<EditableOutlinedBox editing> <FormatLockedInput value={row.spend} onChange={(e) => handleRowChange(i, 'spend', e.target.value)} /> </EditableOutlinedBox>) : row.spend}</StyledTableCell>
                       <StyledTableCell sx={{ px: "4px" }}>{editable.isEditing ? (<EditableOutlinedBox editing> <FormatLockedInput value={row.priorities} onChange={(e) => handleRowChange(i, 'priorities', e.target.value)} /> </EditableOutlinedBox>) : row.priorities}</StyledTableCell>
-
+ 
                       {/* CLIENT PRESENCE: FULL COLOR FILL */}
                       <StyledTableCell sx={{ padding: 0, height: '1px' }}>
                         {/* height: '1px' on the cell allows the child Box to fill 100% of the actual row height */}
@@ -400,8 +401,8 @@ const TechSpendView: React.FC = () => {
                                   }
                                 }}
                               >
-
-
+ 
+ 
                                 <MenuItem value=""><em>None</em></MenuItem>
                                 {PRESENCE_OPTIONS.map((opt) => (
                                   <MenuItem key={opt.color} value={opt.color}>{opt.label}</MenuItem>
@@ -413,14 +414,14 @@ const TechSpendView: React.FC = () => {
                           <StatusCell color={row.presence} />
                         )}
                       </StyledTableCell>
-
+ 
                       <StyledTableCell sx={{ px: "4px" }}>{editable.isEditing ? (<EditableOutlinedBox editing> <FormatLockedInput value={row.incumbent} onChange={(e) => handleRowChange(i, 'incumbent', e.target.value)} /> </EditableOutlinedBox>) : row.incumbent}</StyledTableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
-
+ 
             {/* LEGEND SECTION */}
             <LegendWrapper>
               {PRESENCE_OPTIONS.map((opt) => (
@@ -431,7 +432,7 @@ const TechSpendView: React.FC = () => {
               ))}
             </LegendWrapper>
           </Box>
-
+ 
           <Box sx={{ width: "30%", display: "flex", flexDirection: "column", gap: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>Geography view: Key highlights</Typography>
             <Box sx={{ border: "1px solid #333", display: "flex", flexDirection: "column" }}>
@@ -456,7 +457,7 @@ const TechSpendView: React.FC = () => {
                     <Box sx={{ fontSize: "0.7rem", fontWeight: 700, mb: 0.5 }}>
                       {g.v}
                     </Box>
-
+ 
                     <Box
                       sx={{
                         height: g.heightPercent,
@@ -467,7 +468,7 @@ const TechSpendView: React.FC = () => {
                         outline: editable.isEditing ? "2px dashed #00a99d" : "none",
                       }}
                     />
-
+ 
                     <Typography sx={{ fontSize: "0.65rem", fontWeight: 800, mt: 0.5 }}>
                       {g.l}
                     </Typography>
@@ -521,7 +522,7 @@ const TechSpendView: React.FC = () => {
             <Typography fontWeight={700} mb={2}>
               Edit Graph Data
             </Typography>
-
+ 
             <TextField
               label="X-axis (Label)"
               fullWidth
@@ -532,7 +533,7 @@ const TechSpendView: React.FC = () => {
                 setTempGraphValue({ ...tempGraphValue, l: e.target.value })
               }
             />
-
+ 
             <TextField
               label="Y-axis (Value)"
               fullWidth
@@ -543,7 +544,7 @@ const TechSpendView: React.FC = () => {
                 setTempGraphValue({ ...tempGraphValue, v: e.target.value })
               }
             />
-
+ 
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 3 }}>
               <Button
                 onClick={() => setGraphDialogOpen(false)}
@@ -555,7 +556,7 @@ const TechSpendView: React.FC = () => {
               >
                 Cancel
               </Button>
-
+ 
               <Button
                 variant="contained"
                 onClick={handleGraphSave}
@@ -576,5 +577,6 @@ const TechSpendView: React.FC = () => {
     </Box>
   );
 };
-
+ 
 export default TechSpendView;
+ 
