@@ -78,7 +78,7 @@ export default function MainLayout() {
     { id: "client-context-2", label: "Client Context 2", icon: "bi-briefcase-fill" },
     { id: "customer-profile", label: "Customer Profile", icon: "bi-person-badge" },
     { id: "growth-strategy", label: "Growth Strategy", icon: "bi-graph-up" },
-    { id: "service-line-growth", label: "Service Line Growth", icon: "bi-bar-chart-line" },
+    { id: "service-line-growth-actions", label: "Service Line Growth", icon: "bi-bar-chart-line" },
     { id: "org-structure-tech", label: "Org & Tech View", icon: "bi-diagram-2" },
     { id: "relationship-heatmap", label: "Relationship Heatmap", icon: "bi-thermometer-half" },
     { id: "growth-opportunities", label: "Growth Opportunities", icon: "bi-lightbulb" },
@@ -109,7 +109,7 @@ export default function MainLayout() {
       case "customer-profile": return <CustomerProfile />;
       case "org-structure-tech": return <OrgStructureTechView />;
       case "relationship-heatmap": return <RelationshipHeatmap />;
-      case "service-line-growth": return <ServiceLineGrowth />;
+      case "service-line-growth-actions": return <ServiceLineGrowth />;
       case "growth-strategy": return <GrowthStrategy />;
       case "growth-opportunities": return <GrowthOpportunitiesPage />;
       case "implementation-plan": return <ImplementationPlanPage />;

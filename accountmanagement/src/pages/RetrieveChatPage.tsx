@@ -1,4 +1,4 @@
-// src/Components/ChatPage.tsx
+// src/Components/RetrieveChatPage.tsx
  
 import React, { useState, useEffect } from "react";
 import { Box, TextField, Button, IconButton } from "@mui/material";
@@ -18,10 +18,9 @@ const ALLOWED_TEMPLATES = [
   "growth_strategy",
   "strategic_partnerships",
   "account_team_pod",
-  "service_line_growth",
-  "operational_excellence",
+  "service_line_growth_actions",
+  "operational_excellence_strategy",
   "service_line_penetration",
-  
   "customer_profile",
   "investment_plan",
   "account_dashboard",

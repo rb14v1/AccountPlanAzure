@@ -21,21 +21,10 @@ import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
 const TEMPLATE_NAME = "investment_plan";
 
 // Define interfaces
-interface InvestmentItem {
-  investment_number: number;
-  investment_type: string;
-  investment_description: string;
-  investment_value_eur: string;
-  targeted_outcome: string;
-  primary_owner: string;
-  timeline_status: string;
-  remarks: string;
-}
-
 interface InvestmentRow {
   id: number;
   type: string;
@@ -124,10 +113,22 @@ const InvestmentPlan: React.FC = () => {
   const autoSaveAttempted = useRef(false);
   const dataLoadedFromDB = useRef(false);
 
+  // Helper to extract nested array safely from multiple possible backend keys
+  const extractItems = (dataObj: any): any[] => {
+    if (!dataObj) return [];
+    if (dataObj.data && Array.isArray(dataObj.data.investments)) return dataObj.data.investments;
+    if (dataObj.data && Array.isArray(dataObj.data.data)) return dataObj.data.data;
+    if (Array.isArray(dataObj.data)) return dataObj.data;
+    if (Array.isArray(dataObj.investments)) return dataObj.investments;
+    return [];
+  };
+
   // Transform data into rows format
   const initialData = React.useMemo(() => {
     let rows: InvestmentRow[];
-    if (!investmentData || !investmentData.data) {
+    const items = extractItems(investmentData);
+
+    if (items.length === 0) {
       rows = [
         {
           id: 1,
@@ -191,21 +192,21 @@ const InvestmentPlan: React.FC = () => {
         },
       ];
     } else {
-      rows = investmentData.data.map((item: InvestmentItem) => ({
-        id: item.investment_number,
-        type: item.investment_type,
-        desc: item.investment_description,
-        val: item.investment_value_eur,
-        outcome: item.targeted_outcome,
-        owner: item.primary_owner,
-        status: item.timeline_status,
-        remarks: item.remarks,
+      rows = items.map((item: any, index: number) => ({
+        id: item.investment_number || index + 1,
+        type: item.investment_type || "",
+        desc: item.investment_description || "",
+        val: item.investment_value_eur || item.investment_value || "",
+        outcome: item.targeted_outcome || "",
+        owner: item.primary_owner || "",
+        status: item.timeline_status || item.status || "To be discussed",
+        remarks: item.remarks || "",
       }));
     }
 
     return {
       rows,
-      totalValue: investmentData?.total_investment_value || "XX",
+      totalValue: investmentData?.data?.total_investment_value || investmentData?.total_investment_value || "XX",
     };
   }, [investmentData]);
 
@@ -215,20 +216,21 @@ const InvestmentPlan: React.FC = () => {
   // Update draft when investmentData changes (from chatbot)
   useEffect(() => {
     if (investmentData && !editable.isEditing) {
+      const items = extractItems(investmentData);
       const updatedData = {
-        rows: investmentData.data
-          ? investmentData.data.map((item: InvestmentItem) => ({
-              id: item.investment_number,
-              type: item.investment_type,
-              desc: item.investment_description,
-              val: item.investment_value_eur,
-              outcome: item.targeted_outcome,
-              owner: item.primary_owner,
-              status: item.timeline_status,
-              remarks: item.remarks,
+        rows: items.length > 0
+          ? items.map((item: any, index: number) => ({
+              id: item.investment_number || index + 1,
+              type: item.investment_type || "",
+              desc: item.investment_description || "",
+              val: item.investment_value_eur || item.investment_value || "",
+              outcome: item.targeted_outcome || "",
+              owner: item.primary_owner || "",
+              status: item.timeline_status || item.status || "To be discussed",
+              remarks: item.remarks || "",
             }))
           : initialData.rows,
-        totalValue: investmentData.total_investment_value || "XX",
+        totalValue: investmentData?.data?.total_investment_value || investmentData?.total_investment_value || "XX",
       };
       editable.updateDraft(updatedData);
     }
@@ -243,7 +245,8 @@ const InvestmentPlan: React.FC = () => {
       setInitialLoading(true);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/investment-plan/`, {
+        const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+        const response = await fetch(`${API_BASE_URL}/investment-plan/?user_id=${userId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -282,8 +285,8 @@ const InvestmentPlan: React.FC = () => {
         return;
       }
 
-      const hasValidData =
-        investmentData && investmentData.data && investmentData.data.length > 0;
+      const items = extractItems(investmentData);
+      const hasValidData = items.length > 0;
       const isNewDataFromChatbot = investmentData && !investmentData.id;
 
       if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
@@ -293,6 +296,16 @@ const InvestmentPlan: React.FC = () => {
         try {
           console.log("Sending investment plan to backend:", investmentData);
 
+          const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+          
+          const payload = {
+            user_id: userId,
+            data: {
+              investments: items,
+              total_investment_value: investmentData?.data?.total_investment_value || investmentData?.total_investment_value || "XX"
+            }
+          };
+
           const response = await fetch(
             `${API_BASE_URL}/investment-plan/save_plan/`,
             {
@@ -300,7 +313,7 @@ const InvestmentPlan: React.FC = () => {
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify(investmentData),
+              body: JSON.stringify(payload),
             }
           );
 
@@ -377,18 +390,23 @@ const InvestmentPlan: React.FC = () => {
   const handleManualSave = async () => {
     setLoading(true);
     try {
+      const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+
       const backendFormatted = {
-        data: editable.draftData.rows.map((row) => ({
-          investment_number: row.id,
-          investment_type: row.type,
-          investment_description: row.desc,
-          investment_value_eur: row.val,
-          targeted_outcome: row.outcome,
-          primary_owner: row.owner,
-          timeline_status: row.status,
-          remarks: row.remarks,
-        })),
-        total_investment_value: editable.draftData.totalValue,
+        user_id: userId,
+        data: {
+          investments: editable.draftData.rows.map((row: InvestmentRow) => ({
+            investment_number: row.id,
+            investment_type: row.type,
+            investment_description: row.desc,
+            investment_value_eur: row.val,
+            targeted_outcome: row.outcome,
+            primary_owner: row.owner,
+            timeline_status: row.status,
+            remarks: row.remarks,
+          })),
+          total_investment_value: editable.draftData.totalValue,
+        }
       };
 
       console.log("Manual save - sending investment plan:", backendFormatted);
@@ -442,6 +460,7 @@ const InvestmentPlan: React.FC = () => {
           justifyContent: "center",
           alignItems: "center",
           height: "400px",
+          width: "100%",
         }}
       >
         <CircularProgress />
@@ -459,7 +478,7 @@ const InvestmentPlan: React.FC = () => {
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
-          severity={snackbar.severity}
+          severity={snackbar.severity as any}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
           {snackbar.message}
@@ -533,255 +552,255 @@ const InvestmentPlan: React.FC = () => {
 
         {/* TABLE */}
         <Box id="template-to-download" className="template-section">
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: PRIMARY_TEAL,
-              mb: 2,
-            }}
-          >
-            Investment plan for next 12 months
-          </Typography>
+          <Box className="pdf-section">
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 700,
+                color: PRIMARY_TEAL,
+                mb: 2,
+              }}
+            >
+              Investment plan for next 12 months
+            </Typography>
 
-          {/* Status Legend */}
-          <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
-            {Object.entries(STATUS_COLORS).map(([label, color]) => (
-              <Box
-                key={label}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                }}
-              >
+            {/* Status Legend */}
+            <Box sx={{ display: "flex", gap: 2, mb: 2, flexWrap: "wrap" }}>
+              {Object.entries(STATUS_COLORS).map(([label, color]) => (
                 <Box
+                  key={label}
                   sx={{
-                    width: 20,
-                    height: 20,
-                    backgroundColor: color,
-                    border: "1px solid #000",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
                   }}
-                />
-                <Typography fontSize={12}>{label}</Typography>
-              </Box>
-            ))}
-          </Box>
+                >
+                  <Box
+                    sx={{
+                      width: 20,
+                      height: 20,
+                      backgroundColor: color,
+                      border: "1px solid #000",
+                    }}
+                  />
+                  <Typography fontSize={12}>{label}</Typography>
+                </Box>
+              ))}
+            </Box>
 
-          <TableContainer component={Paper} elevation={0}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  {headers.map((head, idx) => (
-                    <StyledTableCell key={idx} className="header">
-                      {head}
-                    </StyledTableCell>
+            <TableContainer component={Paper} elevation={0}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    {headers.map((head, idx) => (
+                      <StyledTableCell key={idx} className="header">
+                        {head}
+                      </StyledTableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {editable.draftData.rows.map((row: InvestmentRow, index: number) => (
+                    <TableRow key={row.id}>
+                      <StyledTableCell>{row.id}</StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            size="small"
+                            value={row.type}
+                            onChange={(e) =>
+                              handleRowChange(index, "type", e.target.value)
+                            }
+                          />
+                        ) : (
+                          row.type
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            multiline
+                            size="small"
+                            value={row.desc}
+                            onChange={(e) =>
+                              handleRowChange(index, "desc", e.target.value)
+                            }
+                          />
+                        ) : (
+                          row.desc
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            multiline
+                            minRows={1}
+                            maxRows={6}
+                            size="small"
+                            value={row.val}
+                            onChange={(e) =>
+                              handleRowChange(index, "val", e.target.value)
+                            }
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                alignItems: "flex-start",
+                              },
+                              "& textarea": {
+                                resize: "none",
+                                lineHeight: "1.4",
+                              },
+                            }}
+                          />
+                        ) : (
+                          row.val
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            multiline
+                            size="small"
+                            value={row.outcome}
+                            onChange={(e) =>
+                              handleRowChange(index, "outcome", e.target.value)
+                            }
+                          />
+                        ) : (
+                          row.outcome
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            multiline
+                            minRows={1}
+                            maxRows={6}
+                            size="small"
+                            value={row.owner}
+                            onChange={(e) =>
+                              handleRowChange(index, "owner", e.target.value)
+                            }
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                alignItems: "flex-start",
+                              },
+                              "& textarea": {
+                                resize: "none",
+                                lineHeight: "1.4",
+                              },
+                            }}
+                          />
+                        ) : (
+                          row.owner
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell
+                        className="status-cell"
+                        sx={{
+                          backgroundColor: STATUS_COLORS[row.status] || "#d9d9d9",
+                        }}
+                      >
+                        {editable.isEditing ? (
+                          <TextField
+                            select
+                            fullWidth
+                            size="small"
+                            value={row.status}
+                            onChange={(e) =>
+                              handleRowChange(index, "status", e.target.value)
+                            }
+                            sx={{
+                              "& .MuiInputBase-root": {
+                                color: "#fff",
+                                fontWeight: 700,
+                                backgroundColor: "transparent",
+                              },
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: "rgba(255,255,255,0.5)",
+                              },
+                              "& svg": {
+                                color: "#fff",
+                              },
+                            }}
+                          >
+                            {STATUS_OPTIONS.map((status) => (
+                              <MenuItem key={status} value={status}>
+                                {status}
+                              </MenuItem>
+                            ))}
+                          </TextField>
+                        ) : (
+                          row.status
+                        )}
+                      </StyledTableCell>
+
+                      <StyledTableCell>
+                        {editable.isEditing ? (
+                          <TextField
+                            fullWidth
+                            multiline
+                            size="small"
+                            value={row.remarks}
+                            onChange={(e) =>
+                              handleRowChange(index, "remarks", e.target.value)
+                            }
+                          />
+                        ) : (
+                          row.remarks
+                        )}
+                      </StyledTableCell>
+                    </TableRow>
                   ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {editable.draftData.rows.map((row, index) => (
-                  <TableRow key={row.id}>
-                    <StyledTableCell>{row.id}</StyledTableCell>
 
-                    <StyledTableCell>
-                      {editable.isEditing ? (
-                        <TextField
-                          fullWidth
-                          size="small"
-                          value={row.type}
-                          onChange={(e) =>
-                            handleRowChange(index, "type", e.target.value)
-                          }
-                        />
-                      ) : (
-                        row.type
-                      )}
+                  {/* Total Row */}
+                  <TableRow>
+                    <StyledTableCell colSpan={3} className="total-label">
+                      Total
                     </StyledTableCell>
-
-                    <StyledTableCell>
+                    <StyledTableCell className="total-value">
                       {editable.isEditing ? (
                         <TextField
                           fullWidth
-                          multiline
                           size="small"
-                          value={row.desc}
-                          onChange={(e) =>
-                            handleRowChange(index, "desc", e.target.value)
-                          }
-                        />
-                      ) : (
-                        row.desc
-                      )}
-                    </StyledTableCell>
-
-                    <StyledTableCell>
-  {editable.isEditing ? (
-    <TextField
-      fullWidth
-      multiline
-      minRows={1}
-      maxRows={6}
-      size="small"
-      value={row.val}
-      onChange={(e) =>
-        handleRowChange(index, "val", e.target.value)
-      }
-      sx={{
-        "& .MuiInputBase-root": {
-          alignItems: "flex-start",
-        },
-        "& textarea": {
-          resize: "none",
-          lineHeight: "1.4",
-        },
-      }}
-    />
-  ) : (
-    row.val
-  )}
-</StyledTableCell>
-
-
-                    <StyledTableCell>
-                      {editable.isEditing ? (
-                        <TextField
-                          fullWidth
-                          multiline
-                          size="small"
-                          value={row.outcome}
-                          onChange={(e) =>
-                            handleRowChange(index, "outcome", e.target.value)
-                          }
-                        />
-                      ) : (
-                        row.outcome
-                      )}
-                    </StyledTableCell>
-
-                    <StyledTableCell>
-  {editable.isEditing ? (
-    <TextField
-      fullWidth
-      multiline
-      minRows={1}
-      maxRows={6}
-      size="small"
-      value={row.owner}
-      onChange={(e) =>
-        handleRowChange(index, "owner", e.target.value)
-      }
-      sx={{
-        "& .MuiInputBase-root": {
-          alignItems: "flex-start",
-        },
-        "& textarea": {
-          resize: "none",
-          lineHeight: "1.4",
-        },
-      }}
-    />
-  ) : (
-    row.owner
-  )}
-</StyledTableCell>
-
-
-                    <StyledTableCell
-                      className="status-cell"
-                      sx={{
-                        backgroundColor: STATUS_COLORS[row.status] || "#d9d9d9",
-                      }}
-                    >
-                      {editable.isEditing ? (
-                        <TextField
-                          select
-                          fullWidth
-                          size="small"
-                          value={row.status}
-                          onChange={(e) =>
-                            handleRowChange(index, "status", e.target.value)
-                          }
+                          value={editable.draftData.totalValue}
+                          onChange={(e) => handleTotalValueChange(e.target.value)}
                           sx={{
                             "& .MuiInputBase-root": {
-                              color: "#fff",
+                              color: "white",
                               fontWeight: 700,
-                              backgroundColor: "transparent",
+                              textAlign: "center",
                             },
                             "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: "rgba(255,255,255,0.5)",
-                            },
-                            "& svg": {
-                              color: "#fff",
+                              borderColor: "rgba(255, 255, 255, 0.3)",
                             },
                           }}
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <MenuItem key={status} value={status}>
-                              {status}
-                            </MenuItem>
-                          ))}
-                        </TextField>
-                      ) : (
-                        row.status
-                      )}
-                    </StyledTableCell>
-
-                    <StyledTableCell>
-                      {editable.isEditing ? (
-                        <TextField
-                          fullWidth
-                          multiline
-                          size="small"
-                          value={row.remarks}
-                          onChange={(e) =>
-                            handleRowChange(index, "remarks", e.target.value)
-                          }
                         />
                       ) : (
-                        row.remarks
+                        editable.draftData.totalValue
                       )}
                     </StyledTableCell>
+                    <StyledTableCell colSpan={4}></StyledTableCell>
                   </TableRow>
-                ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
-                {/* Total Row */}
-                <TableRow>
-                  <StyledTableCell colSpan={3} className="total-label">
-                    Total
-                  </StyledTableCell>
-                  <StyledTableCell className="total-value">
-                    {editable.isEditing ? (
-                      <TextField
-                        fullWidth
-                        size="small"
-                        value={editable.draftData.totalValue}
-                        onChange={(e) => handleTotalValueChange(e.target.value)}
-                        sx={{
-                          "& .MuiInputBase-root": {
-                            color: "white",
-                            fontWeight: 700,
-                            textAlign: "center",
-                          },
-                          "& .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "rgba(255, 255, 255, 0.3)",
-                          },
-                        }}
-                      />
-                    ) : (
-                      editable.draftData.totalValue
-                    )}
-                  </StyledTableCell>
-                  <StyledTableCell colSpan={4}></StyledTableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-          <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
-            Classification: Controlled. Copyright ©2025 Version 1. All rights
-            reserved.
-          </Typography>
+            <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
+              Classification: Controlled. Copyright ©2025 Version 1. All rights
+              reserved.
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Box>

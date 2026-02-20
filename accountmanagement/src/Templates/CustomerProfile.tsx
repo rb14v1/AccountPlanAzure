@@ -446,14 +446,15 @@ export default function CustomerProfile() {
           )}
         </Box>
         <Box id="template-to-download" className="template-section">
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-            <Typography variant="h4" fontWeight={700} color="teal">
+          
+          <Box className="pdf-section" sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+            <Typography  variant="h4" fontWeight={700} color="teal">
               Customer & Version 1
             </Typography>
           </Box>
 
           {/* INFO TABLE */}
-          <Box sx={{ border: "1px solid #0b2b2e", mb: 3 }}>
+          <Box className="pdf-section" sx={{ border: "1px solid #0b2b2e", mb: 3 }}>
             <InfoRow
               labelLeft="Customer"
               valueLeft={editable.draftData.customer_name || ""}
@@ -490,6 +491,7 @@ export default function CustomerProfile() {
           </Box>
 
           {/* SECTIONS */}
+          <Box className="pdf-section">
           <EditableSection
             title="What work are we currently doing with the customer?"
             items={editable.draftData.current_work || []}
@@ -498,7 +500,8 @@ export default function CustomerProfile() {
               editable.updateDraft({ ...editable.draftData, current_work: items })
             }
           />
-
+          </Box>
+          <Box className="pdf-section">
           <EditableSection
             title="What Service Lines are we currently working with the customer on?"
             items={editable.draftData.service_lines || []}
@@ -507,7 +510,8 @@ export default function CustomerProfile() {
               editable.updateDraft({ ...editable.draftData, service_lines: items })
             }
           />
-
+          </Box>
+          <Box className="pdf-section">
           <EditableSection
             title="What is the customer's current perception of Version 1?"
             items={editable.draftData.customer_perception || []}
@@ -519,7 +523,7 @@ export default function CustomerProfile() {
               })
             }
           />
-
+          </Box>
           <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
             Classification: Controlled. Copyright ©2025 Version 1.
           </Typography>
