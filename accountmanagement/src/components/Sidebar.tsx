@@ -171,26 +171,68 @@ const Sidebar: React.FC<SidebarProps> = ({
   >
     {/* Chat Button (UNCHANGED LOGIC) */}
     <Button
-      fullWidth
-      onClick={() => onOpenChat(chat.id)}
-      sx={{
-        flex: 1,
-        justifyContent: "flex-start",
-        textTransform: "none",
-        px: 1.5,
-        py: 1,
-        borderRadius: 2,
 
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
+  fullWidth
 
-        color:
-          activeChatId === chat.id ? "#ffffff" : "#134e4a",
-      }}
-    >
-      {getShortTitle(chat.title)}
-    </Button>
+  disableRipple   // ✅ removes ripple animation
+
+  disableFocusRipple   // ✅ removes focus ripple
+
+  onClick={() => onOpenChat(chat.id)}
+
+  sx={{
+
+    flex: 1,
+
+    justifyContent: "flex-start",
+
+    textTransform: "none",
+
+    px: 1.5,
+
+    py: 1,
+
+    borderRadius: 2,
+ 
+    whiteSpace: "nowrap",
+
+    overflow: "hidden",
+
+    textOverflow: "ellipsis",
+ 
+    color:
+
+      activeChatId === chat.id ? "#ffffff" : "#134e4a",
+ 
+    // 🔴 REMOVE BLACK BORDER / OUTLINE
+
+    outline: "none",
+
+    border: "none",
+ 
+    "&:focus": {
+
+      outline: "none",
+
+    },
+ 
+    "&.Mui-focusVisible": {
+
+      outline: "none",
+
+    },
+ 
+    // OPTIONAL: remove shadow if any
+
+    boxShadow: "none",
+
+  }}
+>
+
+  {getShortTitle(chat.title)}
+</Button>
+
+ 
 
     {/* DELETE ICON (NEW FEATURE) */}
     <IconButton
