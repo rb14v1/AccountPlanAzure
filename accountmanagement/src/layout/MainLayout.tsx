@@ -96,7 +96,7 @@ export default function MainLayout() {
     { id: "sl-penetration", label: "SL Penetration", icon: "bi-bar-chart-steps" },
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
-    { id: "talent-excellence", label: "Talent Excellence", icon: "bi-people-fill" },
+    { id: "talent-excellence-overview", label: "Talent Excellence", icon: "bi-people-fill" },
     { id: "account-performance-annual-plan", label: "Account Performance Annual Plan", icon: "bi-calendar-check" },
  
   ];
@@ -126,7 +126,7 @@ export default function MainLayout() {
       case "sl-penetration": return <ServiceLinePenetration />;
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;
-      case "talent-excellence": return <TalentExcellenceOverview />;
+      case "talent-excellence-overview": return <TalentExcellenceOverview />;
       case "account-performance-annual-plan": return <AccountPerformanceAnnualPlan />;
       default: return <AccountTeamPod />;
     }
@@ -171,8 +171,8 @@ export default function MainLayout() {
                     selected={activeTab === item.id}
                     onClick={() => {
                       navigateTo(item.id);
-                      // Assuming your app routes are prefixed with /app/
-                      navigate(`/app/${item.id}`); 
+                      // // Assuming your app routes are prefixed with /app/
+                      // navigate(`/app/${item.id}`); 
             }}
                     sx={{
   justifyContent: collapsed ? "center" : "flex-start",
