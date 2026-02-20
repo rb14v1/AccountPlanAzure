@@ -421,7 +421,9 @@ const GrowthStrategy: React.FC = () => {
 
         {/* DOWNLOADABLE CONTENT */}
         <Box id="template-to-download" className="template-section">
+
           <Typography
+           className="pdf-section"
             variant="h4"
             sx={{
               fontWeight: 700,
@@ -432,7 +434,9 @@ const GrowthStrategy: React.FC = () => {
             Growth Strategy
           </Typography>
 
+          
           {strategyData.map((section) => (
+            <Box className="pdf-section">
             <SectionContainer key={section.id} elevation={0}>
               <QuestionHeader>{section.question}</QuestionHeader>
               <AnswerBody>
@@ -473,8 +477,9 @@ const GrowthStrategy: React.FC = () => {
                 )}
               </AnswerBody>
             </SectionContainer>
+            </Box>
           ))}
-
+          
           <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
             Classification: Controlled. Copyright ©2025 Version 1.
           </Typography>

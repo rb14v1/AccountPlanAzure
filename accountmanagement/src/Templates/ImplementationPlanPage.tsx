@@ -19,7 +19,7 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-const TEMPLATE_NAME = "implementation_plan";
+const TEMPLATE_NAME = "Implementation Plan for Growth";
 const STATUS_OPTIONS = [
   "Completed",
   "On-track",
@@ -231,6 +231,32 @@ export default function ImplementationPlanPage() {
     groupedActions[action.category].push(action);
   });
 
+  const pdfTableConfig = {
+    headers: [
+      "Category", "#", "Action", "Primary Owner", 
+      "Support Team", "Timeline", "Status", 
+      "Help Required", "Investment Needed", "Impact"
+    ],
+    rows: editable.draftData.actions.map((row: any) => [
+      row.category || "",
+      row.id,
+      row.action || "",
+      row.primary_owner || "",
+      row.support_team || "",
+      row.timeline || "",
+      row.status || "", // Text version for accessibility
+      row.help_required || "",
+      row.investment_needed || "",
+      row.impact || "",
+    ]),
+    // Pass specific background colors for the "Status" column (Index 6)
+    columnStyles: {
+      6: editable.draftData.actions.map((row: any) => ({
+        fillColor: getStatusColor(row.status)
+      }))
+    }
+  };
+
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
@@ -243,10 +269,9 @@ export default function ImplementationPlanPage() {
           }}
         >
           <DownloadTemplates
-  templateName={TEMPLATE_NAME}
-  beforeDownload={() => setIsPrinting(true)}
-  afterDownload={() => setIsPrinting(false)}
-/>
+            templateName={TEMPLATE_NAME}
+            tableConfig={pdfTableConfig}
+          />
 
           {!editable.isEditing ? (
             <Button variant="outlined" onClick={editable.startEdit} sx={{
@@ -298,6 +323,7 @@ export default function ImplementationPlanPage() {
           )}
         </Box>
         <Box id="template-to-download" className="template-section">
+          
           <Typography fontSize={35} fontWeight={700} sx={{ color: "teal" }}>
             Implementation plan for growth
           </Typography>
@@ -343,35 +369,35 @@ export default function ImplementationPlanPage() {
 
           <TableContainer component={Paper} sx={{ mb: 4 }}>
             <Table
-  size="small"
-  sx={{
-    borderCollapse: "collapse",
-    width: "100%",
-    tableLayout: "fixed",     // 🔑 LOCK layout (same as RelationshipHeatmap)
-    pageBreakInside: "auto",
-  }}
->
+              size="small"
+              sx={{
+                borderCollapse: "collapse",
+                width: "100%",
+                tableLayout: "fixed",     // 🔑 LOCK layout (same as RelationshipHeatmap)
+                pageBreakInside: "auto",
+              }}
+            >
 
 
-  <colgroup>
-  <col style={{ width: "12%" }} />  {/* Category */}
-  <col style={{ width: "4%" }} />   {/* # */}
-  <col style={{ width: "16%" }} />  {/* Action */}
-  <col style={{ width: "12%" }} />  {/* Primary Owner */}
-  <col style={{ width: "12%" }} />  {/* Support Team */}
-  <col style={{ width: "10%" }} />  {/* Timeline */}
-  <col style={{ width: "6%" }} />   {/* Status */}
-  <col style={{ width: "12%" }} />  {/* Help Required */}
-  <col style={{ width: "8%" }} />   {/* Investment */}
-  <col style={{ width: "8%" }} />   {/* Impact */}
-</colgroup>
+              <colgroup>
+                <col style={{ width: "12%" }} />  {/* Category */}
+                <col style={{ width: "4%" }} />   {/* # */}
+                <col style={{ width: "16%" }} />  {/* Action */}
+                <col style={{ width: "12%" }} />  {/* Primary Owner */}
+                <col style={{ width: "12%" }} />  {/* Support Team */}
+                <col style={{ width: "10%" }} />  {/* Timeline */}
+                <col style={{ width: "6%" }} />   {/* Status */}
+                <col style={{ width: "12%" }} />  {/* Help Required */}
+                <col style={{ width: "8%" }} />   {/* Investment */}
+                <col style={{ width: "8%" }} />   {/* Impact */}
+              </colgroup>
 
 
               <TableHead
-  sx={{
-    display: "table-header-group", // 🔑 REQUIRED FOR PDF
-  }}
->
+                sx={{
+                  display: "table-header-group", // 🔑 REQUIRED FOR PDF
+                }}
+              >
 
                 <TableRow>
                   <HeaderCell>Category</HeaderCell>
@@ -395,123 +421,123 @@ export default function ImplementationPlanPage() {
                     return (
                       <TableRow key={row.id}>
                         {/* Category column — PRINT SAFE */}
-{idx === 0 ? (
-  <CategoryCell rowSpan={actions.length}>
-    {editable.isEditing && !isPrinting ? (
-      <TextField
-        size="small"
-        fullWidth
-        value={row.category}
-        onChange={(e) =>
-          handleActionChange(globalIndex, "category", e.target.value)
-        }
-        sx={{
-          "& .MuiInputBase-root": { color: "white" },
-          "& .MuiOutlinedInput-notchedOutline": {
-            borderColor: "rgba(255,255,255,0.3)",
-          },
-        }}
-      />
-    ) : (
-      category
-    )}
-  </CategoryCell>
-) : isPrinting ? (
-  // 🔑 PRINT-ONLY placeholder cell (DOES NOT affect UI)
-  <CategoryCell
-    sx={{
-      backgroundColor: "transparent",
-      border: "1px solid #ccc",
-    }}
-  />
-) : null}
+                        {idx === 0 ? (
+                          <CategoryCell rowSpan={actions.length}>
+                            {editable.isEditing && !isPrinting ? (
+                              <TextField
+                                size="small"
+                                fullWidth
+                                value={row.category}
+                                onChange={(e) =>
+                                  handleActionChange(globalIndex, "category", e.target.value)
+                                }
+                                sx={{
+                                  "& .MuiInputBase-root": { color: "white" },
+                                  "& .MuiOutlinedInput-notchedOutline": {
+                                    borderColor: "rgba(255,255,255,0.3)",
+                                  },
+                                }}
+                              />
+                            ) : (
+                              category
+                            )}
+                          </CategoryCell>
+                        ) : isPrinting ? (
+                          // 🔑 PRINT-ONLY placeholder cell (DOES NOT affect UI)
+                          <CategoryCell
+                            sx={{
+                              backgroundColor: "transparent",
+                              border: "1px solid #ccc",
+                            }}
+                          />
+                        ) : null}
 
 
                         <BodyCell>{row.id}</BodyCell>
 
                         <BodyCell>
                           {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.action}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "action", e.target.value)
-    }
-    sx={{
-      "& textarea": { overflow: "hidden" },
-    }}
-  />
-) : (
-  <PrintBox value={row.action} />
-)
-}
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.action}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "action", e.target.value)
+                              }
+                              sx={{
+                                "& textarea": { overflow: "hidden" },
+                              }}
+                            />
+                          ) : (
+                            <PrintBox value={row.action} />
+                          )
+                          }
 
                         </BodyCell>
 
                         <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.primary_owner}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "primary_owner", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.primary_owner} />
-)
-}
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.primary_owner}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "primary_owner", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.primary_owner} />
+                          )
+                          }
 
-</BodyCell>
-
-
-                        <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.support_team}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "support_team", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.support_team} />
-)
-}
-
-</BodyCell>
+                        </BodyCell>
 
 
                         <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.timeline}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "timeline", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.timeline} />
-)
-}
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.support_team}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "support_team", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.support_team} />
+                          )
+                          }
 
-</BodyCell>
+                        </BodyCell>
+
+
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.timeline}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "timeline", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.timeline} />
+                          )
+                          }
+
+                        </BodyCell>
 
 
                         <StatusCell>
@@ -553,62 +579,62 @@ export default function ImplementationPlanPage() {
                         </StatusCell>
                         <BodyCell>
                           {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.help_required}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "help_required", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.help_required} />
-)
-}
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.help_required}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "help_required", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.help_required} />
+                          )
+                          }
 
                         </BodyCell>
 
                         <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.investment_needed}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "investment_needed", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.investment_needed} />
-)
-}
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.investment_needed}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "investment_needed", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.investment_needed} />
+                          )
+                          }
 
-</BodyCell>
+                        </BodyCell>
 
 
                         <BodyCell>
                           {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.impact}
-    onChange={(e) =>
-      handleActionChange(globalIndex, "impact", e.target.value)
-    }
-    sx={{ "& textarea": { overflow: "hidden" } }}
-  />
-) : (
-  <PrintBox value={row.impact} />
-)
-}
+                            <TextField
+                              size="small"
+                              fullWidth
+                              multiline
+                              minRows={1}
+                              value={row.impact}
+                              onChange={(e) =>
+                                handleActionChange(globalIndex, "impact", e.target.value)
+                              }
+                              sx={{ "& textarea": { overflow: "hidden" } }}
+                            />
+                          ) : (
+                            <PrintBox value={row.impact} />
+                          )
+                          }
 
                         </BodyCell>
                       </TableRow>
@@ -625,7 +651,7 @@ export default function ImplementationPlanPage() {
           </Typography>
 
           <style>
-{`
+            {`
 @media print {
   textarea,
   input {
@@ -649,7 +675,7 @@ export default function ImplementationPlanPage() {
 }
 
 `}
-</style>
+          </style>
 
         </Box>
       </Box>

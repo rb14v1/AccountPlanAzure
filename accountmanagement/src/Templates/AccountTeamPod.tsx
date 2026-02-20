@@ -270,7 +270,9 @@ const AccountTeamPod: React.FC = () => {
       setInitialLoading(true);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/account-team-pod/`, {
+        // 🚨 FIX 1: Send user_id so it fetches correct data from DB
+        const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+        const response = await fetch(`${API_BASE_URL}/account-team-pod/?user_id=${userId}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -326,14 +328,21 @@ const AccountTeamPod: React.FC = () => {
         try {
           console.log("Sending account team POD to backend:", podData);
 
+          // 🚨 FIX 2: Wrap payload and correct URL to save/
+          const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+          const payload = {
+            user_id: userId,
+            data: podData
+          };
+
           const response = await fetch(
-            `${API_BASE_URL}/account-team-pod/save_pod/`,
+            `${API_BASE_URL}/account-team-pod/save/`,
             {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify(podData),
+              body: JSON.stringify(payload),
             }
           );
 
@@ -379,14 +388,21 @@ const AccountTeamPod: React.FC = () => {
     try {
       console.log("Manual save - sending account team POD:", editable.draftData);
 
+      // 🚨 FIX 3: Wrap payload and correct URL to save/
+      const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+      const payload = {
+        user_id: userId,
+        data: editable.draftData
+      };
+
       const response = await fetch(
-        `${API_BASE_URL}/account-team-pod/save_pod/`,
+        `${API_BASE_URL}/account-team-pod/save/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(editable.draftData),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -541,34 +557,37 @@ const AccountTeamPod: React.FC = () => {
           className="template-section"
           sx={{ mt: 2, mx: "auto" }}
         >
-          <Typography variant="h4" sx={{ fontWeight: 700, color: "#008080" }}>
-            Account Team POD
-          </Typography>
+          {/* 🚨 Added pdf-section wrapper so download works */}
+          <Box className="pdf-section">
+            <Typography variant="h4" sx={{ fontWeight: 700, color: "#008080", mb: 3 }}>
+              Account Team POD
+            </Typography>
 
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <PodTable
-                title="Sales and delivery leads"
-                rows={salesRoles}
-                subHeader="Service line leads"
-                extraRows={serviceLineRoles}
-                dataSource={editable.draftData.Sales_and_Delivery_Leads}
-                isEditing={editable.isEditing}
-                section="Sales_and_Delivery_Leads"
-                onChange={handleChange}
-              />
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <PodTable
+                  title="Sales and delivery leads"
+                  rows={salesRoles}
+                  subHeader="Service line leads"
+                  extraRows={serviceLineRoles}
+                  dataSource={editable.draftData.Sales_and_Delivery_Leads}
+                  isEditing={editable.isEditing}
+                  section="Sales_and_Delivery_Leads"
+                  onChange={handleChange}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <PodTable
+                  title="Functional POCs"
+                  rows={functionalRoles}
+                  dataSource={editable.draftData.Functional_POCs}
+                  isEditing={editable.isEditing}
+                  section="Functional_POCs"
+                  onChange={handleChange}
+                />
+              </Grid>
             </Grid>
-            <Grid item xs={12} md={6}>
-              <PodTable
-                title="Functional POCs"
-                rows={functionalRoles}
-                dataSource={editable.draftData.Functional_POCs}
-                isEditing={editable.isEditing}
-                section="Functional_POCs"
-                onChange={handleChange}
-              />
-            </Grid>
-          </Grid>
+          </Box>
         </Box>
       </Box>
     </Box>

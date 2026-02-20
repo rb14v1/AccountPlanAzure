@@ -350,12 +350,13 @@ export default function OperationalExcellencePage() {
           )}
         </Box>
         <Box id="template-to-download" className="template-section">
-          <Box sx={{ mt: 2, mx: "auto" }}>
+          <Box className="pdf-section" sx={{ mt: 2, mx: "auto" }}>
             <Typography fontSize={35} fontWeight={700} sx={{ color: "teal" }}>
               Operational excellence strategy
             </Typography>
           </Box>
 
+          <Box className="pdf-section">
           <TableContainer component={Paper} sx={{ mb: 3 }}>
             <Table size="small">
               <TableHead>
@@ -396,8 +397,9 @@ export default function OperationalExcellencePage() {
               </TableBody>
             </Table>
           </TableContainer>
+          </Box>
 
-          <Box sx={{ mb: 3 }}>
+          <Box className="pdf-section" sx={{ mb: 3 }}>
             <SectionHeader>
               What are the priority levers to drive margin uplift?
             </SectionHeader>
@@ -432,7 +434,7 @@ export default function OperationalExcellencePage() {
             </SectionBody>
           </Box>
 
-          <Box sx={{ mb: 3 }}>
+          <Box className="pdf-section" sx={{ mb: 3 }}>
             <SectionHeader>
               What is the plan for driving commercial model transformation from
               T&M to more FP and outcome linked business?

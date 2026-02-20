@@ -20,18 +20,18 @@ import {
 import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
- 
+
 const API_BASE_URL = "http://localhost:8000/api";
 const TEMPLATE_NAME = "Relationship_Heatmap";
- 
+
 const RELATIONSHIP_OPTIONS = ["Promoter", "Neutral", "Detractor"];
- 
+
 const PRIMARY_TEAL = "#008080";
 const DARK_BG = "#0b1e26";
 const COLOR_NEUTRAL = "#d9a441";
 const COLOR_PROMOTER = "#90c978";
 const COLOR_DETRACTOR = "#e06666";
- 
+
 const StyledTableCell = styled(TableCell)(() => ({
   border: "1px solid #ccc",
   padding: "8px 12px",
@@ -46,8 +46,8 @@ const StyledTableCell = styled(TableCell)(() => ({
     border: "1px solid #000",
   },
 }));
- 
- 
+
+
 const headers = [
   "#",
   "Client Stakeholder",
@@ -57,7 +57,7 @@ const headers = [
   "Client relationship",
   "Engagement Plan, Next Action",
 ];
- 
+
 const getRowColorByRelationship = (relationship: string) => {
   const rel = relationship.toLowerCase();
   if (rel.includes("promoter") || rel.includes("strong")) return COLOR_PROMOTER;
@@ -65,14 +65,14 @@ const getRowColorByRelationship = (relationship: string) => {
   if (rel.includes("neutral") || rel.includes("moderate")) return COLOR_NEUTRAL;
   return "#fff";
 };
- 
+
 export default function RelationshipHeatmap() {
   const { globalData, setGlobalData } = useData();
   const backendRows = Array.isArray(globalData?.relationship_heatmap)
-  ? globalData.relationship_heatmap
-  : globalData?.relationship_heatmap?.stakeholder_list || [];
- 
- 
+    ? globalData.relationship_heatmap
+    : globalData?.relationship_heatmap?.stakeholder_list || [];
+
+
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({
@@ -80,14 +80,14 @@ export default function RelationshipHeatmap() {
     message: "",
     severity: "success" as "success" | "error" | "warning",
   });
- 
+
   const [isPrinting, setIsPrinting] = useState(false);
- 
+
   const autoSaveAttempted = useRef(false);
   const dataLoadedFromDB = useRef(false);
- 
+
   const initialRows = Array.isArray(backendRows) ? [...backendRows] : [];
- 
+
   while (initialRows.length < 5) {
     initialRows.push({
       stakeholder_number: initialRows.length + 1,
@@ -99,9 +99,9 @@ export default function RelationshipHeatmap() {
       engagement_plan_next_action: "",
     });
   }
- 
+
   const editable = useEditableTable(initialRows);
- 
+
   // Update draft when data changes from chatbot
   useEffect(() => {
     if (backendRows && backendRows.length > 0 && !editable.isEditing) {
@@ -120,15 +120,15 @@ export default function RelationshipHeatmap() {
       editable.updateDraft(updatedRows);
     }
   }, [backendRows]);
- 
+
   // STEP 1: Load data from database when component mounts
   useEffect(() => {
     const loadDataFromDB = async () => {
       if (dataLoadedFromDB.current) return;
- 
+
       console.log("Loading relationship heatmap from database...");
       setInitialLoading(true);
- 
+
       try {
         const response = await fetch(`${API_BASE_URL}/relationship-heatmap/`, {
           method: "GET",
@@ -136,11 +136,11 @@ export default function RelationshipHeatmap() {
             "Content-Type": "application/json",
           },
         });
- 
+
         if (response.ok) {
           const dbData = await response.json();
           console.log("Relationship heatmap loaded from DB:", dbData);
- 
+
           if (dbData && dbData.data && dbData.data.length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
@@ -157,10 +157,10 @@ export default function RelationshipHeatmap() {
         setInitialLoading(false);
       }
     };
- 
+
     loadDataFromDB();
   }, [setGlobalData]);
- 
+
   // STEP 2: Auto-save when NEW data arrives from chatbot
   useEffect(() => {
     const autoSaveToDatabase = async () => {
@@ -168,19 +168,19 @@ export default function RelationshipHeatmap() {
         console.log("Relationship heatmap already in DB, skipping auto-save");
         return;
       }
- 
+
       const hasValidData = backendRows && backendRows.length > 0;
       const isNewDataFromChatbot =
         backendRows && backendRows.length > 0 && !backendRows[0]?.id;
- 
+
       if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
         console.log("New relationship heatmap from chatbot detected, auto-saving...");
         autoSaveAttempted.current = true;
- 
+
         try {
           const payload = { data: backendRows };
           console.log("Sending relationship heatmap to backend:", payload);
- 
+
           const response = await fetch(
             `${API_BASE_URL}/relationship-heatmap/save_heatmap/`,
             {
@@ -191,16 +191,16 @@ export default function RelationshipHeatmap() {
               body: JSON.stringify(payload),
             }
           );
- 
+
           const result = await response.json();
           console.log("Auto-save response:", result);
- 
+
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
               relationship_heatmap: result.data.data,
             }));
- 
+
             setSnackbar({
               open: true,
               message: "✅ Relationship Heatmap auto-saved to database",
@@ -220,20 +220,20 @@ export default function RelationshipHeatmap() {
         }
       }
     };
- 
+
     const timeoutId = setTimeout(() => {
       autoSaveToDatabase();
     }, 500);
- 
+
     return () => clearTimeout(timeoutId);
   }, [backendRows, setGlobalData]);
- 
+
   const updateCell = (index: number, field: string, value: string) => {
     const updated = [...editable.draftData];
     updated[index] = { ...updated[index], [field]: value };
     editable.updateDraft(updated);
   };
- 
+
   const addRow = () => {
     editable.updateDraft([
       ...editable.draftData,
@@ -248,14 +248,14 @@ export default function RelationshipHeatmap() {
       },
     ]);
   };
- 
+
   // STEP 3: Manual save
   const handleManualSave = async () => {
     setLoading(true);
     try {
       const payload = { data: editable.draftData };
       console.log("Manual save - sending relationship heatmap:", payload);
- 
+
       const response = await fetch(
         `${API_BASE_URL}/relationship-heatmap/save_heatmap/`,
         {
@@ -266,20 +266,20 @@ export default function RelationshipHeatmap() {
           body: JSON.stringify(payload),
         }
       );
- 
+
       const result = await response.json();
       console.log("Manual save response:", result);
- 
+
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
           relationship_heatmap: result.data.data,
         }));
- 
+
         editable.saveEdit(() => {
           // Save completed
         });
- 
+
         setSnackbar({
           open: true,
           message: "✅ Relationship Heatmap successfully saved",
@@ -299,7 +299,7 @@ export default function RelationshipHeatmap() {
       setLoading(false);
     }
   };
- 
+
   if (initialLoading) {
     return (
       <Box
@@ -315,7 +315,23 @@ export default function RelationshipHeatmap() {
       </Box>
     );
   }
- 
+
+  const pdfTableConfig = {
+    headers: headers,
+    rows: editable.draftData.map((row: any) => [
+      row.stakeholder_number,
+      row.client_stakeholder || "",
+      row.role || "",
+      row.reports_to || "",
+      row.level || "",
+      row.client_relationship || "",
+      row.engagement_plan_next_action || "",
+    ]),
+    // Add this to pass the background colors for each row
+    rowStyles: editable.draftData.map((row: any) => ({
+      fillColor: getRowColorByRelationship(row.client_relationship)
+    }))
+  };
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#fff", p: 2 }}>
       <Snackbar
@@ -331,7 +347,7 @@ export default function RelationshipHeatmap() {
           {snackbar.message}
         </Alert>
       </Snackbar>
- 
+
       <Box sx={{ maxWidth: 1800, mx: "auto", px: 4, py: 2 }}>
         {/* HEADER */}
         <Box
@@ -344,10 +360,9 @@ export default function RelationshipHeatmap() {
         >
           <DownloadTemplates
             templateName={TEMPLATE_NAME}
-            beforeDownload={() => setIsPrinting(true)}
-            afterDownload={() => setIsPrinting(false)}
+            tableConfig={pdfTableConfig}
           />
- 
+
           {!editable.isEditing ? (
             <Button
               variant="outlined"
@@ -401,7 +416,7 @@ export default function RelationshipHeatmap() {
             </>
           )}
         </Box>
- 
+
         <Box id="template-to-download" className="template-section">
           <Typography
             variant="h4"
@@ -413,18 +428,18 @@ export default function RelationshipHeatmap() {
           >
             Relationship heatmap
           </Typography>
- 
+
           {/* TABLE */}
           <TableContainer component={Paper} elevation={0}>
             <Table
-  sx={{
-    tableLayout: "fixed",
-    width: "100%",
-    pageBreakInside: "auto",   // ✅ IMPORTANT: allow page breaking ONLY between rows
-  }}
->
- 
- 
+              sx={{
+                tableLayout: "fixed",
+                width: "100%",
+                pageBreakInside: "auto",   // ✅ IMPORTANT: allow page breaking ONLY between rows
+              }}
+            >
+
+
               <colgroup>
                 <col style={{ width: "4%" }} />   {/* # */}
                 <col style={{ width: "18%" }} />  {/* Client Stakeholder */}
@@ -434,13 +449,13 @@ export default function RelationshipHeatmap() {
                 <col style={{ width: "10%" }} />  {/* Client relationship */}
                 <col style={{ width: "14%" }} />  {/* Engagement Plan */}
               </colgroup>
- 
+
               <TableHead
-  sx={{
-    display: "table-header-group", // ✅ REQUIRED for repeating header on every page
-  }}
->
- 
+                sx={{
+                  display: "table-header-group", // ✅ REQUIRED for repeating header on every page
+                }}
+              >
+
                 <TableRow>
                   {headers.map((h) => (
                     <StyledTableCell key={h} className="header">
@@ -452,15 +467,15 @@ export default function RelationshipHeatmap() {
               <TableBody>
                 {editable.draftData.map((row: any, index: number) => (
                   <TableRow
-  key={index}
-  sx={{
-    backgroundColor: getRowColorByRelationship(
-      row.client_relationship
-    ),
-    pageBreakInside: "avoid", // ✅ CRITICAL: do not split rows across pages
-  }}
->
- 
+                    key={index}
+                    sx={{
+                      backgroundColor: getRowColorByRelationship(
+                        row.client_relationship
+                      ),
+                      pageBreakInside: "avoid", // ✅ CRITICAL: do not split rows across pages
+                    }}
+                  >
+
                     <StyledTableCell>{row.stakeholder_number}</StyledTableCell>
                     {[
                       "client_stakeholder",
@@ -472,7 +487,7 @@ export default function RelationshipHeatmap() {
                     ].map((field) => (
                       <StyledTableCell key={field}>
                         {editable.isEditing && !isPrinting ? (
- 
+
                           field === "client_relationship" ? (
                             <TextField
                               select
@@ -513,28 +528,28 @@ export default function RelationshipHeatmap() {
                                 },
                               }}
                             />
- 
- 
+
+
                           )
                         ) : (
-  <Box
-    sx={{
-      whiteSpace: "pre-wrap",
-      wordBreak: "break-word",
-      fontSize: "0.8rem",
-      lineHeight: 1.4,
-    }}
-  >
-    {row[field] || ""}
-  </Box>
- 
-)}
- 
+                          <Box
+                            sx={{
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word",
+                              fontSize: "0.8rem",
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            {row[field] || ""}
+                          </Box>
+
+                        )}
+
                       </StyledTableCell>
                     ))}
                   </TableRow>
                 ))}
- 
+
                 {/* ADD ROW */}
                 {editable.isEditing && (
                   <TableRow>
@@ -555,7 +570,7 @@ export default function RelationshipHeatmap() {
               </TableBody>
             </Table>
           </TableContainer>
- 
+
           {/* LEGEND */}
           <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
             {[
@@ -576,7 +591,7 @@ export default function RelationshipHeatmap() {
               </Box>
             ))}
           </Box>
- 
+
           <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
             Classification: Controlled. Copyright ©2025 Version 1.
           </Typography>
@@ -585,5 +600,4 @@ export default function RelationshipHeatmap() {
     </Box>
   );
 }
- 
- 
+

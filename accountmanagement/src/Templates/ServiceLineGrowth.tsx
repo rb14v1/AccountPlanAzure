@@ -132,16 +132,16 @@ const ServiceLineGrowth: React.FC = () => {
 
     // Check if the data content has changed (not just the reference)
     const dataChanged = JSON.stringify(previousDataRef.current) !== JSON.stringify(backendData);
-    
+
     if (dataChanged) {
       console.log("🆕 DETECTED NEW DATA from chatbot!");
       console.log("Previous:", previousDataRef.current);
       console.log("New:", backendData);
-      
+
       // Reset flags so auto-save can run again
       autoSaveAttempted.current = false;
       dataLoadedFromDB.current = false;
-      
+
       previousDataRef.current = backendData;
     }
   }, [backendData]);
@@ -380,6 +380,16 @@ const ServiceLineGrowth: React.FC = () => {
       </Box>
     );
   }
+  const pdfTableConfig = {
+    headers: columns,
+    rows: editable.draftData.map((row: any) => [
+      row.label,
+      row.Objective || "",
+      row.Target_Buying_Centres || "",
+      row.Current_Status || "",
+      row.Next_Action_and_Responsible_Person || "",
+    ])
+  };
 
 
   return (
@@ -411,8 +421,7 @@ const ServiceLineGrowth: React.FC = () => {
         >
           <DownloadTemplates
             templateName={TEMPLATE_NAME}
-            beforeDownload={() => setIsPrinting(true)}
-            afterDownload={() => setIsPrinting(false)}
+            tableConfig={pdfTableConfig}
           />
 
           {!editable.isEditing ? (
@@ -471,90 +480,92 @@ const ServiceLineGrowth: React.FC = () => {
 
         {/* TABLE */}
         <Box id="template-to-download" className="template-section">
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              color: PRIMARY_TEAL,
-              mb: 2,
-            }}
-          >
-            Service Line Growth Actions
-          </Typography>
-
-
-          <TableContainer component={Paper} elevation={0}>
-            <Table
+          <Box className="pdf-section">
+            <Typography
+              variant="h4"
               sx={{
-                tableLayout: "fixed",
-                width: "100%",
+                fontWeight: 700,
+                color: PRIMARY_TEAL,
+                mb: 2,
               }}
             >
-              <colgroup>
-                <col style={{ width: "20%" }} /> {/* Development Area */}
-                <col style={{ width: "20%" }} /> {/* Objective */}
-                <col style={{ width: "20%" }} /> {/* Target Buying Centres */}
-                <col style={{ width: "20%" }} /> {/* Current Status */}
-                <col style={{ width: "20%" }} /> {/* Next Action */}
-              </colgroup>
+              Service Line Growth Actions
+            </Typography>
 
-              <TableHead>
-                <TableRow>
-                  {columns.map((col) => (
-                    <StyledTableCell key={col} className="header">
-                      {col}
-                    </StyledTableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {editable.draftData.map((row: any) => (
-                  <TableRow key={row.key}>
-                    <StyledTableCell className="row-label">
-                      {row.label}
-                    </StyledTableCell>
-                    {[
-                      "Objective",
-                      "Target_Buying_Centres",
-                      "Current_Status",
-                      "Next_Action_and_Responsible_Person",
-                    ].map((field) => (
-                      <StyledTableCell key={field}>
-                        {editable.isEditing && !isPrinting ? (
-                          <TextField
-                            multiline
-                            fullWidth
-                            size="small"
-                            value={row[field]}
-                            onChange={(e) =>
-                              updateCell(row.key, field, e.target.value)
-                            }
-                          />
-                        ) : (
-                          <Box
-                            sx={{
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word",
-                              fontSize: "0.85rem",
-                              lineHeight: 1.4,
-                            }}
-                          >
-                            {row[field] || ""}
-                          </Box>
-                        )}
 
+            <TableContainer component={Paper} elevation={0}>
+              <Table
+                sx={{
+                  tableLayout: "fixed",
+                  width: "100%",
+                }}
+              >
+                <colgroup>
+                  <col style={{ width: "20%" }} /> {/* Development Area */}
+                  <col style={{ width: "20%" }} /> {/* Objective */}
+                  <col style={{ width: "20%" }} /> {/* Target Buying Centres */}
+                  <col style={{ width: "20%" }} /> {/* Current Status */}
+                  <col style={{ width: "20%" }} /> {/* Next Action */}
+                </colgroup>
+
+                <TableHead>
+                  <TableRow>
+                    {columns.map((col) => (
+                      <StyledTableCell key={col} className="header">
+                        {col}
                       </StyledTableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {editable.draftData.map((row: any) => (
+                    <TableRow key={row.key}>
+                      <StyledTableCell className="row-label">
+                        {row.label}
+                      </StyledTableCell>
+                      {[
+                        "Objective",
+                        "Target_Buying_Centres",
+                        "Current_Status",
+                        "Next_Action_and_Responsible_Person",
+                      ].map((field) => (
+                        <StyledTableCell key={field}>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField
+                              multiline
+                              fullWidth
+                              size="small"
+                              value={row[field]}
+                              onChange={(e) =>
+                                updateCell(row.key, field, e.target.value)
+                              }
+                            />
+                          ) : (
+                            <Box
+                              sx={{
+                                whiteSpace: "pre-wrap",
+                                wordBreak: "break-word",
+                                fontSize: "0.85rem",
+                                lineHeight: 1.4,
+                              }}
+                            >
+                              {row[field] || ""}
+                            </Box>
+                          )}
+
+                        </StyledTableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
 
 
-          <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
-            Classification: Controlled. Copyright ©2025 Version 1.
-          </Typography>
+            <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
+              Classification: Controlled. Copyright ©2025 Version 1.
+            </Typography>
+          </Box>
         </Box>
       </Box>
     </Box>
