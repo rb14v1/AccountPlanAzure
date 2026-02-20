@@ -406,6 +406,7 @@ const response = await api.post("/chat", {
  
     if (lastTemplate) {
       // 1. Tell TabContext to set the active component
+      const routeName = lastTemplate.toLowerCase().replace(/_/g, "-");
       navigateTo(lastTemplate);
       // 2. Change the URL so MainLayout's renderPage() switch finds the match
       navigate(`/app/${lastTemplate}`);

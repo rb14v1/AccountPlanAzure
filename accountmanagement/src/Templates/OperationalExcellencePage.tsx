@@ -21,16 +21,16 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
 const API_BASE_URL = "http://localhost:8000/api";
-
-// Define the interface matching your JSON output
-interface OperationalExcellenceData {
-  current_gp_percent: string;
-  gp_ambition_percent: string;
-  priority_levers_for_margin_uplift: string[];
-  commercial_transformation_plan: string;
-}
-
 const TEMPLATE_NAME = "operational_excellence_strategy";
+
+// 1. UPDATED INTERFACE: Matches backend output to prevent data loss
+interface OperationalExcellenceData {
+  current_gp_percentage: string;
+  gp_percentage_ambition: string;
+  priority_levers_to_drive_margin_uplift: string[];
+  plan_for_commercial_model_transformation: string;
+  id?: any;
+}
 
 const MetricHeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: "#022D36",
@@ -68,16 +68,28 @@ const SectionBody = styled(Box)(({ theme }) => ({
   minHeight: 120,
 }));
 
+// 2. SAFETY EXTRACTOR: Bridges backend and frontend keys to prevent crashes
+const extractData = (source: any): OperationalExcellenceData => {
+  const data = source?.data || source || {};
+
+  // Check for both old frontend keys and new backend keys
+  const levers = data.priority_levers_to_drive_margin_uplift || data.priority_levers_for_margin_uplift;
+  const plan = data.plan_for_commercial_model_transformation || data.commercial_transformation_plan;
+
+  return {
+    current_gp_percentage: data.current_gp_percentage || data.current_gp_percent || "",
+    gp_percentage_ambition: data.gp_percentage_ambition || data.gp_ambition_percent || "",
+    priority_levers_to_drive_margin_uplift: Array.isArray(levers) ? levers : [],
+    // Safely handles if backend accidentally returns an array for the text block
+    plan_for_commercial_model_transformation: Array.isArray(plan) ? plan.join("\n") : (plan || ""),
+    id: data.id,
+  };
+};
+
 export default function OperationalExcellencePage() {
   const { globalData, setGlobalData } = useData();
 
-  const operationalData: OperationalExcellenceData =
-    globalData?.operational_excellence_strategy || {
-      current_gp_percent: "",
-      gp_ambition_percent: "",
-      priority_levers_for_margin_uplift: [],
-      commercial_transformation_plan: "",
-    };
+  const operationalData = extractData(globalData?.operational_excellence_strategy);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -96,11 +108,11 @@ export default function OperationalExcellencePage() {
   // Update draft when data changes from chatbot
   useEffect(() => {
     if (globalData?.operational_excellence_strategy && !editable.isEditing) {
-      editable.updateDraft(globalData.operational_excellence_strategy);
+      editable.updateDraft(extractData(globalData.operational_excellence_strategy));
     }
   }, [globalData?.operational_excellence_strategy]);
 
-  // STEP 1: Load data from database when component mounts
+  // STEP 1: Load data from database
   useEffect(() => {
     const loadDataFromDB = async () => {
       if (dataLoadedFromDB.current) return;
@@ -109,7 +121,8 @@ export default function OperationalExcellencePage() {
       setInitialLoading(true);
 
       try {
-        const response = await fetch(`${API_BASE_URL}/operational-excellence/`, {
+        // Pointed to unified template payload view
+        const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=101`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -119,11 +132,12 @@ export default function OperationalExcellencePage() {
         if (response.ok) {
           const dbData = await response.json();
           console.log("Operational excellence loaded from DB:", dbData);
+          const parsedData = extractData(dbData);
 
           if (dbData && Object.keys(dbData).length > 0) {
             setGlobalData((prev: any) => ({
               ...prev,
-              operational_excellence_strategy: dbData,
+              operational_excellence_strategy: parsedData,
             }));
             dataLoadedFromDB.current = true;
           } else {
@@ -144,16 +158,14 @@ export default function OperationalExcellencePage() {
   useEffect(() => {
     const autoSaveToDatabase = async () => {
       if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
-        console.log("Operational excellence already in DB, skipping auto-save");
         return;
       }
 
       const hasValidData =
-        operationalData &&
-        (operationalData.current_gp_percent ||
-          operationalData.gp_ambition_percent ||
-          operationalData.priority_levers_for_margin_uplift?.length > 0 ||
-          operationalData.commercial_transformation_plan);
+        operationalData.current_gp_percentage ||
+        operationalData.gp_percentage_ambition ||
+        operationalData.priority_levers_to_drive_margin_uplift.length > 0 ||
+        operationalData.plan_for_commercial_model_transformation;
 
       const isNewDataFromChatbot = operationalData && !operationalData.id;
 
@@ -162,26 +174,23 @@ export default function OperationalExcellencePage() {
         autoSaveAttempted.current = true;
 
         try {
-          console.log("Sending operational excellence to backend:", operationalData);
+          const payload = { user_id: "101", data: operationalData };
 
-          const response = await fetch(
-            `${API_BASE_URL}/operational-excellence/save_strategy/`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(operationalData),
-            }
-          );
+          // Pointed to unified template payload view
+          const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
           const result = await response.json();
-          console.log("Auto-save response:", result);
 
           if (response.ok && result.success) {
             setGlobalData((prev: any) => ({
               ...prev,
-              operational_excellence_strategy: result.data,
+              operational_excellence_strategy: extractData(result.data),
             }));
 
             setSnackbar({
@@ -211,53 +220,46 @@ export default function OperationalExcellencePage() {
     return () => clearTimeout(timeoutId);
   }, [operationalData, setGlobalData]);
 
-  // Handle field changes
-  const handleFieldChange = (
-    field: keyof OperationalExcellenceData,
-    value: string | string[]
-  ) => {
+  const handleFieldChange = (field: keyof OperationalExcellenceData, value: string | string[]) => {
     editable.updateDraft({
       ...editable.draftData,
       [field]: value,
     });
   };
 
-  // Handle array field changes (for priority levers)
   const handleArrayItemChange = (index: number, value: string) => {
-    const updatedArray = [...editable.draftData.priority_levers_for_margin_uplift];
+    // Make sure we have an array to spread
+    const updatedArray = Array.isArray(editable.draftData.priority_levers_to_drive_margin_uplift) 
+      ? [...editable.draftData.priority_levers_to_drive_margin_uplift] 
+      : [];
     updatedArray[index] = value;
-    handleFieldChange("priority_levers_for_margin_uplift", updatedArray);
+    handleFieldChange("priority_levers_to_drive_margin_uplift", updatedArray);
   };
 
   // STEP 3: Manual save
   const handleManualSave = async () => {
     setLoading(true);
     try {
-      console.log("Manual save - sending operational excellence:", editable.draftData);
-
-      const response = await fetch(
-        `${API_BASE_URL}/operational-excellence/save_strategy/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(editable.draftData),
-        }
-      );
+      const payload = { user_id: "101", data: editable.draftData };
+      
+      // Pointed to unified template payload view
+      const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const result = await response.json();
-      console.log("Manual save response:", result);
 
       if (response.ok && result.success) {
         setGlobalData((prev: any) => ({
           ...prev,
-          operational_excellence_strategy: result.data,
+          operational_excellence_strategy: extractData(result.data),
         }));
 
-        editable.saveEdit(() => {
-          // Save completed
-        });
+        editable.saveEdit(() => {});
 
         setSnackbar({
           open: true,
@@ -281,19 +283,17 @@ export default function OperationalExcellencePage() {
 
   if (initialLoading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "400px",
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
         <CircularProgress />
         <Typography sx={{ ml: 2 }}>Loading operational excellence...</Typography>
       </Box>
     );
   }
+
+  // 3. SAFE RENDER FALLBACK: Guarantees the array .map() will NEVER crash the app again
+  const safeLevers = Array.isArray(editable.draftData.priority_levers_to_drive_margin_uplift) 
+    ? editable.draftData.priority_levers_to_drive_margin_uplift 
+    : [];
 
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
@@ -303,23 +303,13 @@ export default function OperationalExcellencePage() {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-        >
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>
           {snackbar.message}
         </Alert>
       </Snackbar>
 
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            mb: 2,
-          }}
-        >
+        <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 2 }}>
           <DownloadTemplates templateName={TEMPLATE_NAME} />
           {!editable.isEditing ? (
             <Button
@@ -344,14 +334,7 @@ export default function OperationalExcellencePage() {
                 variant="contained"
                 onClick={handleManualSave}
                 disabled={loading}
-                sx={{
-                  backgroundColor: "#008080",
-                  ml: 2,
-                  color: "#fff",
-                  "&:hover": {
-                    backgroundColor: "#006d6d",
-                  },
-                }}
+                sx={{ backgroundColor: "#008080", ml: 2, color: "#fff", "&:hover": { backgroundColor: "#006d6d" } }}
               >
                 {loading ? <CircularProgress size={24} /> : "Save"}
               </Button>
@@ -359,15 +342,7 @@ export default function OperationalExcellencePage() {
                 variant="outlined"
                 onClick={editable.cancelEdit}
                 disabled={loading}
-                sx={{
-                  borderColor: "#008080",
-                  color: "#008080",
-                  ml: 2,
-                  "&:hover": {
-                    borderColor: "#006d6d",
-                    backgroundColor: "#e6f4f4",
-                  },
-                }}
+                sx={{ borderColor: "#008080", color: "#008080", ml: 2, "&:hover": { borderColor: "#006d6d", backgroundColor: "#e6f4f4" } }}
               >
                 Cancel
               </Button>
@@ -381,7 +356,6 @@ export default function OperationalExcellencePage() {
             </Typography>
           </Box>
 
-          {/* GP Metrics Table */}
           <TableContainer component={Paper} sx={{ mb: 3 }}>
             <Table size="small">
               <TableHead>
@@ -397,16 +371,12 @@ export default function OperationalExcellencePage() {
                       <TextField
                         size="small"
                         fullWidth
-                        value={editable.draftData.current_gp_percent}
-                        onChange={(e) =>
-                          handleFieldChange("current_gp_percent", e.target.value)
-                        }
-                        InputProps={{
-                          sx: { color: "#000000" },
-                        }}
+                        value={editable.draftData.current_gp_percentage}
+                        onChange={(e) => handleFieldChange("current_gp_percentage", e.target.value)}
+                        InputProps={{ sx: { color: "#000000" } }}
                       />
                     ) : (
-                      editable.draftData.current_gp_percent
+                      editable.draftData.current_gp_percentage
                     )}
                   </MetricBodyCell>
                   <MetricBodyCell>
@@ -414,16 +384,12 @@ export default function OperationalExcellencePage() {
                       <TextField
                         size="small"
                         fullWidth
-                        value={editable.draftData.gp_ambition_percent}
-                        onChange={(e) =>
-                          handleFieldChange("gp_ambition_percent", e.target.value)
-                        }
-                        InputProps={{
-                          sx: { color: "#000000" },
-                        }}
+                        value={editable.draftData.gp_percentage_ambition}
+                        onChange={(e) => handleFieldChange("gp_percentage_ambition", e.target.value)}
+                        InputProps={{ sx: { color: "#000000" } }}
                       />
                     ) : (
-                      editable.draftData.gp_ambition_percent
+                      editable.draftData.gp_percentage_ambition
                     )}
                   </MetricBodyCell>
                 </TableRow>
@@ -431,7 +397,6 @@ export default function OperationalExcellencePage() {
             </Table>
           </TableContainer>
 
-          {/* Priority Levers Section */}
           <Box sx={{ mb: 3 }}>
             <SectionHeader>
               What are the priority levers to drive margin uplift?
@@ -439,40 +404,34 @@ export default function OperationalExcellencePage() {
             <SectionBody>
               {editable.isEditing ? (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                  {editable.draftData.priority_levers_for_margin_uplift.map(
-                    (item, idx) => (
-                      <TextField
-                        key={idx}
-                        size="small"
-                        fullWidth
-                        value={item}
-                        onChange={(e) =>
-                          handleArrayItemChange(idx, e.target.value)
-                        }
-                        placeholder={`Lever ${idx + 1}`}
-                        InputProps={{
-                          sx: { color: "#000000" },
-                        }}
-                      />
-                    )
-                  )}
+                  {safeLevers.map((item, idx) => (
+                    <TextField
+                      key={idx}
+                      size="small"
+                      fullWidth
+                      value={item}
+                      onChange={(e) => handleArrayItemChange(idx, e.target.value)}
+                      placeholder={`Lever ${idx + 1}`}
+                      InputProps={{ sx: { color: "#000000" } }}
+                    />
+                  ))}
+                  <Button 
+                    onClick={() => handleFieldChange("priority_levers_to_drive_margin_uplift", [...safeLevers, ""])} 
+                    sx={{ alignSelf: "flex-start", color: "#008080" }}
+                  >
+                    + Add Lever
+                  </Button>
                 </Box>
               ) : (
-                editable.draftData.priority_levers_for_margin_uplift.map(
-                  (item, idx) => (
-                    <Typography
-                      key={idx}
-                      sx={{ mb: 1, fontSize: 13, color: "#000000" }}
-                    >
-                      • {item}
-                    </Typography>
-                  )
-                )
+                safeLevers.map((item, idx) => (
+                  <Typography key={idx} sx={{ mb: 1, fontSize: 13, color: "#000000" }}>
+                    • {item}
+                  </Typography>
+                ))
               )}
             </SectionBody>
           </Box>
 
-          {/* Commercial Transformation Section */}
           <Box sx={{ mb: 3 }}>
             <SectionHeader>
               What is the plan for driving commercial model transformation from
@@ -484,30 +443,20 @@ export default function OperationalExcellencePage() {
                   multiline
                   rows={4}
                   fullWidth
-                  value={editable.draftData.commercial_transformation_plan}
-                  onChange={(e) =>
-                    handleFieldChange(
-                      "commercial_transformation_plan",
-                      e.target.value
-                    )
-                  }
-                  InputProps={{
-                    sx: { color: "#000000" },
-                  }}
+                  value={editable.draftData.plan_for_commercial_model_transformation}
+                  onChange={(e) => handleFieldChange("plan_for_commercial_model_transformation", e.target.value)}
+                  InputProps={{ sx: { color: "#000000" } }}
                 />
               ) : (
-                <Typography
-                  sx={{ fontSize: 13, whiteSpace: "pre-wrap", color: "#000000" }}
-                >
-                  {editable.draftData.commercial_transformation_plan}
+                <Typography sx={{ fontSize: 13, whiteSpace: "pre-wrap", color: "#000000" }}>
+                  {editable.draftData.plan_for_commercial_model_transformation}
                 </Typography>
               )}
             </SectionBody>
           </Box>
 
           <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 2 }}>
-            Classification: Controlled. Copyright ©2025 Version 1. All rights
-            reserved.
+            Classification: Controlled. Copyright ©2025 Version 1. All rights reserved.
           </Typography>
         </Box>
       </Box>

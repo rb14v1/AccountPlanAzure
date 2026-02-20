@@ -84,7 +84,7 @@ export default function MainLayout() {
     { id: "growth-opportunities", label: "Growth Opportunities", icon: "bi-lightbulb" },
     { id: "implementation-plan", label: "Implementation Plan", icon: "bi-clipboard-check" },
     { id: "strategic-partnerships", label: "Strategic Partnerships", icon: "bi-people" },
-    { id: "operational-excellence", label: "Operational Excellence", icon: "bi-bullseye" },
+    { id: "operational-excellence-strategy", label: "Operational Excellence", icon: "bi-bullseye" },
     { id: "critical-risk", label: "Critical Risk", icon: "bi-exclamation-triangle" },
     { id: "account-dashboard", label: "Account Dashboard", icon: "bi-speedometer2" },
     { id: "operational-implementation", label: "Operational Impl. Plan", icon: "bi-file-earmark-check" },
@@ -114,7 +114,7 @@ export default function MainLayout() {
       case "growth-opportunities": return <GrowthOpportunitiesPage />;
       case "implementation-plan": return <ImplementationPlanPage />;
       case "strategic-partnerships": return <StrategicPartnershipsPage />;
-      case "operational-excellence": return <OperationalExcellencePage />;
+      case "operational-excellence-strategy": return <OperationalExcellencePage />;
       case "critical-risk": return <CriticalRiskPage />;
       case "operational-implementation": return <OperationalImplementationPlan />;
       case "investment-plan": return <InvestmentPlan />;

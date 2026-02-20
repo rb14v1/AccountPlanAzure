@@ -365,7 +365,7 @@ def chat(request):
         
         if chat_session: save_message(chat_session, "bot", message)
         
-        return JsonResponse({"message": message, "payload": safe_payload}, json_dumps_params={"ensure_ascii": False})
+        return JsonResponse({"message": message, "payload": safe_payload, "template_type": template_type}, json_dumps_params={"ensure_ascii": False})
 
     # --- Q&A Fallback ---
     print("🤖 [Chat] Generative Q&A...")

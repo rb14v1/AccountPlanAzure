@@ -110,9 +110,9 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   "template_type": "implementation_plan",
   "data": {
     "actions": [
-      { "action": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
-      { "action": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
-      { "action": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" }
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" }
     ]
   }
 }`
@@ -255,7 +255,299 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     "insights": "string"
    }
 }`
+  },
+  {
+    id: "account_performance_annual_plan",
+    title: "Account Performance",
+    description: "Generate an account performance annual plan.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "account_performance_annual_plan",
+  "data": {
+    "financials": [
+      { "metric": "Revenue", "unit": "£m", "fy24": "string", "fy25": "string", "fy26": "string" },
+      { "metric": "GM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" },
+      { "metric": "CM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ],
+    "delivery": [
+      { "metric": "Utilization", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ],
+    "talent": [
+      { "metric": "Attrition", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ]
   }
+}`
+  },
+  {
+    id: "service_line_growth_actions",
+    title: "Service Line Growth",
+    description: "Map out service line growth actions and objectives.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "service_line_growth_actions",
+  "data": {
+    "Cloud_Transformation": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "Data": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "AI": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "SRG_Managed_Services": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "EA": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "Strategy_Design_and_Change": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "SAM_and_Licensing": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" }
+  }
+}`
+  },
+
+  // Add these to the STARTER_PROMPTS array in constants.ts
+
+  {
+    id: "Account_Team_POD",
+    title: "Account Team POD",
+    description: "Define the core sales and delivery leads.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "Account_Team_POD",
+  "data": {
+    "Sales_and_Delivery_Leads": {
+      "Client_Partner": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Delivery_Manager": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Digital_and_Cloud_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "SRG_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "EA_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Data_POC": { "Accountable_POC": "string", "Time_Commitment": "string" }
+    },
+    "Functional_POCs": {
+      "Presales_Lead": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Marketing_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Partnerships_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "AI_and_Innovation_Lead": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Delivery_Excellence_Lead": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "Talent_Supply_Chain_POC": { "Accountable_POC": "string", "Time_Commitment": "string" },
+      "L_and_D_Lead": { "Accountable_POC": "string", "Time_Commitment": "string" }
+    }
+  }
+}`
+  },
+  {
+    id: "Account_Cockpit",
+    title: "Account Cockpit",
+    description: "Generate a high-level performance cockpit overview.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "Account_Cockpit",
+  "data": {
+    "revenue_performance": {
+      "yoy_data": [
+        { "y": "FY24", "v": "number" },
+        { "y": "FY25", "v": "number" },
+        { "y": "FY26", "v": "number" }
+      ],
+      "qoq_data": [
+        { "label": "string", "val": "number" }
+      ]
+    },
+    "booking_performance": {
+      "yoy_data": [
+        { "y": "FY24", "v": "number" },
+        { "y": "FY25", "v": "number" },
+        { "y": "FY26", "v": "number" }
+      ]
+    },
+    "margin_performance": {
+      "yoy_data": [
+        { "y": "FY24", "v": "number" },
+        { "y": "FY25", "v": "number" },
+        { "y": "FY26", "v": "number" }
+      ]
+    },
+    "large_deals": [
+      { "label": "string", "v": "number" }
+    ],
+    "sl_penetration": [
+      { "label": "string", "val": "number" }
+    ],
+    "partners": [
+      { "name": "string", "revenue": "string", "target": "string" }
+    ],
+    "geographic_revenue": [
+      { "l": "string", "v": "number" }
+    ]
+  }
+}`
+  },
+  {
+    id: "account_dashboard",
+    title: "Account Dashboard",
+    description: "Detailed quarterly metrics for the account.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "account_dashboard",
+  "data": {
+    "Revenue Budget": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Revenue Actuals / Forecast": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "TCV won": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Win rate (YTD)": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Book to bill ratio": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "SL revenue penetration %": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "# of SLs present in the account*": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Gross Margin %": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Revenue / FTE (ONS)": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Revenue / FTE (OFS)": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Cost / FTE (ONS)": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Cost / FTE (OFS)": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Attrition %": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Fulfilment %": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
+    "Delivery on time %": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" }
+  }
+}`
+  },
+  {
+    id: "Client_Context",
+    title: "Client Context",
+    description: "Get general context and executive changes for the client.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "Client_Context",
+  "data": {
+    "year_founded": "string",
+    "headquarters_location": "string",
+    "number_of_offices": "string",
+    "total_employees": "string",
+    "roe_percent": "string",
+    "total_revenue_usd_bn": {
+      "ebitda_margin": "percentage",
+      "actuals": "string",
+      "forecast": "string"
+    },
+    "revenue_by_year": [
+      {
+        "fiscal_year": "string",
+        "revenue": "string",
+        "cagr_percent": "percentage"
+      }
+    ],
+    "key_highlights": [
+      "string"
+    ],
+    "executive_changes": [
+      {
+        "name": "string",
+        "position": "string",
+        "background": "string"
+      }
+    ],
+    "client_description": "string"
+  }
+}`
+  },
+  {
+    id: "client_context_business_tech_priorities",
+    title: "Business & Tech Priorities",
+    description: "Analyze tech spend and business priorities.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "client_context_business_tech_priorities",
+  "data": {
+    "top_business_priorities": ["string"],
+    "top_tech_priorities": ["string"],
+    "tech_spend_landscape": {
+      "overall_tech_spend": "string",
+      "outsourced_tech_spend": "string",
+      "research_and_development_spend_pct": "string",
+      "core_erp_platform": "string",
+      "preferred_hyperscaler_partners": "string",
+      "other_isvs": "string"
+    },
+    "competitive_intel": {
+      "competition_overview": [
+        {
+          "name": "string",
+          "share_of_wallet_percent": "string",
+          "depth_of_relationship": "integer",
+          "key_areas_of_engagement": "string"
+        }
+      ]
+    }
+  }
+}`
+  },
+  {
+    id: "org_structure_tech_view",
+    title: "Org Structure (Tech View)",
+    description: "Map out the key technology leaders and structure.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "org_structure_tech_view",
+  "data": {
+    "group_ceo": {
+      "name": "string",
+      "role": "string"
+    },
+    "cdio": {
+      "name": "string",
+      "role": "string"
+    },
+    "key_functions": [
+      {
+        "function": "string",
+        "leader_name": "string",
+        "leader_role": "string",
+        "presence_type": "string"
+      }
+    ]
+  }
+}`
+  },
+  {
+    id: "Revenue_Teardown",
+    title: "Revenue Teardown",
+    description: "Detailed teardown of revenue by geography and EE/EN.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "Revenue_Teardown",
+  "data": {
+    "eeRows": [
+      { "id": 1, "name": "EE / EER", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" },
+      { "id": 2, "name": "EN", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" }
+    ],
+    "geoRows": [
+      { "id": 1, "name": "Americas", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" },
+      { "id": 2, "name": "Europe", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" },
+      { "id": 3, "name": "APAC", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" }
+    ],
+    "insights": {
+      "top": "string",
+      "bottom": "string"
+    }
+  }
+}`
+  },
 
 ];
  

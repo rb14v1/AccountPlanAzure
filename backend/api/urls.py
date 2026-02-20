@@ -91,4 +91,6 @@ urlpatterns = [
     # 14. Account Team Pod
     path("account-team-pod/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
     path("account-team-pod/save/", views.template_payload_detail, kwargs={"template_type": "account_team_pod"}),
+
+    path('template-payload/<str:template_type>/', views.template_payload_detail, name='template_payload_detail'),
 ]

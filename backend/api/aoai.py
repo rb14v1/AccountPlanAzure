@@ -49,7 +49,7 @@ def parse_yaml_like_text_to_json(text_response: str, template_type: str = None) 
         type_patterns = {
             "growth_strategy": ["growth_aspiration", "key_vectors_for_driving_growth"],
             "strategic_partnerships": ["partner_name", "internal_poc"],
-            "operational_excellence": ["current_gp_percent", "gp_ambition"],
+            "operational_excellence_strategy": ["current_gp_percent", "gp_ambition"],
             "account_team_pod": ["Sales_and_Delivery_Leads", "Functional_POCs"],
             "service_line_growth": ["cloud_transformation", "data", "ai"],
             "customer_profile": ["customer_name", "csat", "headquarter_location"],
