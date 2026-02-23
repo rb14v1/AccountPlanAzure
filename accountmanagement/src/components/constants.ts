@@ -379,7 +379,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   },
   {
     id: "account_dashboard",
-    title: "Account Dashboard",
+    title: "Account Performance - Quarterly Plan",
     description: "Detailed quarterly metrics for the account.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -407,15 +407,15 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
   {
-    id: "Client_Context",
-    title: "Client Context",
+    id: "Client_Context_1",
+    title: "Client Context 1",
     description: "Get general context and executive changes for the client.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "Client_Context",
+  "template_type": "Client_Context_1",
   "data": {
     "year_founded": "string",
     "headquarters_location": "string",
@@ -449,15 +449,15 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
   {
-    id: "client_context_business_tech_priorities",
-    title: "Business & Tech Priorities",
+    id: "Client_Context_2",
+    title: "Client Context 2",
     description: "Analyze tech spend and business priorities.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "client_context_business_tech_priorities",
+  "template_type": "Client_Context_2",
   "data": {
     "top_business_priorities": ["string"],
     "top_tech_priorities": ["string"],
