@@ -137,7 +137,6 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
     },
 
-
     # ---------------------------------------------------------
     # Customer Profile
     # ---------------------------------------------------------
@@ -220,7 +219,6 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             }
         ]
     },
-
 
     # ---------------------------------------------------------
     # Growth Opportunities
@@ -325,7 +323,7 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             ]
         }
     },
-    
+
     # ---------------------------------------------------------
     # Relationship Heatmap
     # ---------------------------------------------------------
@@ -385,6 +383,7 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "plan_for_commercial_model_transformation": [""]
         },
     },
+
     # ---------------------------------------------------------
     # Talent Excellence Overview
     # ---------------------------------------------------------
@@ -539,7 +538,6 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
     },
 
-
     # ---------------------------------------------------------
     # Tech Spend View
     # ---------------------------------------------------------
@@ -578,6 +576,44 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
                 {"geo": "APAC", "val": ""}
             ]
         },
+    },
+
+    # ---------------------------------------------------------
+    # Org Structure Tech View
+    # ---------------------------------------------------------
+    "org_structure_tech_view": {
+        "template_type": "org_structure_tech_view",
+        "data": {
+            "group_ceo": {"name": "", "role": ""},
+            "cdio": {"name": "", "role": ""},
+            "key_functions": [
+                {"function": "", "leader_name": "", "leader_role": "", "presence_type": "Green"},
+                {"function": "", "leader_name": "", "leader_role": "", "presence_type": "Orange"}
+            ]
+        }
+    },
+
+    # ---------------------------------------------------------
+    # Revenue Teardown
+    # ---------------------------------------------------------
+    "revenue_teardown": {
+        "template_type": "revenue_teardown",
+        "data": {
+            "eeRows": [
+                { "id": 1, "name": "EE / EER", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" },
+                { "id": 2, "name": "EN", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" }
+            ],
+            "geoRows": [
+                { "id": 1, "name": "Americas", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" },
+                { "id": 2, "name": "EMEA", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" },
+                { "id": 3, "name": "APAC", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" },
+                { "id": 4, "name": "Others", "fy25Act": "", "fy26Tar": "", "fy25Share": "", "fy26Share": "" }
+            ],
+            "insights": {
+                "top": "",
+                "bottom": ""
+            }
+        }
     },
 }
 

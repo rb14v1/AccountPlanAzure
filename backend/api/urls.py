@@ -96,5 +96,13 @@ urlpatterns = [
     path("account-cockpit/", views.template_payload_detail, kwargs={"template_type": "account_cockpit_view"}),
     path("account-cockpit/save/", views.template_payload_detail, kwargs={"template_type": "account_cockpit_view"}),
 
+    # 16. Org Structure
+    path("org-structure/", views.template_payload_detail, kwargs={"template_type": "org_structure_tech_view"}),
+    path("org-structure/save/", views.template_payload_detail, kwargs={"template_type": "org_structure_tech_view"}),
+
+    # 17. Revenue Teardown
+    path("revenue-teardown/", views.template_payload_detail, kwargs={"template_type": "revenue_teardown"}),
+    path("revenue-teardown/save/", views.template_payload_detail, kwargs={"template_type": "revenue_teardown"}),
+
     path('template-payload/<str:template_type>/', views.template_payload_detail, name='template_payload_detail'),
 ]

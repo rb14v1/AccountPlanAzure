@@ -249,6 +249,20 @@ def detect_template_type_from_query(query: str) -> str:
             "revenue performance",
             "booking performance"
         ],
+        "org_structure_tech_view": [
+            "org structure",
+            "organization structure",
+            "org chart",
+            "cdio",
+            "key functions"
+        ],
+        "revenue_teardown": [
+            "Revenue_Teardown",
+            "revenue teardown",
+            "teardown of revenue",
+            "fy25share",
+            "fy26share"
+        ],
         "implementation_plan": [
             # 1. ✅ MASTER TRIGGER
             "implementation_plan",

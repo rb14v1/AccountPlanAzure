@@ -254,7 +254,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   },
   {
     id: "account_performance_annual_plan",
-    title: "Account Performance",
+    title: "Account Performance - Annual Plan",
     description: "Generate an account performance annual plan.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -513,7 +513,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
   {
-    id: "Revenue_Teardown",
+    id: "revenue_teardown",
     title: "Revenue Teardown",
     description: "Detailed teardown of revenue by geography and EE/EN.",
     placeholders: [
@@ -521,7 +521,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "Revenue_Teardown",
+  "template_type": "revenue_teardown",
   "data": {
     "eeRows": [
       { "id": 1, "name": "EE / EER", "fy25Act": "string", "fy26Tar": "string", "fy25Share": "string", "fy26Share": "string" },

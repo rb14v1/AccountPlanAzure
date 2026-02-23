@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -14,13 +14,19 @@ import {
   Paper,
   Button,
   TextField,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { useData } from "../context/DataContext";
 import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
- 
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const TEMPLATE_NAME = "revenue_teardown";
+
 // --- STYLED COMPONENTS ---
- 
+
 const PageWrapper = styled(Box)({
   display: "flex",
   flexDirection: "column",
@@ -31,7 +37,7 @@ const PageWrapper = styled(Box)({
   color: "#000",
   width: "100%",
 });
- 
+
 const DarkHeader = styled(Box)({
   backgroundColor: "#001a1a",
   color: "#fff",
@@ -42,7 +48,7 @@ const DarkHeader = styled(Box)({
   display: "flex",
   alignItems: "center",
 });
- 
+
 const SubTableHeader = styled(Box)({
   backgroundColor: "#002a2e",
   color: "#fff",
@@ -52,7 +58,7 @@ const SubTableHeader = styled(Box)({
   display: "flex",
   width: "100%",
 });
- 
+
 const StyledTableHeader = styled(TableCell)({
   backgroundColor: "#005f6b",
   color: "#fff",
@@ -63,7 +69,7 @@ const StyledTableHeader = styled(TableCell)({
   textAlign: "center",
   lineHeight: 1.1,
 });
- 
+
 const StyledCell = styled(TableCell)({
   fontSize: "0.65rem",
   padding: "4px", // Increased padding to prevent line merging
@@ -72,7 +78,7 @@ const StyledCell = styled(TableCell)({
   height: "clamp(24px, 4vh, 32px)",
   position: "relative"
 });
- 
+
 const InsightBox = styled(Box)({
   border: "1.5px solid #002a2e",
   flex: 1,
@@ -82,7 +88,7 @@ const InsightBox = styled(Box)({
   flexDirection: "column",
   padding: "8px", // Added padding to separate the edit box from the container border
 });
- 
+
 // Format-locked input for cells
 // 1. Gray Table Cell Inputs
 const FormatLockedInput = styled(TextField)({
@@ -110,7 +116,7 @@ const FormatLockedInput = styled(TextField)({
     backgroundColor: '#ebebeb', // Slightly darker on hover
   }
 });
- 
+
 // 2. Gray Multiline Insight Inputs
 const InsightInput = styled(TextField)({
   flex: 1,
@@ -134,18 +140,49 @@ const InsightInput = styled(TextField)({
     border: "none !important",
   },
 });
- 
-const TEMPLATE_NAME = "Revenue_Teardown";
- 
+
+// --- SAFE EXTRACTOR ---
+const defaultData = {
+  eeRows: [
+    { id: 1, name: "EE / EER", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
+    { id: 2, name: "EN", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
+  ],
+  geoRows: [
+    { id: 1, name: "Americas", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
+    { id: 2, name: "Europe", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
+    { id: 3, name: "APAC", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
+  ],
+  insights: {
+    top: "• Key takeaway 1\n• Key takeaway 2",
+    bottom: "• Geography highlight 1\n• Geography highlight 2"
+  }
+};
+
+const extractData = (source: any) => {
+  const d = source?.data || source || {};
+  const mergeArr = (defArr: any[], srcArr: any[]) =>
+    defArr.map((defRow, i) => ({ ...defRow, ...(Array.isArray(srcArr) && srcArr[i] ? srcArr[i] : {}) }));
+  
+  return {
+    eeRows: mergeArr(defaultData.eeRows, d.eeRows),
+    geoRows: mergeArr(defaultData.geoRows, d.geoRows),
+    insights: {
+      top: d.insights?.top || defaultData.insights.top,
+      bottom: d.insights?.bottom || defaultData.insights.bottom
+    },
+    id: d.id
+  };
+};
+
 // --- SUB-COMPONENTS ---
- 
+
 const LegendItem = ({ color, label }: { color: string; label: string }) => (
   <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
     <Box sx={{ width: 25, height: 10, bgcolor: color }} />
     <Typography sx={{ fontSize: '0.65rem', fontWeight: 700 }}>{label}</Typography>
   </Box>
 );
- 
+
 const StackedBar = ({ label, values, colors }: { label: string; values: number[]; colors: string[] }) => (
   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
     <Stack spacing={0} sx={{ width: '85%', height: 'clamp(40px, 8vh, 60px)', justifyContent: 'flex-end', borderBottom: '1px solid #ccc' }}>
@@ -171,70 +208,159 @@ const StackedBar = ({ label, values, colors }: { label: string; values: number[]
     <Typography sx={{ fontSize: '0.5rem', mt: 0.2, fontWeight: 700 }}>{label}</Typography>
   </Box>
 );
- 
+
 const RevenueTeardownView: React.FC = () => {
   const { globalData, setGlobalData } = useData();
- 
-  const defaultData = {
-    eeRows: [
-      { id: 1, name: "EE / EER", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
-      { id: 2, name: "EN", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
-    ],
-    geoRows: [
-      { id: 1, name: "Americas", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
-      { id: 2, name: "Europe", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
-      { id: 3, name: "APAC", fy25Act: "", fy26Tar: "", fy25Share: "", fy26Share: "" },
-    ],
-    insights: {
-        top: "• Key takeaway 1\n• Key takeaway 2",
-        bottom: "• Geography highlight 1\n• Geography highlight 2"
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+  
+  const rawData = extractData(globalData?.revenue_teardown);
+  const editable = useEditableTable(rawData);
+
+  // Backend States
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
+
+  const dataLoadedFromDB = useRef(false);
+  const autoSaveAttempted = useRef(false);
+
+  // 1. Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.revenue_teardown && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.revenue_teardown));
+    }
+  }, [globalData?.revenue_teardown]);
+
+  // 2. Load from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      if (dataLoadedFromDB.current) return;
+      setInitialLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
+        if (res.ok) {
+          const dbData = await res.json();
+          if (Object.keys(dbData).length > 0) {
+            const parsed = extractData(dbData);
+            editable.updateDraft(parsed);
+            setGlobalData((prev: any) => ({ ...prev, revenue_teardown: parsed }));
+            dataLoadedFromDB.current = true;
+          }
+        }
+      } catch (e) {
+        console.error("Fetch failed", e);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, setGlobalData]);
+
+  // 3. Auto-Save
+  useEffect(() => {
+    const autoSave = async () => {
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
+        const isNew = rawData && !rawData.id;
+        if (isNew && !autoSaveAttempted.current) {
+          autoSaveAttempted.current = true;
+          try {
+            const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_id: userId, data: rawData })
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+              setGlobalData((prev: any) => ({ ...prev, revenue_teardown: extractData(result.data) }));
+              setSnackbar({ open: true, message: "✅ Auto-saved to database", severity: "success" });
+            }
+          } catch (e) {
+            autoSaveAttempted.current = false;
+          }
+        }
+      }
+    };
+    const t = setTimeout(autoSave, 500);
+    return () => clearTimeout(t);
+  }, [rawData, userId, setGlobalData]);
+
+  // 4. Manual Save
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, data: editable.draftData })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setGlobalData((prev: any) => ({ ...prev, revenue_teardown: extractData(result.data) }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
+      } else throw new Error("Save failed");
+    } catch (e) {
+      setSnackbar({ open: true, message: "❌ Save failed", severity: "error" });
+    } finally {
+      setLoading(false);
     }
   };
- 
-  const revenueData = globalData?.Revenue_Teardown || defaultData;
-  const editable = useEditableTable(revenueData);
- 
+
   const handleTableChange = (section: 'eeRows' | 'geoRows', index: number, field: string, value: string) => {
     const updated = [...editable.draftData[section]];
     updated[index] = { ...updated[index], [field]: value };
     editable.updateDraft({ ...editable.draftData, [section]: updated });
   };
- 
+
   const handleInsightChange = (section: 'top' | 'bottom', value: string) => {
     editable.updateDraft({
         ...editable.draftData,
         insights: { ...editable.draftData.insights, [section]: value }
     });
   };
- 
+
   const chartLabels = ["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"];
- 
+
+  if (initialLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 10 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ bgcolor: "#fff", minHeight: "100vh" }}>
+      {/* ADDED SNACKBAR FOR FEEDBACK */}
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+      </Snackbar>
+
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', p: 1, gap: 2 }}>
         <DownloadTemplates templateName={TEMPLATE_NAME} />
         {!editable.isEditing ? (
-          <Button variant="outlined" onClick={editable.startEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Edit</Button>
+          <Button variant="outlined" onClick={editable.startEdit} disabled={loading} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Edit</Button>
         ) : (
           <>
             <Button
               variant="contained"
-              onClick={() => editable.saveEdit((updated) => setGlobalData((prev: any) => ({ ...prev, Revenue_Teardown: updated })))}
+              onClick={handleSave} // POINTED TO BACKEND SAVE FUNCTION
+              disabled={loading}
               sx={{ backgroundColor: "#00a99d", color: "#fff" }}
-            >Save</Button>
-            <Button variant="outlined" onClick={editable.cancelEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Cancel</Button>
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
+            </Button>
+            <Button variant="outlined" onClick={editable.cancelEdit} disabled={loading} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Cancel</Button>
           </>
         )}
       </Box>
- 
+
       <PageWrapper id="template-to-download">
         <Typography variant="h5" sx={{ color: "#00c1b1", fontWeight: 800, mb: 0.5, fontSize: "clamp(1.4rem, 3vh, 2rem)" }}>
           Revenue Teardown: EE vs. EN & Geo teardown
         </Typography>
- 
+
         <Grid container wrap="nowrap" spacing={2} sx={{ flex: 1, minHeight: 0, width: "100%" }}>
           <Grid item sx={{ width: "72%", display: "flex", flexDirection: "column", height: "100%", gap: 0.5 }}>
-           
+            
             {/* Section 1 */}
             <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.2 }}>
@@ -267,7 +393,7 @@ const RevenueTeardownView: React.FC = () => {
                 </Table>
               </TableContainer>
             </Box>
- 
+
             {/* Section 2 */}
             <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1.2, minHeight: 0, mt: 0.5 }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.2 }}>
@@ -301,7 +427,7 @@ const RevenueTeardownView: React.FC = () => {
               </TableContainer>
             </Box>
           </Grid>
- 
+
           {/* RIGHT PANEL: Insights */}
           <Grid item sx={{ width: "28%", display: "flex", flexDirection: "column", height: "100%", gap: 1 }}>
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -323,7 +449,7 @@ const RevenueTeardownView: React.FC = () => {
                 )}
               </InsightBox>
             </Box>
- 
+
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
               <DarkHeader>Key insights</DarkHeader>
               <InsightBox>
@@ -349,6 +475,5 @@ const RevenueTeardownView: React.FC = () => {
     </Box>
   );
 };
- 
+
 export default RevenueTeardownView;
- 

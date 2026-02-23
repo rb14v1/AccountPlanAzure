@@ -339,6 +339,79 @@ def normalize_account_cockpit(obj: dict) -> dict:
 
     return {"template_type": "account_cockpit_view", "data": clean_data}
 
+def normalize_org_structure(obj: dict) -> dict:
+    raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_person(key):
+        person = raw_data.get(key)
+        if isinstance(person, dict):
+            return {"name": str(person.get("name", "")), "role": str(person.get("role", ""))}
+        return {"name": "", "role": ""}
+
+    clean_data = {
+        "group_ceo": safe_person("group_ceo"),
+        "cdio": safe_person("cdio"),
+    }
+
+    raw_functions = raw_data.get("key_functions") or []
+    clean_functions = []
+    if isinstance(raw_functions, list):
+        for f in raw_functions:
+            if isinstance(f, dict):
+                clean_functions.append({
+                    "function": str(f.get("function", "")),
+                    "leader_name": str(f.get("leader_name", "")),
+                    "leader_role": str(f.get("leader_role", "")),
+                    "presence_type": str(f.get("presence_type", "Green"))
+                })
+                
+    if not clean_functions:
+        clean_functions = [{"function": "", "leader_name": "", "leader_role": "", "presence_type": "Green"} for _ in range(4)]
+        
+    clean_data["key_functions"] = clean_functions
+
+    return {"template_type": "org_structure_tech_view", "data": clean_data}
+
+def normalize_revenue_teardown(obj: dict) -> dict:
+    DEFAULTS = {
+        "eeRows": [
+            { "id": 1, "name": "EE / EER"},
+            { "id": 2, "name": "EN"}
+        ],
+        "geoRows": [
+            { "id": 1, "name": "Americas"},
+            { "id": 2, "name": "EMEA"},
+            { "id": 3, "name": "APAC"},
+            { "id": 4, "name": "Others"}
+        ]
+    }
+    
+    raw_data = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    clean_data = {}
+
+    for key in ["eeRows", "geoRows"]:
+        llm_list = raw_data.get(key) or []
+        clean_list = []
+        for i, def_row in enumerate(DEFAULTS[key]):
+            match = llm_list[i] if isinstance(llm_list, list) and i < len(llm_list) and isinstance(llm_list[i], dict) else {}
+            clean_list.append({
+                "id": def_row["id"],
+                "name": def_row["name"],
+                "fy25Act": str(match.get("fy25Act", "")),
+                "fy26Tar": str(match.get("fy26Tar", "")),
+                "fy25Share": str(match.get("fy25Share", "")),
+                "fy26Share": str(match.get("fy26Share", ""))
+            })
+        clean_data[key] = clean_list
+
+    raw_insights = raw_data.get("insights") if isinstance(raw_data.get("insights"), dict) else {}
+    clean_data["insights"] = {
+        "top": str(raw_insights.get("top", "")),
+        "bottom": str(raw_insights.get("bottom", ""))
+    }
+
+    return {"template_type": "revenue_teardown", "data": clean_data}
+
 
 # Registry mapping string names to normalizer functions
 NORMALIZER_REGISTRY = {
@@ -355,6 +428,8 @@ NORMALIZER_REGISTRY = {
     "implementation_plan": normalize_implementation_plan,
     "tech_spend_view": normalize_tech_spend,
     "account_cockpit_view": normalize_account_cockpit,
+    "org_structure_tech_view": normalize_org_structure,
+    "revenue_teardown": normalize_revenue_teardown,
 }
 
 def get_normalized_payload(template_type: str, raw_data: dict) -> dict:

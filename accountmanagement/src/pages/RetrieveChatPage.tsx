@@ -26,7 +26,9 @@ const ALLOWED_TEMPLATES = [
   "account_dashboard",
   "tech_spend_view", // ✅ ADDED THIS
   "relationship_heatmap", // ✅ ADDED THIS FOR YOUR OTHER TEMPLATE
-  "account_cockpit_view"
+  "account_cockpit_view",
+  "org_structure_tech_view",
+  "revenue_teardown",
 ] as const;
  
 const RetrieveChatPage: React.FC = () => {
