@@ -267,7 +267,7 @@ const TalentExcellenceOverview: React.FC = () => {
       rawValue &&
         !["#", "xx%", "x%", ""].includes(normalized)
         ? rawValue
-        : "TBD";
+        : " ";
 
     return (
       <StyledCell sx={{ bgcolor: bgColor, p: 0 }}>
@@ -356,12 +356,12 @@ const TalentExcellenceOverview: React.FC = () => {
                     <TableRow key={`ov-${i}`}>
                       {i === 0 && <StyledCell rowSpan={6} sx={{ bgcolor: '#005f6b', color: '#fff', fontWeight: 700, textAlign: 'center' }}>Overall Workforce Overview</StyledCell>}
                       <StyledCell align="center">{row.id}</StyledCell>
-                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || "TBD"}</StyledCell>
+                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || " "}</StyledCell>
                       <StyledCell sx={{ bgcolor: '#d9d9d9' }}>
                         {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('overviewRows', i, 'target', e.target.value)} /> : row.target &&
                           !["#", "xx%", "x%", ""].includes(String(row.target).toLowerCase())
                           ? row.target
-                          : "TBD"}
+                          : " "}
                       </StyledCell>
                       {renderQuarterCell('overviewRows', i, 'q1')}
                       {renderQuarterCell('overviewRows', i, 'q2')}
@@ -373,12 +373,12 @@ const TalentExcellenceOverview: React.FC = () => {
                     <TableRow key={`dm-${i}`}>
                       {i === 0 && <StyledCell rowSpan={10} sx={{ bgcolor: '#005f6b', color: '#fff', fontWeight: 700, textAlign: 'center' }}>Demand and Fulfilment</StyledCell>}
                       <StyledCell align="center">{row.id}</StyledCell>
-                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || "TBD"}</StyledCell>
+                      <StyledCell sx={{ textAlign: 'left' }}>{row.metric || " "}</StyledCell>
                       <StyledCell sx={{ bgcolor: '#d9d9d9' }}>
                         {editable.isEditing ? <FormatLockedInput variant="outlined" value={row.target} onChange={(e) => handleRowChange('demandRows', i, 'target', e.target.value)} /> : row.target &&
                           !["#", "xx%", "x%", ""].includes(String(row.target).toLowerCase())
                           ? row.target
-                          : "TBD"}
+                          : " "}
                       </StyledCell>
                       {renderQuarterCell('demandRows', i, 'q1')}
                       {renderQuarterCell('demandRows', i, 'q2')}

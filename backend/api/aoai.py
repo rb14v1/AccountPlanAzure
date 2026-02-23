@@ -124,11 +124,11 @@ def detect_template_type_from_query(query: str) -> str:
             "data modernization", "ai capabilities", "managed services", "srg"
         ],
         "operational_excellence_strategy": [
-            "operational excellence", "margin", "gp percent",
-            "commercial transformation", "priority levers"
+            "operational excellence", "gp percent", "gp percentage", 
+            "commercial transformation", "priority levers", "margin uplift" # Removed generic "margin" to prevent clashes
         ],
         "customer_profile": [
-            "customer profile", "customer perception", "csat",
+            "customer profile", "customer perception", "csat score", # Changed "csat" to prevent clash with "csat_trajectory"
             "headquarter location", "current work"
         ],
         "talent_excellence_overview": [
@@ -241,6 +241,13 @@ def detect_template_type_from_query(query: str) -> str:
         ],
         "relationship_heatmap": [
             "relationship heatmap", "stakeholder", "relationship strength"
+        ],
+        "account_cockpit_view": [
+            "account_cockpit_view",
+            "account cockpit",
+            "cockpit view",
+            "revenue performance",
+            "booking performance"
         ],
         "implementation_plan": [
             # 1. ✅ MASTER TRIGGER

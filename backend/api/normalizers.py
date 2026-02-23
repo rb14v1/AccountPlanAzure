@@ -292,6 +292,54 @@ def normalize_tech_spend(obj: dict) -> dict:
 
     return {"template_type": "tech_spend_view", "data": clean_data}
 
+def normalize_account_cockpit(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    clean_data = {}
+
+    # 1. Map YoY Performance blocks
+    def extract_yoy(perf_key):
+        items = raw.get(perf_key, {}).get("yoy", [])
+        out = []
+        for i, year in enumerate(["FY24", "FY25", "FY26"]):
+            val = items[i].get("value", "") if i < len(items) and isinstance(items[i], dict) else ""
+            out.append({"y": year, "v": val})
+        return out
+    
+    clean_data["revenueYoyData"] = extract_yoy("revenue_performance")
+    clean_data["bookingYoyData"] = extract_yoy("booking_performance")
+    clean_data["marginYoyData"] = extract_yoy("margin_performance")
+
+    # 2. Large Deals
+    ld_items = raw.get("large_deals", {}).get("tcv_wins", [])
+    ld_out = []
+    for i, q in enumerate(["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25"]):
+        val = ld_items[i].get("value", "") if i < len(ld_items) and isinstance(ld_items[i], dict) else ""
+        ld_out.append({"label": q, "v": val})
+    clean_data["largeDealsData"] = ld_out
+
+    # 3. SL Penetration
+    sl_items = raw.get("sl_penetration", [])
+    sl_out = []
+    for i, q in enumerate(["FY25 Q1", "FY25 Q2", "FY25 Q3", "FY25 Q4", "FY26 Q1", "FY26 Q2", "FY26 Q3", "FY26 Q4"]):
+        val = sl_items[i].get("value", "") if i < len(sl_items) and isinstance(sl_items[i], dict) else ""
+        sl_out.append({"label": q, "val": val})
+    clean_data["slPenetrationData"] = sl_out
+
+    # 4. Partners
+    p_items = raw.get("partnership_revenue", [])
+    p_out = []
+    for i in range(5):
+        p = p_items[i] if i < len(p_items) and isinstance(p_items[i], dict) else {}
+        p_out.append({
+            "name": str(p.get("partner", "")),
+            "revenue": str(p.get("fy25_revenue", "")),
+            "target": str(p.get("fy26_target", ""))
+        })
+    clean_data["partners"] = p_out
+
+    return {"template_type": "account_cockpit_view", "data": clean_data}
+
+
 # Registry mapping string names to normalizer functions
 NORMALIZER_REGISTRY = {
     "account_team_pod": normalize_account_team_pod,
@@ -306,6 +354,7 @@ NORMALIZER_REGISTRY = {
     "investment_plan": normalize_investment_plan,
     "implementation_plan": normalize_implementation_plan,
     "tech_spend_view": normalize_tech_spend,
+    "account_cockpit_view": normalize_account_cockpit,
 }
 
 def get_normalized_payload(template_type: str, raw_data: dict) -> dict:

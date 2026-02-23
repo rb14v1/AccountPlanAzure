@@ -290,13 +290,42 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     "account_cockpit_view": {
         "template_type": "account_cockpit_view",
         "data": {
-            "executive_summary": [""],
-            "key_highlights": [""],
-            "key_metrics": [""],
-            "risks": [""],
-            "opportunities": [""],
-        },
+            "revenue_performance": {
+                "yoy": [{"year": "FY24", "value": "", "target_achieved": ""}, {"year": "FY25", "value": "", "target_achieved": ""}, {"year": "FY26", "value": "", "target_achieved": ""}],
+                "qoq": [{"quarter": "FY25 Q1", "value": "", "target": ""}, {"quarter": "FY25 Q2", "value": "", "target": ""}, {"quarter": "FY25 Q3", "value": "", "target": ""}, {"quarter": "FY25 Q4", "value": "", "target": ""}, {"quarter": "FY26 Q1", "value": "", "target": ""}, {"quarter": "FY26 Q2", "value": "", "target": ""}, {"quarter": "FY26 Q3", "value": "", "target": ""}, {"quarter": "FY26 Q4", "value": "", "target": ""}]
+            },
+            "booking_performance": {
+                "yoy": [{"year": "FY24", "value": "", "target_achieved": ""}, {"year": "FY25", "value": "", "target_achieved": ""}, {"year": "FY26", "value": "", "target_achieved": ""}],
+                "qoq": [{"quarter": "FY25 Q1", "value": "", "target": ""}, {"quarter": "FY25 Q2", "value": "", "target": ""}, {"quarter": "FY25 Q3", "value": "", "target": ""}, {"quarter": "FY25 Q4", "value": "", "target": ""}, {"quarter": "FY26 Q1", "value": "", "target": ""}, {"quarter": "FY26 Q2", "value": "", "target": ""}, {"quarter": "FY26 Q3", "value": "", "target": ""}, {"quarter": "FY26 Q4", "value": "", "target": ""}]
+            },
+            "margin_performance": {
+                "yoy": [{"year": "FY24", "value": "", "target_achieved": ""}, {"year": "FY25", "value": "", "target_achieved": ""}, {"year": "FY26", "value": "", "target_achieved": ""}],
+                "qoq": [{"quarter": "FY25 Q1", "value": "", "target": ""}, {"quarter": "FY25 Q2", "value": "", "target": ""}, {"quarter": "FY25 Q3", "value": "", "target": ""}, {"quarter": "FY25 Q4", "value": "", "target": ""}, {"quarter": "FY26 Q1", "value": "", "target": ""}, {"quarter": "FY26 Q2", "value": "", "target": ""}, {"quarter": "FY26 Q3", "value": "", "target": ""}, {"quarter": "FY26 Q4", "value": "", "target": ""}]
+            },
+            "large_deals": {
+                "tcv_wins": [{"quarter": "Q1 FY25", "value": ""}, {"quarter": "Q2 FY25", "value": ""}, {"quarter": "Q3 FY25", "value": ""}, {"quarter": "Q4 FY25", "value": ""}],
+                "num_wins": ["", "", "", ""]
+            },
+            "service_lines_presence": {
+                "data_cloud": False, "infra": False, "dats": False, "erp": False
+            },
+            "sl_penetration": [
+                {"quarter": "FY25 Q1", "value": ""}, {"quarter": "FY25 Q2", "value": ""}, {"quarter": "FY25 Q3", "value": ""}, {"quarter": "FY25 Q4", "value": ""}
+            ],
+            "partnership_revenue": [
+                {"partner": "", "fy25_revenue": "", "fy26_target": ""},
+                {"partner": "", "fy25_revenue": "", "fy26_target": ""},
+                {"partner": "", "fy25_revenue": "", "fy26_target": ""}
+            ],
+            "revenue_geos": [
+                {"geo": "Americas", "value": ""}, {"geo": "EMEA", "value": ""}, {"geo": "APAC", "value": ""}, {"geo": "Others", "value": ""}
+            ],
+            "csat_trajectory": [
+                {"period": "H1 FY24", "value": ""}, {"period": "H2 FY24", "value": ""}, {"period": "H1 FY25", "value": ""}, {"period": "H2 FY25", "value": ""}
+            ]
+        }
     },
+    
     # ---------------------------------------------------------
     # Relationship Heatmap
     # ---------------------------------------------------------

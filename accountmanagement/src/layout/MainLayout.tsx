@@ -92,7 +92,7 @@ export default function MainLayout() {
     { id: "innovation-strategy", label: "Innovation Strategy", icon: "bi-lightbulb-fill" },
     { id: "revenue-teardown", label: "Revenue Teardown", icon: "bi-graph-up-arrow" },
     { id: "tech-spend", label: "Tech Spend View", icon: "bi-database-gear" },
-    { id: "account-cockpit", label: "Account Cockpit", icon: "bi-speedometer2" },
+    { id: "account-cockpit-view", label: "Account Cockpit", icon: "bi-speedometer2" },
     { id: "sl-penetration", label: "SL Penetration", icon: "bi-bar-chart-steps" },
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
@@ -122,7 +122,7 @@ export default function MainLayout() {
       case "innovation-strategy": return <InnovationStrategy />;
       case "revenue-teardown": return <RevenueTeardownView />;
       case "tech-spend": return <TechSpendView />;
-      case "account-cockpit": return <AccountCockpitView />;
+      case "account-cockpit-view": return <AccountCockpitView />;
       case "sl-penetration": return <ServiceLinePenetration />;
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;

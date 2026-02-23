@@ -85,16 +85,12 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 {
   "template_type": "relationship_heatmap",
   "data": {
-    "stakeholder_list": [
-      {
         "client_stakeholder": "string",
         "role": "string",
         "reports_to": "string",
         "level": "string",
         "client_relationship": "string",
         "engagement_plan_next_action": "string"
-      }
-    ]
   }
 }`
   },
@@ -337,7 +333,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
   {
-    id: "Account_Cockpit",
+    id: "account_cockpit_view",
     title: "Account Cockpit",
     description: "Generate a high-level performance cockpit overview.",
     placeholders: [
@@ -345,43 +341,38 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "Account_Cockpit",
+  "template_type": "account_cockpit_view",
   "data": {
     "revenue_performance": {
-      "yoy_data": [
-        { "y": "FY24", "v": "number" },
-        { "y": "FY25", "v": "number" },
-        { "y": "FY26", "v": "number" }
-      ],
-      "qoq_data": [
-        { "label": "string", "val": "number" }
-      ]
+      "yoy": [{"year": "FY24", "value": "number", "target_achieved": "string"}],
+      "qoq": [{"quarter": "string", "value": "number", "target": "string"}]
     },
     "booking_performance": {
-      "yoy_data": [
-        { "y": "FY24", "v": "number" },
-        { "y": "FY25", "v": "number" },
-        { "y": "FY26", "v": "number" }
-      ]
+      "yoy": [{"year": "FY24", "value": "number", "target_achieved": "string"}],
+      "qoq": [{"quarter": "string", "value": "number", "target": "string"}]
     },
     "margin_performance": {
-      "yoy_data": [
-        { "y": "FY24", "v": "number" },
-        { "y": "FY25", "v": "number" },
-        { "y": "FY26", "v": "number" }
-      ]
+      "yoy": [{"year": "FY24", "value": "number", "target_achieved": "string"}],
+      "qoq": [{"quarter": "string", "value": "number", "target": "string"}]
     },
-    "large_deals": [
-      { "label": "string", "v": "number" }
-    ],
+    "large_deals": {
+      "tcv_wins": [{"quarter": "string", "value": "number"}],
+      "num_wins": ["string", "string", "string", "string"]
+    },
+    "service_lines_presence": {
+      "data_cloud": false, "infra": false, "dats": false, "erp": false
+    },
     "sl_penetration": [
-      { "label": "string", "val": "number" }
+      { "quarter": "string", "value": "number" }
     ],
-    "partners": [
-      { "name": "string", "revenue": "string", "target": "string" }
+    "partnership_revenue": [
+      { "partner": "string", "fy25_revenue": "string", "fy26_target": "string" }
     ],
-    "geographic_revenue": [
-      { "l": "string", "v": "number" }
+    "revenue_geos": [
+      { "geo": "string", "value": "number" }
+    ],
+    "csat_trajectory": [
+      { "period": "string", "value": "number" }
     ]
   }
 }`
