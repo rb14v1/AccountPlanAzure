@@ -411,7 +411,168 @@ def normalize_revenue_teardown(obj: dict) -> dict:
     }
 
     return {"template_type": "revenue_teardown", "data": clean_data}
+def normalize_client_context_1(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_str(val): return str(val) if val else ""
+    
+    clean_data = {
+        "year_founded": safe_str(raw.get("year_founded")),
+        "headquarters_location": safe_str(raw.get("headquarters_location")),
+        "number_of_offices": safe_str(raw.get("number_of_offices")),
+        "total_employees": safe_str(raw.get("total_employees")),
+        "roe_percent": safe_str(raw.get("roe_percent")),
+        "client_description": safe_str(raw.get("client_description")),
+    }
+    
+    tr = raw.get("total_revenue_usd_bn") if isinstance(raw.get("total_revenue_usd_bn"), dict) else {}
+    clean_data["total_revenue_usd_bn"] = {
+        "ebitda_margin": safe_str(tr.get("ebitda_margin")),
+        "actuals": safe_str(tr.get("actuals")),
+        "forecast": safe_str(tr.get("forecast")),
+    }
+    
+    rby = raw.get("revenue_by_year")
+    clean_data["revenue_by_year"] = [{"fiscal_year": safe_str(x.get("fiscal_year")), "revenue": safe_str(x.get("revenue")), "cagr_percent": safe_str(x.get("cagr_percent"))} for x in rby if isinstance(x, dict)] if isinstance(rby, list) else []
+        
+    kh = raw.get("key_highlights")
+    clean_data["key_highlights"] = [safe_str(x) for x in kh] if isinstance(kh, list) else ([kh] if isinstance(kh, str) else [])
+        
+    ec = raw.get("executive_changes")
+    clean_data["executive_changes"] = [{"name": safe_str(x.get("name")), "position": safe_str(x.get("position")), "background": safe_str(x.get("background"))} for x in ec if isinstance(x, dict)] if isinstance(ec, list) else []
+        
+    return {"template_type": "client_context_1", "data": clean_data}
 
+def normalize_client_context_2(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_str(val): return str(val) if val else ""
+    def safe_list(val, default): return val if isinstance(val, list) else default
+    
+    b_it = raw.get("business_it_priorities") if isinstance(raw.get("business_it_priorities"), dict) else {}
+    tech = raw.get("tech_landscape_spend") if isinstance(raw.get("tech_landscape_spend"), dict) else {}
+    spend = tech.get("spend") if isinstance(tech.get("spend"), dict) else {}
+    partners = tech.get("partners") if isinstance(tech.get("partners"), dict) else {}
+    comp = raw.get("competitive_intel") if isinstance(raw.get("competitive_intel"), dict) else {}
+    
+    clean_data = {
+        "business_it_priorities": {
+            "business": [safe_str(x) for x in safe_list(b_it.get("business"), [])],
+            "it": [safe_str(x) for x in safe_list(b_it.get("it"), [])]
+        },
+        "tech_landscape_spend": {
+            "spend": {
+                "overall": safe_str(spend.get("overall")),
+                "outsourced": safe_str(spend.get("outsourced")),
+                "rnd": safe_str(spend.get("rnd"))
+            },
+            "partners": {
+                "erp": {"name": safe_str(partners.get("erp", {}).get("name", "")) if isinstance(partners.get("erp"), dict) else ""},
+                "hyperscalers": [{"name": safe_str(x.get("name"))} for x in safe_list(partners.get("hyperscalers"), []) if isinstance(x, dict)],
+                "isvs": [{"name": safe_str(x.get("name"))} for x in safe_list(partners.get("isvs"), []) if isinstance(x, dict)]
+            }
+        },
+        "competitive_intel": {
+            "market_share": [{"name": safe_str(x.get("name")), "value": float(x.get("value", 0) or 0)} for x in safe_list(comp.get("market_share"), []) if isinstance(x, dict)],
+            "competition_overview": [{"competitor_name": safe_str(x.get("competitor_name")), "wallet_share_percent": safe_str(x.get("wallet_share_percent")), "depth_of_relationship": int(x.get("depth_of_relationship", 0) or 0), "key_areas_of_engagement": safe_str(x.get("key_areas_of_engagement"))} for x in safe_list(comp.get("competition_overview"), []) if isinstance(x, dict)]
+        }
+    }
+    return {"template_type": "client_context_2", "data": clean_data}
+
+def normalize_account_performance_quarterly(obj: dict) -> dict:
+    raw_data = obj.get("data") if isinstance(obj.get("data"), (dict, list)) else obj
+
+    QUARTERS = ["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"]
+    EXPECTED_METRICS = [
+        "Revenue Budget", "Revenue Actuals / Forecast", "TCV won", "Win rate (YTD)",
+        "Book to bill ratio", "SL revenue penetration %", "# of SLs present in the account*",
+        "Gross Margin %", "Revenue / FTE (ONS)", "Revenue / FTE (OFS)",
+        "Cost / FTE (ONS)", "Cost / FTE (OFS)", "Attrition %", "Fulfilment %", "Delivery on time %"
+    ]
+
+    # Initialize safely so frontend never crashes due to missing keys
+    clean_data = {m: {q: "" for q in QUARTERS} for m in EXPECTED_METRICS}
+
+    def get_metric_key(m_in):
+        for em in EXPECTED_METRICS:
+            if em.lower().strip() == str(m_in).lower().strip():
+                return em
+        return m_in
+
+    # Scenario 1: LLM returns a list
+    if isinstance(raw_data, list):
+        for row in raw_data:
+            if not isinstance(row, dict): continue
+            metric = row.get("metric")
+            if not metric: continue
+            
+            real_m = get_metric_key(metric)
+            if real_m not in clean_data: clean_data[real_m] = {q: "" for q in QUARTERS}
+            
+            for q in QUARTERS:
+                if q in row and row[q] is not None:
+                    clean_data[real_m][q] = str(row[q])
+
+    # Scenario 2: LLM returns a direct dict mapping
+    elif isinstance(raw_data, dict):
+        data_dict = raw_data.get("data", raw_data) if isinstance(raw_data.get("data"), dict) else raw_data
+        for metric, q_values in data_dict.items():
+            real_m = get_metric_key(metric)
+            if real_m not in clean_data: clean_data[real_m] = {q: "" for q in QUARTERS}
+            
+            if isinstance(q_values, dict):
+                for q in QUARTERS:
+                    if q in q_values and q_values[q] is not None:
+                        clean_data[real_m][q] = str(q_values[q])
+
+    return {
+        "template_type": "account_performance_quarterly_plan",
+        "data": clean_data
+    }
+
+def normalize_service_line_penetration(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    clean_data = {}
+ 
+    # barValues (Flatten the nested array from the prompt schema)
+    bv = raw.get("barValues", [["", "", "", ""]])
+    if isinstance(bv, list) and len(bv) > 0 and isinstance(bv[0], list):
+        clean_data["barValues"] = bv
+    elif isinstance(bv, list):
+        clean_data["barValues"] = [bv]
+    else:
+        clean_data["barValues"] = [["", "", "", ""]]
+ 
+    # xxValues
+    xx = raw.get("xxValues", [])
+    clean_data["xxValues"] = [str(x) for x in xx] if isinstance(xx, list) else [""] * 8
+ 
+    # tableRows
+    defaults = [
+        { "id": "1", "name": "Secured Order Book"},
+        { "id": "1a", "name": "- Gross Order Book"},
+        { "id": "1b", "name": "- Expiry / run-off"},
+        { "id": "2", "name": "Open TCV"},
+        { "id": "3", "name": "TCV Won"},
+        { "id": "4", "name": "TCV dropped / lost"}
+    ]
+    raw_rows = raw.get("tableRows", [])
+    clean_rows = []
+    for i, def_row in enumerate(defaults):
+        match = raw_rows[i] if isinstance(raw_rows, list) and i < len(raw_rows) and isinstance(raw_rows[i], dict) else {}
+        clean_rows.append({
+            "id": def_row["id"],
+            "name": def_row["name"],
+            "v1": str(match.get("v1", "")),
+            "v2": str(match.get("v2", "")),
+            "v3": str(match.get("v3", "")),
+            "v4": str(match.get("v4", ""))
+        })
+    clean_data["tableRows"] = clean_rows
+    clean_data["insights"] = str(raw.get("insights", ""))
+ 
+    return {"template_type": "service_line_penetration", "data": clean_data}
+ 
 
 # Registry mapping string names to normalizer functions
 NORMALIZER_REGISTRY = {
@@ -430,6 +591,10 @@ NORMALIZER_REGISTRY = {
     "account_cockpit_view": normalize_account_cockpit,
     "org_structure_tech_view": normalize_org_structure,
     "revenue_teardown": normalize_revenue_teardown,
+    "client_context_1": normalize_client_context_1,
+    "client_context_2": normalize_client_context_2,
+    "account_performance_quarterly_plan": normalize_account_performance_quarterly,
+    "service_line_penetration": normalize_service_line_penetration,
 }
 
 def get_normalized_payload(template_type: str, raw_data: dict) -> dict:
@@ -466,3 +631,4 @@ def get_humanized_message(template_type: str, safe_payload: dict) -> str:
         )
     
     return f"{template_type.replace('_', ' ').title()} successfully generated and saved."
+

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   Box,
   Button,
@@ -8,12 +8,16 @@ import {
   List,
   ListItem,
   TextField,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
-const TEMPLATE_NAME = "Client_Context";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const TEMPLATE_NAME = "client_context_1";
 
 // DEFINE THE SHAPE OF YOUR DATA (Matches your Prompt)
 export interface ClientContextJSON {
@@ -39,6 +43,7 @@ export interface ClientContextJSON {
     background: string;
   }>;
   client_description: string;
+  id?: any;
 }
 
 interface StatData {
@@ -77,6 +82,28 @@ const StatBox = styled(Box)(({ theme }) => ({
   position: "relative",
   flex: 1,
 }));
+
+// --- SAFE EXTRACTOR ---
+const extractData = (source: any): ClientContextJSON => {
+  const d = source?.data || source || {};
+  return {
+    year_founded: d.year_founded || "",
+    headquarters_location: d.headquarters_location || "",
+    number_of_offices: d.number_of_offices || "",
+    total_employees: d.total_employees || "",
+    roe_percent: d.roe_percent || "",
+    total_revenue_usd_bn: {
+      ebitda_margin: d.total_revenue_usd_bn?.ebitda_margin || "",
+      actuals: d.total_revenue_usd_bn?.actuals || "",
+      forecast: d.total_revenue_usd_bn?.forecast || ""
+    },
+    revenue_by_year: Array.isArray(d.revenue_by_year) ? d.revenue_by_year : [],
+    key_highlights: Array.isArray(d.key_highlights) ? d.key_highlights : [],
+    executive_changes: Array.isArray(d.executive_changes) ? d.executive_changes : [],
+    client_description: d.client_description || "",
+    id: d.id
+  };
+};
 
 // --- UPDATED SUB-COMPONENT: Accepts 'stats', 'isEditing', and 'onStatsChange' props ---
 const StatsRow: React.FC<{
@@ -275,7 +302,7 @@ const RevenueChart: React.FC<{
 
         {revenueData.map((item, idx) => {
           const numericVal = getNum(item.revenue);
-          const heightPx = (numericVal / maxVal) * 220;
+          const heightPx = maxVal > 0 ? (numericVal / maxVal) * 220 : 0;
 
           return (
             <Box
@@ -292,7 +319,7 @@ const RevenueChart: React.FC<{
               <Box
                 sx={{
                   width: "45px",
-                  height: `${heightPx}px`,
+                  height: `${heightPx || 1}px`,
                   bgcolor: idx > 1 ? PRIMARY_ORANGE : "#dba380",
                   display: "flex",
                   alignItems: "center",
@@ -431,28 +458,97 @@ const ExecutiveCard: React.FC<
 // --- MAIN COMPONENT ---
 const ClientContext: React.FC = () => {
   const { globalData, setGlobalData } = useData();
-  const contextData: ClientContextJSON | undefined = globalData?.Client_Context;
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
 
-  // Initialize data structure
-  const initialData: ClientContextJSON = contextData || {
-    year_founded: "",
-    headquarters_location: "",
-    number_of_offices: "",
-    total_employees: "",
-    roe_percent: "",
-    total_revenue_usd_bn: {
-      ebitda_margin: "",
-      actuals: "",
-      forecast: "",
-    },
-    revenue_by_year: [],
-    key_highlights: [],
-    executive_changes: [],
-    client_description: "",
+  const rawData = extractData(globalData?.client_context_1);
+  const editable = useEditableTable<ClientContextJSON>(rawData);
+
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
+
+  const dataLoadedFromDB = useRef(false);
+  const autoSaveAttempted = useRef(false);
+
+  // 1. Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.client_context_1 && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.client_context_1));
+    }
+  }, [globalData?.client_context_1]);
+
+  // 2. Load from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      if (dataLoadedFromDB.current) return;
+      setInitialLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
+        if (res.ok) {
+          const dbData = await res.json();
+          if (Object.keys(dbData).length > 0) {
+            const parsed = extractData(dbData);
+            editable.updateDraft(parsed);
+            setGlobalData((prev: any) => ({ ...prev, client_context_1: parsed }));
+            dataLoadedFromDB.current = true;
+          }
+        }
+      } catch (e) {
+        console.error("Fetch failed", e);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, setGlobalData]);
+
+  // 3. Auto-Save
+  useEffect(() => {
+    const autoSave = async () => {
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
+        const isNew = rawData && !rawData.id;
+        if (isNew && !autoSaveAttempted.current) {
+          autoSaveAttempted.current = true;
+          try {
+            const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_id: userId, data: rawData })
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+              setGlobalData((prev: any) => ({ ...prev, client_context_1: extractData(result.data) }));
+              setSnackbar({ open: true, message: "✅ Auto-saved to database", severity: "success" });
+            }
+          } catch (e) {
+            autoSaveAttempted.current = false;
+          }
+        }
+      }
+    };
+    const t = setTimeout(autoSave, 500);
+    return () => clearTimeout(t);
+  }, [rawData, userId, setGlobalData]);
+
+  // 4. Manual Save
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, data: editable.draftData })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setGlobalData((prev: any) => ({ ...prev, client_context_1: extractData(result.data) }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
+      } else throw new Error("Save failed");
+    } catch (e) {
+      setSnackbar({ open: true, message: "❌ Save failed", severity: "error" });
+    } finally {
+      setLoading(false);
+    }
   };
-
-  // Initialize editable hook
-  const editable = useEditableTable<ClientContextJSON>(initialData);
 
   // Handle stats changes
   const handleStatsChange = (index: number, value: string) => {
@@ -526,8 +622,19 @@ const ClientContext: React.FC = () => {
     img: `https://ui-avatars.com/api/?name=${encodeURIComponent(exec.name)}&background=random&color=fff`,
   }));
 
+  if (initialLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>{snackbar.message}</Alert>
+      </Snackbar>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
         <Box
           sx={{
@@ -547,6 +654,7 @@ const ClientContext: React.FC = () => {
               <Button
                 variant="outlined"
                 onClick={editable.startEdit}
+                disabled={loading}
                 sx={{
                   borderColor: "#008080",
                   color: "#008080",
@@ -562,145 +670,140 @@ const ClientContext: React.FC = () => {
               <>
                 <Button
                   variant="contained"
-                  onClick={() =>
-                    editable.saveEdit((updatedData) => {
-                      setGlobalData((prev: any) => ({
-                        ...prev,
-                        Client_Context: updatedData,
-                      }));
-                    })
-                  }
+                  onClick={handleSave}
+                  disabled={loading}
                   sx={{
-                  backgroundColor: "#008080",
-                  color: "#fff",
-                  "&:hover": {
-                    backgroundColor: "#006d6d",
-                  },
-                }}
+                    backgroundColor: "#008080",
+                    color: "#fff",
+                    "&:hover": {
+                      backgroundColor: "#006d6d",
+                    },
+                  }}
                 >
-                Save
-              </Button>
-            <Button
-              variant="outlined"
-              onClick={editable.cancelEdit}
-              sx={{
-                borderColor: "#008080",
-                color: "#008080",
-                "&:hover": {
-                  borderColor: "#006d6d",
-                  backgroundColor: "#e6f4f4",
-                },
-              }}
-            >
-              Cancel
-            </Button>
-          </>
+                  {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={editable.cancelEdit}
+                  disabled={loading}
+                  sx={{
+                    borderColor: "#008080",
+                    color: "#008080",
+                    "&:hover": {
+                      borderColor: "#006d6d",
+                      backgroundColor: "#e6f4f4",
+                    },
+                  }}
+                >
+                  Cancel
+                </Button>
+              </>
             )}
-        </Box>
-      </Box>
-
-      <Box id="template-to-download" className="template-section">
-        <StatsRow stats={statsData} isEditing={editable.isEditing} onStatsChange={handleStatsChange} />
-
-        <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 6, width: "100%" }}>
-          <Box sx={{ flex: 1 }}>
-            <RevenueChart
-              revenueData={editable.draftData.revenue_by_year}
-              margin={editable.draftData.total_revenue_usd_bn.ebitda_margin}
-              isEditing={editable.isEditing}
-              onRevenueChange={handleRevenueChange}
-              onMarginChange={handleMarginChange}
-            />
-
-            <Box sx={{ mt: -4 }}>
-              {editable.isEditing ? (
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  value={editable.draftData.client_description}
-                  onChange={(e) =>
-                    editable.updateDraft({
-                      ...editable.draftData,
-                      client_description: e.target.value,
-                    })
-                  }
-                  sx={{ "& .MuiInputBase-input": { fontSize: "0.85rem" } }}
-                />
-              ) : (
-                <Typography variant="body2" sx={{ color: "#555", lineHeight: 1.6, fontSize: "0.85rem" }}>
-                  {editable.draftData.client_description}
-                </Typography>
-              )}
-            </Box>
           </Box>
+        </Box>
 
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ mb: 4 }}>
-              <SectionHeader variant="h6">Key highlights</SectionHeader>
-              <List sx={{ pl: 0 }}>
-                {editable.draftData.key_highlights.map((text, idx) => {
-                  if (editable.isEditing) {
+        <Box id="template-to-download" className="template-section">
+          <StatsRow stats={statsData} isEditing={editable.isEditing} onStatsChange={handleStatsChange} />
+
+          <Box sx={{ display: "flex", flexDirection: { xs: "column", md: "row" }, gap: 6, width: "100%" }}>
+            <Box sx={{ flex: 1 }}>
+              <RevenueChart
+                revenueData={editable.draftData.revenue_by_year}
+                margin={editable.draftData.total_revenue_usd_bn.ebitda_margin}
+                isEditing={editable.isEditing}
+                onRevenueChange={handleRevenueChange}
+                onMarginChange={handleMarginChange}
+              />
+
+              <Box sx={{ mt: -4 }}>
+                {editable.isEditing ? (
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={4}
+                    value={editable.draftData.client_description}
+                    onChange={(e) =>
+                      editable.updateDraft({
+                        ...editable.draftData,
+                        client_description: e.target.value,
+                      })
+                    }
+                    sx={{ "& .MuiInputBase-input": { fontSize: "0.85rem" } }}
+                  />
+                ) : (
+                  <Typography variant="body2" sx={{ color: "#555", lineHeight: 1.6, fontSize: "0.85rem" }}>
+                    {editable.draftData.client_description}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ mb: 4 }}>
+                <SectionHeader variant="h6">Key highlights</SectionHeader>
+                <List sx={{ pl: 0 }}>
+                  {editable.draftData.key_highlights.map((text, idx) => {
+                    if (editable.isEditing) {
+                      return (
+                        <ListItem key={idx} sx={{ display: "list-item", pl: 0, py: 0.5 }}>
+                          <TextField
+                            fullWidth
+                            multiline
+                            size="small"
+                            value={text}
+                            onChange={(e) => handleHighlightChange(idx, e.target.value)}
+                            sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem" } }}
+                          />
+                        </ListItem>
+                      );
+                    }
+
+                    const firstCommaIndex = text.indexOf(",");
+                    const boldText = firstCommaIndex !== -1 ? text.substring(0, firstCommaIndex) : text;
+                    const normalText = firstCommaIndex !== -1 ? text.substring(firstCommaIndex) : "";
+
                     return (
-                      <ListItem key={idx} sx={{ display: "list-item", pl: 0, py: 0.5 }}>
-                        <TextField
-                          fullWidth
-                          multiline
-                          size="small"
-                          value={text}
-                          onChange={(e) => handleHighlightChange(idx, e.target.value)}
-                          sx={{ "& .MuiInputBase-input": { fontSize: "0.8rem" } }}
-                        />
+                      <ListItem
+                        key={idx}
+                        sx={{ display: "list-item", pl: 0, py: 0.25, alignItems: "flex-start" }}
+                      >
+                        <Box component="span" sx={{ display: "flex", alignItems: "flex-start" }}>
+                          <Box component="span" sx={{ mr: 1, color: "#333", fontSize: "1.2rem", lineHeight: 0.8 }}>
+                            •
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            component="span"
+                            sx={{ fontSize: "0.8rem", lineHeight: 1.5, color: "#333" }}
+                          >
+                            <strong>{boldText}</strong>
+                            {normalText}
+                          </Typography>
+                        </Box>
                       </ListItem>
                     );
-                  }
+                  })}
+                </List>
+              </Box>
 
-                  const firstCommaIndex = text.indexOf(",");
-                  const boldText = firstCommaIndex !== -1 ? text.substring(0, firstCommaIndex) : text;
-                  const normalText = firstCommaIndex !== -1 ? text.substring(firstCommaIndex) : "";
-
-                  return (
-                    <ListItem
+              <Box>
+                <SectionHeader variant="h6">Executive changes</SectionHeader>
+                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3, mt: 2 }}>
+                  {executives.map((exec, idx) => (
+                    <ExecutiveCard
                       key={idx}
-                      sx={{ display: "list-item", pl: 0, py: 0.25, alignItems: "flex-start" }}
-                    >
-                      <Box component="span" sx={{ display: "flex", alignItems: "flex-start" }}>
-                        <Box component="span" sx={{ mr: 1, color: "#333", fontSize: "1.2rem", lineHeight: 0.8 }}>
-                          •
-                        </Box>
-                        <Typography
-                          variant="body2"
-                          component="span"
-                          sx={{ fontSize: "0.8rem", lineHeight: 1.5, color: "#333" }}
-                        >
-                          <strong>{boldText}</strong>
-                          {normalText}
-                        </Typography>
-                      </Box>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </Box>
-
-            <Box>
-              <SectionHeader variant="h6">Executive changes</SectionHeader>
-              <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 3, mt: 2 }}>
-                {executives.map((exec, idx) => (
-                  <ExecutiveCard
-                    key={idx}
-                    {...exec}
-                    isEditing={editable.isEditing}
-                    onChange={(field, value) => handleExecutiveChange(idx, field, value)}
-                  />
-                ))}
+                      {...exec}
+                      isEditing={editable.isEditing}
+                      onChange={(field, value) => handleExecutiveChange(idx, field, value)}
+                    />
+                  ))}
+                </Box>
               </Box>
             </Box>
           </Box>
         </Box>
       </Box>
     </Box>
-    </Box >
   );
 };
 

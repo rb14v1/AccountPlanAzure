@@ -23,7 +23,8 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import DownloadTemplates from "../components/DownloadTemplates";
  
 // --- API CONFIGURATION ---
-const API_BASE_URL = "http://localhost:8000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const TEMPLATE_NAME = "service_line_penetration";
  
 // --- STYLED COMPONENTS ---
  
@@ -47,6 +48,16 @@ const DarkHeader = styled(Box)({
   width: "100%",
   display: "flex",
   alignItems: "center",
+});
+ 
+const SubTableHeader = styled(Box)({
+  backgroundColor: "#002a2e",
+  color: "#fff",
+  padding: "2px 0px",
+  fontSize: "0.7rem",
+  fontWeight: 700,
+  display: "flex",
+  width: "100%",
 });
  
 const StyledTableHeader = styled(TableCell)({
@@ -119,8 +130,6 @@ const InsightInput = styled(TextField)({
     border: "none !important",
   },
 });
- 
-const TEMPLATE_NAME = "Service_Line_Penetration";
  
 // --- SUB-COMPONENTS ---
  
@@ -212,38 +221,8 @@ const SLStackedBar = ({
 };
  
  
- 
- 
- 
-// --- MAIN COMPONENT ---
- 
-const ServiceLinePenetration: React.FC = () => {
-  const { globalData, setGlobalData } = useData();
- 
-  const userId =
-    globalData?.user_id ||
-    localStorage.getItem("user_id") ||
-    localStorage.getItem("userid");
-
-  const companyName =
-    globalData?.company_name ||
-    globalData?.account_name ||
-    localStorage.getItem("company_name") ||
-    localStorage.getItem("account_name") ||
-    "";
-
-  const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "warning",
-  });
-
-  const autoSaveAttempted = useRef(false);
-  const dataLoadedFromDB = useRef(false);
- 
-  const defaultData = {
+// --- SAFE EXTRACTOR ---
+const defaultData = {
   tableRows: [
     { id: '1', name: "Secured Order Book", v1: "", v2: "", v3: "", v4: "" },
     { id: '1a', name: "- Gross Order Book", v1: "", v2: "", v3: "", v4: "", indent: true },
@@ -252,61 +231,102 @@ const ServiceLinePenetration: React.FC = () => {
     { id: '3', name: "TCV Won", v1: "", v2: "", v3: "", v4: "", disabled: true },
     { id: '4', name: "TCV dropped / lost", v1: "", v2: "", v3: "", v4: "", disabled: true },
   ],
-  xxValues: ["XX","XX","XX","XX","XX","XX","XX","XX"],
- 
+  xxValues: ["XX", "XX", "XX", "XX", "XX", "XX", "XX", "XX"],
   barValues: [
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
-    [10,12,14,16],
+    [10, 12, 14, 16], [10, 12, 14, 16], [10, 12, 14, 16], [10, 12, 14, 16],
+    [10, 12, 14, 16], [10, 12, 14, 16], [10, 12, 14, 16], [10, 12, 14, 16],
   ],
- 
   insights: ""
 };
  
+const extractData = (source: any) => {
+  const d = source?.data || source || {};
  
-  const slData = globalData?.Service_Line_Penetration || defaultData;
-  const editable = useEditableTable(slData);
+  // Safely extract table rows mapping AI generated rows to UI structure
+  const tableRows = defaultData.tableRows.map((defRow, i) => {
+    const srcRow = Array.isArray(d.tableRows) ? d.tableRows[i] : {};
+    return {
+      ...defRow,
+      v1: srcRow?.v1 || defRow.v1,
+      v2: srcRow?.v2 || defRow.v2,
+      v3: srcRow?.v3 || defRow.v3,
+      v4: srcRow?.v4 || defRow.v4
+    };
+  });
  
-  // STEP 1: Load data from database when component mounts
+  // Extract XX values ensuring there are 8 elements
+  let xxValues = defaultData.xxValues;
+  if (Array.isArray(d.xxValues)) {
+    xxValues = d.xxValues.map((v: any) => String(v));
+    while (xxValues.length < 8) xxValues.push("XX");
+  }
+ 
+  // Extract Bar Values ensuring 8 arrays of numbers
+  let barValues = defaultData.barValues;
+  if (Array.isArray(d.barValues)) {
+    if (Array.isArray(d.barValues[0])) {
+      barValues = d.barValues.map((arr: any) =>
+        Array.isArray(arr) ? arr.map((v: any) => Number(v) || 0) : [0,0,0,0]
+      );
+    } else {
+      // If AI sent a single flat array, convert it to array of arrays
+      barValues = [d.barValues.map((v: any) => Number(v) || 0)];
+    }
+    // Pad to ensure 8 quarters are represented
+    while (barValues.length < 8) barValues.push([10, 12, 14, 16]);
+  }
+ 
+  return {
+    tableRows,
+    xxValues,
+    barValues,
+    insights: d.insights || defaultData.insights,
+    id: d.id
+  };
+};
+ 
+// --- MAIN COMPONENT ---
+ 
+const ServiceLinePenetration: React.FC = () => {
+  const { globalData, setGlobalData } = useData();
+ 
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+ 
+  const rawData = extractData(globalData?.service_line_penetration);
+  const editable = useEditableTable(rawData);
+ 
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "warning",
+  });
+ 
+  const autoSaveAttempted = useRef(false);
+  const dataLoadedFromDB = useRef(false);
+ 
+  // Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.service_line_penetration && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.service_line_penetration));
+    }
+  }, [globalData?.service_line_penetration]);
+ 
+  // STEP 1: Load data from unified database endpoint
   useEffect(() => {
     const loadDataFromDB = async () => {
       if (dataLoadedFromDB.current) return;
-
-      console.log("Loading service line penetration from database...");
       setInitialLoading(true);
-
-      if (!userId) {
-        console.warn("Skipping DB fetch: missing userId");
-        setInitialLoading(false);
-        return;
-      }
-
+ 
       try {
-        const response = await fetch(
-          `${API_BASE_URL}/service-line-penetration/?user_id=${encodeURIComponent(userId)}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
+        const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
         if (response.ok) {
           const dbData = await response.json();
-          console.log("Service line penetration loaded from DB:", dbData);
-
           if (dbData && Object.keys(dbData).length > 0) {
-            setGlobalData((prev: any) => ({
-              ...prev,
-              Service_Line_Penetration: dbData,
-            }));
-            editable.updateDraft(dbData);
+            const parsed = extractData(dbData);
+            setGlobalData((prev: any) => ({ ...prev, service_line_penetration: parsed }));
+            editable.updateDraft(parsed);
             dataLoadedFromDB.current = true;
           }
         }
@@ -316,80 +336,75 @@ const ServiceLinePenetration: React.FC = () => {
         setInitialLoading(false);
       }
     };
-
     loadDataFromDB();
-  }, [userId]);
-
-  // STEP 2: Auto-save logic when NEW data arrives from chatbot
+  }, [userId, setGlobalData]);
+ 
+  // STEP 2: Auto-save logic to unified database endpoint
   useEffect(() => {
     const autoSaveToDatabase = async () => {
       if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
-        console.log("Service line penetration already in DB, skipping auto-save");
-        return;
-      }
-
-      const hasValidData = slData && 
-        (slData.tableRows?.length > 0 || slData.xxValues?.length > 0 || slData.insights);
-
-      const isNewDataFromChatbot = slData && !slData.id;
-
-      if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
-        if (!userId) return;
-
-        autoSaveAttempted.current = true;
-
-        try {
-          console.log("Sending service line penetration to backend:", slData);
-
-          const payload = {
-            user_id: userId,
-            company_name: companyName,
-            tableRows: slData.tableRows,
-            xxValues: slData.xxValues,
-            insights: slData.insights,
-          };
-
-          const response = await fetch(
-            `${API_BASE_URL}/service-line-penetration/save_penetration/`,
-            {
+        const isNewDataFromChatbot = rawData && !rawData.id;
+       
+        if (isNewDataFromChatbot && !autoSaveAttempted.current) {
+          autoSaveAttempted.current = true;
+          try {
+            const payload = {
+              user_id: userId,
+              data: rawData
+            };
+ 
+            const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(payload),
-            }
-          );
-
-          const result = await response.json();
-          console.log("Auto-save response:", result);
-
-          if (response.ok && result.success) {
-            setGlobalData((prev: any) => ({
-              ...prev,
-              Service_Line_Penetration: result.data,
-            }));
-            dataLoadedFromDB.current = true;
-            setSnackbar({
-              open: true,
-              message: "✅ Service Line Penetration auto-saved to database",
-              severity: "success",
             });
-          } else {
-            throw new Error(result.message || "Auto-save failed");
+ 
+            const result = await response.json();
+            if (response.ok && result.success) {
+              setGlobalData((prev: any) => ({ ...prev, service_line_penetration: extractData(result.data) }));
+              setSnackbar({ open: true, message: "✅ Auto-saved to database", severity: "success" });
+            }
+          } catch (error) {
+            autoSaveAttempted.current = false;
           }
-        } catch (error) {
-          console.error("Auto-save error:", error);
-          setSnackbar({
-            open: true,
-            message: "⚠️ Auto-save failed. You can edit and save manually.",
-            severity: "warning",
-          });
-          autoSaveAttempted.current = false;
         }
       }
     };
-
-    const timeoutId = setTimeout(() => autoSaveToDatabase(), 500);
+    const timeoutId = setTimeout(autoSaveToDatabase, 500);
     return () => clearTimeout(timeoutId);
-  }, [slData, userId, companyName]);
+  }, [rawData, userId, setGlobalData]);
+ 
+  // STEP 3: Manual save
+  const handleManualSave = async () => {
+    setLoading(true);
+    try {
+      const payload = {
+        user_id: userId,
+        data: editable.draftData,
+      };
+ 
+      const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+ 
+      const result = await response.json();
+      if (response.ok && result.success) {
+        const parsed = extractData(result.data);
+        setGlobalData((prev: any) => ({ ...prev, service_line_penetration: parsed }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
+      } else {
+        throw new Error(result.message || "Failed to save");
+      }
+    } catch (error) {
+      console.error("Manual save error:", error);
+      setSnackbar({ open: true, message: "❌ Failed to save changes", severity: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
  
   const handleTableChange = (index: number, field: string, value: string) => {
     const updated = [...editable.draftData.tableRows];
@@ -402,68 +417,13 @@ const ServiceLinePenetration: React.FC = () => {
     updated[index] = value;
     editable.updateDraft({ ...editable.draftData, xxValues: updated });
   };
-
-  // STEP 3: Manual save - update global state and persist to backend
-  const handleManualSave = async () => {
-    setLoading(true);
-    try {
-      if (!userId) {
-        setSnackbar({
-          open: true,
-          message: "❌ Missing User ID. Cannot save.",
-          severity: "error",
-        });
-        return;
-      }
-
-      const payload = {
-        user_id: userId,
-        company_name: companyName,
-        tableRows: editable.draftData.tableRows,
-        xxValues: editable.draftData.xxValues,
-        insights: editable.draftData.insights,
-      };
-
-      const response = await fetch(
-        `${API_BASE_URL}/service-line-penetration/save_penetration/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-User-Id": userId,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const result = await response.json();
-      if (response.ok && result.success) {
-        setGlobalData((prev: any) => ({
-          ...prev,
-          Service_Line_Penetration: result.data || editable.draftData,
-        }));
-        editable.saveEdit(() => {});
-        setSnackbar({
-          open: true,
-          message: "✅ Service Line Penetration saved",
-          severity: "success",
-        });
-        dataLoadedFromDB.current = true;
-      } else {
-        throw new Error(result.message || "Failed to save");
-      }
-    } catch (error) {
-      console.error("Manual save error:", error);
-      setSnackbar({
-        open: true,
-        message: "❌ Failed to save changes",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
+ 
+  const handleBarValueChange = (barIndex: number, segmentIndex: number, value: string) => {
+    const updated = [...editable.draftData.barValues];
+    updated[barIndex][segmentIndex] = Number(value);
+    editable.updateDraft({ ...editable.draftData, barValues: updated });
   };
-
+ 
   if (initialLoading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
@@ -472,12 +432,6 @@ const ServiceLinePenetration: React.FC = () => {
       </Box>
     );
   }
- 
-  const handleBarValueChange = (barIndex: number, segmentIndex: number, value: string) => {
-  const updated = [...editable.draftData.barValues];
-  updated[barIndex][segmentIndex] = Number(value);
-  editable.updateDraft({ ...editable.draftData, barValues: updated });
-};
  
   const slColors = ["#001a1a", "#00c1b1", "#efefe9", "#d8d3cf"];
   const slLabels = ["App Mod", "Data & AI", "EA", "Managed Services", "SAM", "Security", "Exp. Design"];
@@ -494,14 +448,18 @@ const ServiceLinePenetration: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
-
+ 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1, gap: 2 }}>
         <DownloadTemplates templateName={TEMPLATE_NAME} />
         {!editable.isEditing ? (
           <Button variant="outlined" onClick={editable.startEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Edit</Button>
         ) : (
-          <><Button variant="contained" onClick={handleManualSave} disabled={loading} sx={{ backgroundColor: "#00a99d", color: "#fff" }}>{loading ? "Saving..." : "Save"}</Button>
-          <Button variant="outlined" onClick={editable.cancelEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Cancel</Button></>
+          <>
+            <Button variant="contained" onClick={handleManualSave} disabled={loading} sx={{ backgroundColor: "#00a99d", color: "#fff" }}>
+              {loading ? "Saving..." : "Save"}
+            </Button>
+            <Button variant="outlined" onClick={editable.cancelEdit} sx={{ borderColor: "#00a99d", color: "#00a99d" }}>Cancel</Button>
+          </>
         )}
       </Box>
  
@@ -511,34 +469,33 @@ const ServiceLinePenetration: React.FC = () => {
         </Typography>
  
         <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 1 }}>
-         
-          <Box sx={{ display: 'flex', gap: 2, flex: '0 0 auto', alignItems: 'flex-start' }}>
-           
-            <Box sx={{ flex: '0 0 55%', display: 'flex', flexDirection: 'column' }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                    <Typography sx={{ fontWeight: 800, fontSize: '0.8rem' }}>SL Penetration</Typography>
-                    <LegendItem color="#00adef" label="Overall SL penetration %" circle />
-                </Box>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                    {slLabels.map((label, i) => (<LegendItem key={label} color={slColors[i % 4]} label={label} />))}
-                </Box>
-                {/* RECTIFICATION: height flex and alignItems adjusted to remove top space */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', mt: 1 }}>
-                  {["Q1 FY25","Q2 FY25","Q3 FY25","Q4 FY25","Q1 FY26","Q2 FY26","Q3 FY26","Q4 FY26"].map((label, i) => (
-  <SLStackedBar
-    key={i}
-    index={i}
-    label={label}
-    values={editable.draftData.barValues[i]}
-    colors={slColors}
-    xxVal={editable.draftData.xxValues[i]}
-    onXXChange={handleXXChange}
-    onBarValueChange={handleBarValueChange}
-    isEditing={editable.isEditing}
-  />
-))}
  
-                </Box>
+          <Box sx={{ display: 'flex', gap: 2, flex: '0 0 auto', alignItems: 'flex-start' }}>
+ 
+            <Box sx={{ flex: '0 0 55%', display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.8rem' }}>SL Penetration</Typography>
+                <LegendItem color="#00adef" label="Overall SL penetration %" circle />
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
+                {slLabels.map((label, i) => (<LegendItem key={label} color={slColors[i % 4]} label={label} />))}
+              </Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%', mt: 1 }}>
+                {["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"].map((label, i) => (
+                  <SLStackedBar
+                    key={i}
+                    index={i}
+                    label={label}
+                    values={editable.draftData.barValues[i]}
+                    colors={slColors}
+                    xxVal={editable.draftData.xxValues[i]}
+                    onXXChange={handleXXChange}
+                    onBarValueChange={handleBarValueChange}
+                    isEditing={editable.isEditing}
+                  />
+                ))}
+ 
+              </Box>
             </Box>
  
             <Box sx={{ flex: '0 0 43%', display: 'flex', flexDirection: 'column', mt: 2 }}>
@@ -580,9 +537,9 @@ const ServiceLinePenetration: React.FC = () => {
             <DarkHeader>Key insights</DarkHeader>
             <Box sx={{ flex: 1, border: '1.5px solid #000', bgcolor: '#fff', display: 'flex', overflow: 'hidden' }}>
               {editable.isEditing ? (
-                  <InsightInput multiline fullWidth variant="outlined" value={editable.draftData.insights} onChange={(e) => editable.updateDraft({ ...editable.draftData, insights: e.target.value })} />
+                <InsightInput multiline fullWidth variant="outlined" value={editable.draftData.insights} onChange={(e) => editable.updateDraft({ ...editable.draftData, insights: e.target.value })} />
               ) : (
-                  <Typography sx={{ p: 1, fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}>{editable.draftData.insights}</Typography>
+                <Typography sx={{ p: 1, fontSize: '0.75rem', whiteSpace: 'pre-wrap' }}>{editable.draftData.insights}</Typography>
               )}
             </Box>
           </Box>
@@ -593,5 +550,4 @@ const ServiceLinePenetration: React.FC = () => {
 };
  
 export default ServiceLinePenetration;
- 
  

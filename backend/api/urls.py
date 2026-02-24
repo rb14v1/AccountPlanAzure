@@ -56,6 +56,10 @@ urlpatterns = [
     path("account-performance/", views.template_payload_detail, kwargs={"template_type": "account_performance_annual_plan"}),
     path("account-performance/save/", views.template_payload_detail, kwargs={"template_type": "account_performance_annual_plan"}),
 
+    # 5B. Account Performance Quarterly Plan  ✅ ADD THIS
+    path("account-performance-quarterly/",views.template_payload_detail,kwargs={"template_type": "account_performance_quarterly_plan"}),
+    path("account-performance-quarterly/save/",views.template_payload_detail,kwargs={"template_type": "account_performance_quarterly_plan"}),
+
     # 6. Tech Spend View
     path("tech-spend/", views.template_payload_detail, kwargs={"template_type": "tech_spend_view"}),
     path("tech-spend/save/", views.template_payload_detail, kwargs={"template_type": "tech_spend_view"}),
@@ -103,6 +107,14 @@ urlpatterns = [
     # 17. Revenue Teardown
     path("revenue-teardown/", views.template_payload_detail, kwargs={"template_type": "revenue_teardown"}),
     path("revenue-teardown/save/", views.template_payload_detail, kwargs={"template_type": "revenue_teardown"}),
+
+    # 18. Client Context 1
+    path("client-context-1/", views.template_payload_detail, kwargs={"template_type": "client_context_1"}),
+    path("client-context-1/save/", views.template_payload_detail, kwargs={"template_type": "client_context_1"}),
+
+    # 19. Client Context 2
+    path("client-context-2/", views.template_payload_detail, kwargs={"template_type": "client_context_2"}),
+    path("client-context-2/save/", views.template_payload_detail, kwargs={"template_type": "client_context_2"}),
 
     path('template-payload/<str:template_type>/', views.template_payload_detail, name='template_payload_detail'),
 ]

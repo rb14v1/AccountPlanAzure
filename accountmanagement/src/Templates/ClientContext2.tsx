@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   PieChart as RePieChart,
   Pie,
@@ -20,12 +20,17 @@ import {
   TableRow,
   Chip,
   Paper,
-  styled
+  styled,
+  CircularProgress,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import { useData } from "../context/DataContext";
-
 import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const TEMPLATE_NAME = "client_context_2";
 
 type CompetitionRow = {
   name: string;
@@ -79,8 +84,6 @@ const logoStyle = {
   objectFit: "contain" as const,
 };
 
-
-
 function depthColor(depth: number) {
   if (depth >= 5) return { bg: "#00B050", color: "#fff" };
   if (depth === 4) return { bg: "#92D050", color: "#000" };
@@ -123,93 +126,201 @@ const defaultContextData = {
   }
 };
 
-const ClientContext2 = () => {
-  // Access global data
-  const { globalData, setGlobalData } = useData();
-  const companyLogos = globalData?.companyLogos;
-  console.log("Company Logos:", companyLogos);
+// --- SAFE EXTRACTOR BRIDGE ---
+// Safely maps the new backend AI schema to your existing frontend variables
+const extractData = (source: any) => {
+  const d = source?.data || source || {};
 
+  const top_business_priorities = d.top_business_priorities || d.business_it_priorities?.business || defaultContextData.top_business_priorities;
+  const top_tech_priorities = d.top_tech_priorities || d.business_it_priorities?.it || defaultContextData.top_tech_priorities;
 
-  const contextData =
-  globalData?.client_context_2 || defaultContextData;
-
-  const editable = useEditableTable(contextData);
-
-
-  console.log("ClientContext2 - globalData:", globalData); // DEBUG
-  console.log("ClientContext2 - contextData:", contextData); // DEBUG
-
-  // Extract data with fallbacks
-  const businessPriorities = contextData?.top_business_priorities || [
-    "Improve customer experience across digital channels",
-    "Reduce operational cost by 15% via automation",
-    "Expand to new markets in APAC region"
-  ];
-
-  const techPriorities = contextData?.top_tech_priorities || [
-    "Cloud migration (Move legacy Oracle to AWS)",
-    "AI automation for customer support tickets",
-    "Cybersecurity enhancement (Zero Trust model)"
-  ];
-
-  const techSpendData = contextData?.tech_spend_landscape || {
-    core_erp_platform: "Oracle",
-    preferred_hyperscaler_partners: "Azure, AWS",
-    other_isvs: "Salesforce, PEGA"
+  const tech_spend_landscape = d.tech_spend_landscape || {
+    core_erp_platform: d.tech_landscape_spend?.partners?.erp?.name || defaultContextData.tech_spend_landscape.core_erp_platform,
+    preferred_hyperscaler_partners: Array.isArray(d.tech_landscape_spend?.partners?.hyperscalers) 
+      ? d.tech_landscape_spend.partners.hyperscalers.map((h: any) => h.name).join(", ") 
+      : defaultContextData.tech_spend_landscape.preferred_hyperscaler_partners,
+    other_isvs: Array.isArray(d.tech_landscape_spend?.partners?.isvs) 
+      ? d.tech_landscape_spend.partners.isvs.map((i: any) => i.name).join(", ") 
+      : defaultContextData.tech_spend_landscape.other_isvs
   };
+
+  let competition_overview = defaultContextData.competitive_intel.competition_overview;
+  if (Array.isArray(d.competitive_intel?.competition_overview) && d.competitive_intel.competition_overview.length > 0) {
+    competition_overview = d.competitive_intel.competition_overview.map((c: any) => ({
+      name: c.competitor_name || c.name || "",
+      share_of_wallet_percent: c.wallet_share_percent || c.share_of_wallet_percent || "0%",
+      depth_of_relationship: c.depth_of_relationship || 1,
+      key_areas_of_engagement: c.key_areas_of_engagement || ""
+    }));
+  } else if (Array.isArray(d.competitive_intel?.competition_overview)) {
+    competition_overview = d.competitive_intel.competition_overview;
+  }
+
+  return {
+    top_business_priorities,
+    top_tech_priorities,
+    tech_spend_landscape,
+    competitive_intel: {
+      share_of_wallet: d.competitive_intel?.share_of_wallet || defaultContextData.competitive_intel.share_of_wallet,
+      competition_overview
+    },
+    id: d.id
+  };
+};
+
+const ClientContext2 = () => {
+  const { globalData, setGlobalData } = useData();
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+
+  // Backend States
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
+
+  const dataLoadedFromDB = useRef(false);
+  const autoSaveAttempted = useRef(false);
+
+  const rawData = extractData(globalData?.client_context_2);
+  const editable = useEditableTable(rawData);
+  const companyLogos = globalData?.companyLogos;
+
+  // 1. Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.client_context_2 && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.client_context_2));
+    }
+  }, [globalData?.client_context_2]);
+
+  // 2. Load from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      if (dataLoadedFromDB.current) return;
+      setInitialLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
+        if (res.ok) {
+          const dbData = await res.json();
+          if (Object.keys(dbData).length > 0) {
+            const parsed = extractData(dbData);
+            editable.updateDraft(parsed);
+            setGlobalData((prev: any) => ({ ...prev, client_context_2: parsed }));
+            dataLoadedFromDB.current = true;
+          }
+        }
+      } catch (e) {
+        console.error("Fetch failed", e);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, setGlobalData]);
+
+  // 3. Auto-Save
+  useEffect(() => {
+    const autoSave = async () => {
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
+        const isNew = rawData && !rawData.id;
+        if (isNew && !autoSaveAttempted.current) {
+          autoSaveAttempted.current = true;
+          try {
+            const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ user_id: userId, data: rawData })
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+              setGlobalData((prev: any) => ({ ...prev, client_context_2: extractData(result.data) }));
+              setSnackbar({ open: true, message: "✅ Auto-saved to database", severity: "success" });
+            }
+          } catch (e) {
+            autoSaveAttempted.current = false;
+          }
+        }
+      }
+    };
+    const t = setTimeout(autoSave, 500);
+    return () => clearTimeout(t);
+  }, [rawData, userId, setGlobalData]);
+
+  // 4. Manual Save
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId, data: editable.draftData })
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setGlobalData((prev: any) => ({ ...prev, client_context_2: extractData(result.data) }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
+      } else throw new Error("Save failed");
+    } catch (e) {
+      setSnackbar({ open: true, message: "❌ Save failed", severity: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ Read directly from editable draft to make UI reactive while typing
+  const businessPriorities = editable.draftData.top_business_priorities || [];
+  const techPriorities = editable.draftData.top_tech_priorities || [];
+  const techSpendData = editable.draftData.tech_spend_landscape || {};
+  const competitiveIntel = editable.draftData.competitive_intel || defaultContextData.competitive_intel;
+
   const updateBusinessPriority = (index: number, value: string) => {
     const updated = [...editable.draftData.top_business_priorities];
     updated[index] = value;
-
-    editable.updateDraft({
-      ...editable.draftData,
-      top_business_priorities: updated,
-    });
+    editable.updateDraft({ ...editable.draftData, top_business_priorities: updated });
   };
 
   const updateTechPriority = (index: number, value: string) => {
     const updated = [...editable.draftData.top_tech_priorities];
     updated[index] = value;
-
-    editable.updateDraft({
-      ...editable.draftData,
-      top_tech_priorities: updated,
-    });
+    editable.updateDraft({ ...editable.draftData, top_tech_priorities: updated });
   };
 
   const updateKeyArea = (index: number, value: string) => {
     const updated = [...editable.draftData.competitive_intel.competition_overview];
-    updated[index] = {
-      ...updated[index],
-      key_areas_of_engagement: value,
-    };
-
+    updated[index] = { ...updated[index], key_areas_of_engagement: value };
     editable.updateDraft({
       ...editable.draftData,
-      competitive_intel: {
-        ...editable.draftData.competitive_intel,
-        competition_overview: updated,
-      },
+      competitive_intel: { ...editable.draftData.competitive_intel, competition_overview: updated },
     });
   };
 
-  const competitiveIntel = contextData?.competitive_intel || {
-    share_of_wallet: {
-      client: 20,
-      competitor_1: 20,
-      competitor_2: 20,
-      competitor_3: 10
-    },
-    competition_overview: [
-      { name: "Version 1", share_of_wallet_percent: "20%", depth_of_relationship: 4, key_areas_of_engagement: "Cloud & ERP" },
-      { name: "Competitor 1", share_of_wallet_percent: "20%", depth_of_relationship: 3, key_areas_of_engagement: "Data & AI" },
-      { name: "Competitor 2", share_of_wallet_percent: "20%", depth_of_relationship: 3, key_areas_of_engagement: "Consulting" },
-      { name: "Competitor 3", share_of_wallet_percent: "10%", depth_of_relationship: 2, key_areas_of_engagement: "Support" },
-      { name: "Competitor 4", share_of_wallet_percent: "10%", depth_of_relationship: 2, key_areas_of_engagement: "Modernisation" }
-    ]
+  const updateCompetitorName = (index: number, value: string) => {
+    const updated = [...editable.draftData.competitive_intel.competition_overview];
+    updated[index] = { ...updated[index], name: value };
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: { ...editable.draftData.competitive_intel, competition_overview: updated },
+    });
   };
 
-  // Build dummy data for compatibility
+  const updateShareOfWallet = (index: number, value: string) => {
+    const updated = [...editable.draftData.competitive_intel.competition_overview];
+    updated[index] = { ...updated[index], share_of_wallet_percent: `${value}%` };
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: { ...editable.draftData.competitive_intel, competition_overview: updated },
+    });
+  };
+
+  const addCompetitionRow = () => {
+    const updated = [
+      ...editable.draftData.competitive_intel.competition_overview,
+      { name: "New Competitor", share_of_wallet_percent: "0%", depth_of_relationship: 1, key_areas_of_engagement: "" },
+    ];
+    editable.updateDraft({
+      ...editable.draftData,
+      competitive_intel: { ...editable.draftData.competitive_intel, competition_overview: updated },
+    });
+  };
+
+  // Build dummy data for compatibility with your existing UI
   const dummyData: DummyData = {
     businessPriorities,
     techPriorities,
@@ -221,15 +332,6 @@ const ClientContext2 = () => {
       key: comp.key_areas_of_engagement || "..."
     }))
   };
-  const TEMPLATE_NAME = " Client_Context_2";
-  // Parse hyperscalers and ISVs
-  const hyperscalersList = techSpendData.preferred_hyperscaler_partners?.split(",").map((s: string) => s.trim()) || [];
-  const isvsList = techSpendData.other_isvs?.split(",").map((s: string) => s.trim()) || [];
-
-  //
-  //
-  //
-  // ================= LOGO DATA =================
 
   const techData: TechData = {
     spend: { overall: "€xx Mn", outsourced: "€xx Mn", rnd: "€xx Mn" },
@@ -240,51 +342,6 @@ const ClientContext2 = () => {
     }
   };
 
-
-
-
-
-  const chartData = editable.isEditing
-    ? editable.draftData.competitive_intel.competition_overview.map((c: any) => ({
-      name: c.name,
-      value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
-    }))
-    : competitiveIntel.competition_overview.map((c: any) => ({
-      name: c.name,
-      value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
-    }));
-
-  const updateCompetitorName = (index: number, value: string) => {
-    const updated = [...editable.draftData.competitive_intel.competition_overview];
-    updated[index] = {
-      ...updated[index],
-      name: value,
-    };
-
-    editable.updateDraft({
-      ...editable.draftData,
-      competitive_intel: {
-        ...editable.draftData.competitive_intel,
-        competition_overview: updated,
-      },
-    });
-  };
-
-  const updateShareOfWallet = (index: number, value: string) => {
-    const updated = [...editable.draftData.competitive_intel.competition_overview];
-    updated[index] = {
-      ...updated[index],
-      share_of_wallet_percent: `${value}%`,
-    };
-
-    editable.updateDraft({
-      ...editable.draftData,
-      competitive_intel: {
-        ...editable.draftData.competitive_intel,
-        competition_overview: updated,
-      },
-    });
-  };
   const pieData = (editable.isEditing
     ? editable.draftData.competitive_intel?.competition_overview
     : competitiveIntel.competition_overview
@@ -293,31 +350,21 @@ const ClientContext2 = () => {
     value: Number(c.share_of_wallet_percent?.replace("%", "")) || 0,
   }));
 
-  const addCompetitionRow = () => {
-    const updated = [
-      ...editable.draftData.competitive_intel.competition_overview,
-      {
-        name: "New Competitor",
-        share_of_wallet_percent: "0%",
-        depth_of_relationship: 1,
-        key_areas_of_engagement: "",
-      },
-    ];
-
-    editable.updateDraft({
-      ...editable.draftData,
-      competitive_intel: {
-        ...editable.draftData.competitive_intel,
-        competition_overview: updated,
-      },
-    });
-  };
-
-
-
+  if (initialLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
+      
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>{snackbar.message}</Alert>
+      </Snackbar>
+
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
         <Box
           sx={{
@@ -329,7 +376,7 @@ const ClientContext2 = () => {
         >
           <DownloadTemplates templateName={TEMPLATE_NAME} />
           {!editable.isEditing ? (
-            <Button variant="outlined" onClick={editable.startEdit} sx={{
+            <Button variant="outlined" onClick={editable.startEdit} disabled={loading} sx={{
               borderColor: "#008080",
               color: "#008080",
               ml: 2,
@@ -344,14 +391,8 @@ const ClientContext2 = () => {
             <>
               <Button
                 variant="contained"
-                onClick={() =>
-                  editable.saveEdit((updatedData) => {
-                    setGlobalData((prev: any) => ({
-                      ...prev,
-                      client_context_business_tech_priorities: updatedData,
-                    }));
-                  })
-                }
+                onClick={handleSave}
+                disabled={loading}
                 sx={{
                   backgroundColor: "#008080",
                   ml: 2,
@@ -361,9 +402,9 @@ const ClientContext2 = () => {
                   },
                 }}
               >
-                Save
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
               </Button>
-              <Button variant="outlined" onClick={editable.cancelEdit} sx={{
+              <Button variant="outlined" onClick={editable.cancelEdit} disabled={loading} sx={{
                 borderColor: "#008080",
                 color: "#008080",
                 ml: 2,
@@ -812,7 +853,7 @@ const ClientContext2 = () => {
                         : dummyData.competition
                       ).map((row: any, i: number) => {
 
-                        const { bg, color } = depthColor(row.depth);
+                        const { bg, color } = depthColor(row.depth_of_relationship || row.depth);
                         return (
                           <TableRow
                             key={i}

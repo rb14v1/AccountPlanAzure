@@ -173,7 +173,6 @@ def detect_template_type_from_query(query: str) -> str:
             # 3. Specific Row Headers (From your Prompt)
             "revenue budget",
             "revenue actuals",
-            "tcv won",
             "win rate",
             "book to bill",
             "gross margin",
@@ -187,6 +186,12 @@ def detect_template_type_from_query(query: str) -> str:
             "utilization",
             "attrition"
         ],
+        
+        "account_performance_quarterly_plan": [
+            "account_performance_quarterly_plan", "quarterly plan", "quarterly performance", "account quarterly plan",
+            "q1 fy", "q2 fy", "q3 fy", "q4 fy"
+        ],
+
         "tech_spend_view": [
             # 1. ✅ MASTER TRIGGER (Matches JSON ID)
             "tech_spend_view",
@@ -274,15 +279,33 @@ def detect_template_type_from_query(query: str) -> str:
             "timeline for growth",
             "investment needed"
         ],
+        "client_context_1": [
+            "client context", "client_context_1", "year founded", "headquarters location",
+            "roe percent", "total employees", "executive changes", "cagr percent"
+        ],
+        "client_context_2": [
+            "client_context_2", "client context 2", "business & it priorities",
+            "tech landscape", "competitive intel", "wallet share", "market share"
+        ],
+        
+        "service_line_penetration": [
+            "service_line_penetration", "service line penetration", "secured order book",
+            "gross order book", "expiry / run-off"
+        ],
 
     }
 
+    
+    for template_type in template_keywords.keys():
+        if template_type in query_lower:
+            return template_type
+
+    
     for template_type, keywords in template_keywords.items():
         if any(keyword in query_lower for keyword in keywords):
             return template_type
 
     return None
-
 
 def _client() -> AzureOpenAI:
     endpoint = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()

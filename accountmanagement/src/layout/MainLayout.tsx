@@ -43,7 +43,7 @@ import StrategicPartnershipsPage from "../Templates/StrategicPartnershipsPage";
 import OperationalExcellencePage from "../Templates/OperationalExcellencePage";
 import CriticalRiskPage from "../Templates/CriticalRiskPage";
 import OperationalImplementationPlan from "../Templates/OperationalImplementationPlan";
-import AccountDashboard from "../Templates/AccountDashboard";
+import AccountPerformanceQuarterlyPlan from "../Templates/AccountPerformanceQuarterlyPlan";
 import InnovationStrategy from "../Templates/InnovationStrategy";
 import RevenueTeardownView from "../Templates/RevenueTeardownView";
 import TechSpendView from "../Templates/TechSpendView";
@@ -86,14 +86,14 @@ export default function MainLayout() {
     { id: "strategic-partnerships", label: "Strategic Partnerships", icon: "bi-people" },
     { id: "operational-excellence-strategy", label: "Operational Excellence", icon: "bi-bullseye" },
     { id: "critical-risk", label: "Critical Risk", icon: "bi-exclamation-triangle" },
-    { id: "account-dashboard", label: "Account Dashboard", icon: "bi-speedometer2" },
+    { id: "account-performance-quarterly-plan", label: "Account Performance Quarterly Plan", icon: "bi-speedometer2" },
     { id: "operational-implementation", label: "Operational Impl. Plan", icon: "bi-file-earmark-check" },
     { id: "investment-plan", label: "Investment Plan", icon: "bi-cash-stack" },
     { id: "innovation-strategy", label: "Innovation Strategy", icon: "bi-lightbulb-fill" },
     { id: "revenue-teardown", label: "Revenue Teardown", icon: "bi-graph-up-arrow" },
     { id: "tech-spend", label: "Tech Spend View", icon: "bi-database-gear" },
     { id: "account-cockpit-view", label: "Account Cockpit", icon: "bi-speedometer2" },
-    { id: "sl-penetration", label: "SL Penetration", icon: "bi-bar-chart-steps" },
+    { id: "service-line-penetration", label: "SL Penetration", icon: "bi-bar-chart-steps" },
     { id: "planned-action-genai", label: "Planned Action GenAI", icon: "bi-robot" },
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
     { id: "talent-excellence-overview", label: "Talent Excellence", icon: "bi-people-fill" },
@@ -118,12 +118,12 @@ export default function MainLayout() {
       case "critical-risk": return <CriticalRiskPage />;
       case "operational-implementation": return <OperationalImplementationPlan />;
       case "investment-plan": return <InvestmentPlan />;
-      case "account-dashboard": return <AccountDashboard />;
+      case "account-performance-quarterly-plan": return <AccountPerformanceQuarterlyPlan />;
       case "innovation-strategy": return <InnovationStrategy />;
       case "revenue-teardown": return <RevenueTeardownView />;
       case "tech-spend": return <TechSpendView />;
       case "account-cockpit-view": return <AccountCockpitView />;
-      case "sl-penetration": return <ServiceLinePenetration />;
+      case "service-line-penetration": return <ServiceLinePenetration />;
       case "planned-action-genai": return <PlannedActionGenAI />;
       case "margin-improvement": return <MarginImprovementPlan />;
       case "talent-excellence-overview": return <TalentExcellenceOverview />;

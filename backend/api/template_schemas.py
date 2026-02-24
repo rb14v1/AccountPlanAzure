@@ -13,115 +13,105 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     # ---------------------------------------------------------
     # Account Dashboard (Quarterly Plan / Performance Table)
     # ---------------------------------------------------------
-    "account_dashboard": {
-        "template_type": "Account_Dashboard",
-        "data": {
-            # Revenue
-            "Revenue Budget": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Revenue Actuals / Forecast": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "TCV won": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Win rate (YTD)": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Book to bill ratio": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "SL revenue penetration %": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "# of SLs present in the account*": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-
-            # Delivery Ops
-            "Gross Margin %": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Revenue / FTE (ONS)": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Revenue / FTE (OFS)": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Cost / FTE (ONS)": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Cost / FTE (OFS)": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-
-            # Talent
-            "Attrition %": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Fulfilment %": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
-            "Delivery on time %": {
-                "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
-                "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": "",
-            },
+    "account_performance_quarterly_plan": {
+    "template_type": "account_performance_quarterly_plan",
+    "data": [
+        {
+            "metric": "Revenue Budget",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
         },
-    },
+        {
+            "metric": "Revenue Actuals / Forecast",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "TCV won",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Win rate (YTD)",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Book to bill ratio",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "SL revenue penetration %",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "# of SLs present in the account*",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Gross Margin %",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Revenue / FTE (ONS)",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Revenue / FTE (OFS)",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Cost / FTE (ONS)",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Cost / FTE (OFS)",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Attrition %",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Fulfilment %",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        },
+        {
+            "metric": "Delivery on time %",
+            "Q1 FY25": "", "Q2 FY25": "", "Q3 FY25": "", "Q4 FY25": "",
+            "Q1 FY26": "", "Q2 FY26": "", "Q3 FY26": "", "Q4 FY26": ""
+        }
+    ]
+},
 
     # ---------------------------------------------------------
     # Service Line Penetration
     # ---------------------------------------------------------
     "service_line_penetration": {
-        # MUST MATCH frontend key: globalData?.Service_Line_Penetration
-        "template_type": "Service_Line_Penetration",
+        "template_type": "service_line_penetration",
         "data": {
+            "barValues": [["", "", "", ""]],
+            "xxValues": ["", "", "", "", "", "", "", ""],
             "tableRows": [
-                {"id": "1",  "name": "Secured Order Book",
-                    "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "1a", "name": "- Gross Order Book",  "v1": "",
-                    "v2": "", "v3": "", "v4": "", "indent": True},
-                {"id": "1b", "name": "- Expiry / run-off",  "v1": "",
-                    "v2": "", "v3": "", "v4": "", "indent": True},
-                {"id": "2",  "name": "Open TCV",
-                    "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "3",  "name": "Win Rate (%)",
-                 "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "4",  "name": "NRR (%)",
-                 "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "5",  "name": "Revenue",
-                    "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "6",  "name": "Tech Spend",
-                    "v1": "", "v2": "", "v3": "", "v4": ""},
-                {"id": "7",  "name": "Propensity to Buy",
-                    "v1": "", "v2": "", "v3": "", "v4": ""},
+                { "id": "1", "name": "Secured Order Book", "v1": "", "v2": "", "v3": "", "v4": "" },
+                { "id": "1a", "name": "- Gross Order Book", "v1": "", "v2": "", "v3": "", "v4": "" },
+                { "id": "1b", "name": "- Expiry / run-off", "v1": "", "v2": "", "v3": "", "v4": "" },
+                { "id": "2", "name": "Open TCV", "v1": "", "v2": "", "v3": "", "v4": "" },
+                { "id": "3", "name": "TCV Won", "v1": "", "v2": "", "v3": "", "v4": "" },
+                { "id": "4", "name": "TCV dropped / lost", "v1": "", "v2": "", "v3": "", "v4": "" }
             ],
-            "serviceLines": [
-                {"name": "Cloud",        "pos": 0, "penetration": "",
-                    "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Data",         "pos": 0, "penetration": "",
-                    "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Engineering",  "pos": 0, "penetration": "",
-                    "revenue": "", "techSpend": "", "propensity": ""},
-                {"name": "Security",     "pos": 0, "penetration": "",
-                    "revenue": "", "techSpend": "", "propensity": ""},
-            ],
-        },
+            "insights": ""
+        }
     },
 
     # ---------------------------------------------------------
@@ -612,6 +602,63 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             "insights": {
                 "top": "",
                 "bottom": ""
+            }
+        }
+    },
+    # ---------------------------------------------------------
+    # Client Context 1
+    # ---------------------------------------------------------
+    "client_context_1": {
+        "template_type": "client_context_1",
+        "data": {
+            "year_founded": "",
+            "headquarters_location": "",
+            "number_of_offices": "",
+            "total_employees": "",
+            "roe_percent": "",
+            "total_revenue_usd_bn": {
+                "ebitda_margin": "",
+                "actuals": "",
+                "forecast": ""
+            },
+            "revenue_by_year": [
+                { "fiscal_year": "", "revenue": "", "cagr_percent": "" }
+            ],
+            "key_highlights": [""],
+            "executive_changes": [
+                { "name": "", "position": "", "background": "" }
+            ],
+            "client_description": ""
+        }
+    },
+
+    # ---------------------------------------------------------
+    # Client Context 2
+    # ---------------------------------------------------------
+    "client_context_2": {
+        "template_type": "client_context_2",
+        "data": {
+            "business_it_priorities": {
+                "business": ["", "", ""],
+                "it": ["", "", ""]
+            },
+            "tech_landscape_spend": {
+                "spend": {"overall": "", "outsourced": "", "rnd": ""},
+                "partners": {
+                    "erp": {"name": ""},
+                    "hyperscalers": [{"name": ""}, {"name": ""}],
+                    "isvs": [{"name": ""}, {"name": ""}]
+                }
+            },
+            "competitive_intel": {
+                "market_share": [
+                    {"name": "Client", "value": 0},
+                    {"name": "Competitor 1", "value": 0},
+                    {"name": "Competitor 2", "value": 0}
+                ],
+                "competition_overview": [
+                    {"competitor_name": "", "wallet_share_percent": "", "depth_of_relationship": 1, "key_areas_of_engagement": ""}
+                ]
             }
         }
     },

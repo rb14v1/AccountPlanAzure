@@ -23,7 +23,7 @@ const ALLOWED_TEMPLATES = [
   "service_line_penetration",
   "customer_profile",
   "investment_plan",
-  "account_dashboard",
+  "account_performance_quarterly_plan",
   "tech_spend_view", // ✅ ADDED THIS
   "relationship_heatmap", // ✅ ADDED THIS FOR YOUR OTHER TEMPLATE
   "account_cockpit_view",

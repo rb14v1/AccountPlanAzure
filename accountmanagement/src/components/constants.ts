@@ -378,7 +378,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
   {
-    id: "account_dashboard",
+    id: "account_performance_quarterly_plan",
     title: "Account Performance - Quarterly Plan",
     description: "Detailed quarterly metrics for the account.",
     placeholders: [
@@ -386,7 +386,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "account_dashboard",
+  "template_type": "account_performance_quarterly_plan",
   "data": {
     "Revenue Budget": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
     "Revenue Actuals / Forecast": { "Q1 FY25": "string", "Q2 FY25": "string", "Q3 FY25": "string", "Q4 FY25": "string", "Q1 FY26": "string", "Q2 FY26": "string", "Q3 FY26": "string", "Q4 FY26": "string" },
@@ -536,6 +536,34 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
       "top": "string",
       "bottom": "string"
     }
+  }
+}`
+  },
+
+  {
+    id: "service_line_penetration",
+    title: "Service Line Penetration",
+    description: "Generate a revenue teardown and service line penetration view.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "service_line_penetration",
+  "data": {
+    "barValues": [
+      ["App_Mod_val", "Data_AI_val", "EA_val", "Managed_Services_val"]
+    ],
+    "xxValues": ["string", "string", "string", "string", "string", "string", "string", "string"],
+    "tableRows": [
+      { "id": "1", "name": "Secured Order Book", "v1": "string", "v2": "string", "v3": "string", "v4": "string" },
+      { "id": "1a", "name": "- Gross Order Book", "v1": "string", "v2": "string", "v3": "string", "v4": "string" },
+      { "id": "1b", "name": "- Expiry / run-off", "v1": "string", "v2": "string", "v3": "string", "v4": "string" },
+      { "id": "2", "name": "Open TCV", "v1": "string", "v2": "string", "v3": "string", "v4": "string" },
+      { "id": "3", "name": "TCV Won", "v1": "string", "v2": "string", "v3": "string", "v4": "string" },
+      { "id": "4", "name": "TCV dropped / lost", "v1": "string", "v2": "string", "v3": "string", "v4": "string" }
+    ],
+    "insights": "string"
   }
 }`
   },
