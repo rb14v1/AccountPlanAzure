@@ -20,10 +20,10 @@ import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
-const TEMPLATE_NAME = "Critical_Risk_Tracking";
+const TEMPLATE_NAME = "critical_risk"; // ✅ Matches Backend Schema
 
 // Define the interface matching your JSON output
-interface CriticalRisk {
+export interface CriticalRisk {
   category: string;
   risk_number: number;
   description_of_risk: string;
@@ -51,7 +51,6 @@ const cell = {
   whiteSpace: "normal",
   wordBreak: "break-word",
 };
-
 
 const categoryCell = {
   backgroundColor: "#177E89",
@@ -89,9 +88,41 @@ const AutoGrowTextField = ({
   />
 );
 
+// --- SAFE EXTRACTOR BRIDGE ---
+const extractData = (source: any): CriticalRisk[] => {
+  const rawArray = Array.isArray(source?.data) ? source.data : (Array.isArray(source) ? source : []);
+  
+  const mapped = rawArray.map((item: any, i: number) => ({
+    category: item.category || "",
+    risk_number: Number(item.risk_number) || i + 1,
+    description_of_risk: item.description_of_risk || "",
+    impact_of_risk: item.impact_of_risk || "",
+    timeline: item.timeline || "",
+    countermeasures_taken: item.countermeasures_taken || "",
+    owner: item.owner || "",
+  }));
+
+  // Ensure minimum 5 empty rows
+  while (mapped.length < 5) {
+    mapped.push({
+      category: "",
+      risk_number: mapped.length + 1,
+      description_of_risk: "",
+      impact_of_risk: "",
+      timeline: "",
+      countermeasures_taken: "",
+      owner: "",
+    });
+  }
+  return mapped;
+};
+
 const CriticalRiskPage: React.FC = () => {
   const { globalData, setGlobalData } = useData();
-  const risksData: CriticalRisk[] = globalData?.Critical_Risk_Tracking || [];
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
+
+  const rawData = extractData(globalData?.critical_risk);
+  const editable = useEditableTable<CriticalRisk[]>(rawData);
 
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -103,60 +134,30 @@ const CriticalRiskPage: React.FC = () => {
 
   const [isPrinting, setIsPrinting] = useState(false);
 
-  const initialRows: CriticalRisk[] = [...risksData];
-
-while (initialRows.length < 5) {
-  initialRows.push({
-    category: "",
-    risk_number: initialRows.length + 1,
-    description_of_risk: "",
-    impact_of_risk: "",
-    timeline: "",
-    countermeasures_taken: "",
-    owner: "",
-  });
-}
-
   const autoSaveAttempted = useRef(false);
   const dataLoadedFromDB = useRef(false);
 
-  // Initialize editable table hook
-  const editable = useEditableTable(initialRows);
+  // 1. Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.critical_risk && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.critical_risk));
+    }
+  }, [globalData?.critical_risk]);
 
-
-  // Create placeholder rows if no data (show 5 empty rows)
-  
-  // Update draft when data changes from chatbot
-  
-
-  // STEP 1: Load data from database when component mounts
+  // 2. Load data from unified DB endpoint
   useEffect(() => {
     const loadDataFromDB = async () => {
       if (dataLoadedFromDB.current) return;
-
-      console.log("Loading critical risks from database...");
       setInitialLoading(true);
-
       try {
-        const response = await fetch(`${API_BASE_URL}/critical-risk/`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
+        const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
         if (response.ok) {
           const dbData = await response.json();
-          console.log("Critical risks loaded from DB:", dbData);
-
-          if (dbData && dbData.data && dbData.data.length > 0) {
-            setGlobalData((prev: any) => ({
-              ...prev,
-              Critical_Risk_Tracking: dbData.data,
-            }));
+          if (Object.keys(dbData).length > 0) {
+            const parsed = extractData(dbData);
+            setGlobalData((prev: any) => ({ ...prev, critical_risk: parsed }));
+            editable.updateDraft(parsed);
             dataLoadedFromDB.current = true;
-          } else {
-            console.log("No critical risks found in database");
           }
         }
       } catch (error) {
@@ -165,76 +166,68 @@ while (initialRows.length < 5) {
         setInitialLoading(false);
       }
     };
-
     loadDataFromDB();
-  }, [setGlobalData]);
+  }, [userId, setGlobalData]);
 
-  // STEP 2: Auto-save when NEW data arrives from chatbot
+  // 3. Auto-save when NEW data arrives from chatbot
   useEffect(() => {
     const autoSaveToDatabase = async () => {
-      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
-        console.log("Critical risks already in DB, skipping auto-save");
-        return;
-      }
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) return;
 
-      const hasValidData = risksData && risksData.length > 0;
-      const isNewDataFromChatbot =
-        risksData && risksData.length > 0 && !risksData[0]?.id;
+      const rawGlobal = globalData?.critical_risk;
+      const isNewDataFromChatbot = rawGlobal && !rawGlobal.id && (Array.isArray(rawGlobal.data) || Array.isArray(rawGlobal));
 
-      if (hasValidData && isNewDataFromChatbot && !autoSaveAttempted.current) {
-        console.log("New critical risks from chatbot detected, auto-saving...");
+      if (isNewDataFromChatbot && !autoSaveAttempted.current) {
         autoSaveAttempted.current = true;
-
         try {
-          const payload = { data: risksData };
-          console.log("Sending critical risks to backend:", payload);
-
-          const response = await fetch(
-            `${API_BASE_URL}/critical-risk/save_risks/`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(payload),
-            }
-          );
+          const payload = { user_id: userId, data: rawData };
+          const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
 
           const result = await response.json();
-          console.log("Auto-save response:", result);
-
           if (response.ok && result.success) {
-            setGlobalData((prev: any) => ({
-              ...prev,
-              Critical_Risk_Tracking: result.data.data,
-            }));
-
-            setSnackbar({
-              open: true,
-              message: "✅ Critical Risks auto-saved to database",
-              severity: "success",
-            });
-          } else {
-            throw new Error(result.message || "Auto-save failed");
+            setGlobalData((prev: any) => ({ ...prev, critical_risk: extractData(result.data) }));
+            setSnackbar({ open: true, message: "✅ Critical Risks auto-saved to database", severity: "success" });
           }
         } catch (error) {
-          console.error("Auto-save error:", error);
-          setSnackbar({
-            open: true,
-            message: "⚠️ Auto-save failed. You can edit and save manually.",
-            severity: "warning",
-          });
           autoSaveAttempted.current = false;
         }
       }
     };
-
-    const timeoutId = setTimeout(() => {
-      autoSaveToDatabase();
-    }, 500);
-
+    const timeoutId = setTimeout(autoSaveToDatabase, 500);
     return () => clearTimeout(timeoutId);
-  }, [risksData, setGlobalData]);
+  }, [rawData, userId, setGlobalData]);
+
+  // 4. Manual save to unified DB endpoint
+  const handleManualSave = async () => {
+    setLoading(true);
+    try {
+      const payload = { user_id: userId, data: editable.draftData };
+      const response = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setGlobalData((prev: any) => ({ ...prev, critical_risk: extractData(result.data) }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Critical Risks successfully saved", severity: "success" });
+        dataLoadedFromDB.current = true;
+      } else {
+        throw new Error("Failed to save");
+      }
+    } catch (error) {
+      console.error("Manual save error:", error);
+      setSnackbar({ open: true, message: "❌ Failed to save Critical Risks", severity: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Group risks by category for display
   const groupedRisks = editable.draftData.reduce((acc, risk) => {
@@ -243,7 +236,6 @@ while (initialRows.length < 5) {
     acc[cat].push(risk);
     return acc;
   }, {} as Record<string, CriticalRisk[]>);
-
 
   // Handle field changes
   const handleFieldChange = (
@@ -269,57 +261,6 @@ while (initialRows.length < 5) {
       globalIndex += risks.length;
     }
     return globalIndex;
-  };
-
-  // STEP 3: Manual save
-  const handleManualSave = async () => {
-    setLoading(true);
-    try {
-      const payload = { data: editable.draftData };
-      console.log("Manual save - sending critical risks:", payload);
-
-      const response = await fetch(
-        `${API_BASE_URL}/critical-risk/save_risks/`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const result = await response.json();
-      console.log("Manual save response:", result);
-
-      if (response.ok && result.success) {
-        setGlobalData((prev: any) => ({
-          ...prev,
-          Critical_Risk_Tracking: result.data.data,
-        }));
-
-        editable.saveEdit(() => {
-          // Save completed
-        });
-
-        setSnackbar({
-          open: true,
-          message: "✅ Critical Risks successfully saved",
-          severity: "success",
-        });
-      } else {
-        throw new Error(result.message || "Failed to save");
-      }
-    } catch (error) {
-      console.error("Manual save error:", error);
-      setSnackbar({
-        open: true,
-        message: "❌ Failed to save Critical Risks",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (initialLoading) {
@@ -365,10 +306,10 @@ while (initialRows.length < 5) {
           }}
         >
           <DownloadTemplates
-  templateName={TEMPLATE_NAME}
-  beforeDownload={() => setIsPrinting(true)}
-  afterDownload={() => setIsPrinting(false)}
-/>
+            templateName="Critical Risk Tracking"
+            beforeDownload={() => setIsPrinting(true)}
+            afterDownload={() => setIsPrinting(false)}
+          />
 
           {!editable.isEditing ? (
             <Button
@@ -402,7 +343,7 @@ while (initialRows.length < 5) {
                   },
                 }}
               >
-                {loading ? <CircularProgress size={24} /> : "Save"}
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
               </Button>
               <Button
                 variant="outlined"
@@ -445,15 +386,14 @@ while (initialRows.length < 5) {
               }}
             >
               <colgroup>
-  <col style={{ width: "14%" }} />  {/* Category */}
-  <col style={{ width: "6%" }} />   {/* # */}
-  <col style={{ width: "20%" }} />  {/* Description */}
-  <col style={{ width: "18%" }} />  {/* Impact */}
-  <col style={{ width: "12%" }} />  {/* Timeline */}
-  <col style={{ width: "18%" }} />  {/* Countermeasures */}
-  <col style={{ width: "12%" }} />  {/* Owner */}
-</colgroup>
-
+                <col style={{ width: "14%" }} />  {/* Category */}
+                <col style={{ width: "6%" }} />   {/* # */}
+                <col style={{ width: "20%" }} />  {/* Description */}
+                <col style={{ width: "18%" }} />  {/* Impact */}
+                <col style={{ width: "12%" }} />  {/* Timeline */}
+                <col style={{ width: "18%" }} />  {/* Countermeasures */}
+                <col style={{ width: "12%" }} />  {/* Owner */}
+              </colgroup>
 
               <TableHead>
                 <TableRow>
@@ -479,21 +419,20 @@ while (initialRows.length < 5) {
                     return (
                       <TableRow key={globalIndex}>
                         {/* Category */}
-<TableCell sx={{ ...cell, ...categoryCell }}>
-  {editable.isEditing && !isPrinting ? (
-    <AutoGrowTextField
-      value={risk.category}
-      onChange={(e) =>
-        handleFieldChange(globalIndex, "category", e.target.value)
-      }
-    />
-  ) : (
-    <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-      {risk.category}
-    </Box>
-  )}
-</TableCell>
-
+                        <TableCell sx={{ ...cell, ...categoryCell }}>
+                          {editable.isEditing && !isPrinting ? (
+                            <AutoGrowTextField
+                              value={risk.category}
+                              onChange={(e) =>
+                                handleFieldChange(globalIndex, "category", e.target.value)
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.category}
+                            </Box>
+                          )}
+                        </TableCell>
 
                         {/* Risk number */}
                         <TableCell sx={cell}>
@@ -518,96 +457,90 @@ while (initialRows.length < 5) {
 
                         {/* Description of Risk */}
                         <TableCell sx={cell}>
-  {editable.isEditing && !isPrinting ? (
-  <AutoGrowTextField
-    value={risk.description_of_risk}
-    onChange={(e) =>
-      handleFieldChange(
-        globalIndex,
-        "description_of_risk",
-        e.target.value
-      )
-    }
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {risk.description_of_risk}
-  </Box>
-)}
-
-</TableCell>
-
+                          {editable.isEditing && !isPrinting ? (
+                            <AutoGrowTextField
+                              value={risk.description_of_risk}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  globalIndex,
+                                  "description_of_risk",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.description_of_risk}
+                            </Box>
+                          )}
+                        </TableCell>
 
                         {/* Impact of Risk */}
                         <TableCell sx={cell}>
                           {editable.isEditing && !isPrinting ? (
-  <AutoGrowTextField
-    value={risk.impact_of_risk}
-    onChange={(e) =>
-      handleFieldChange(globalIndex, "impact_of_risk", e.target.value)
-    }
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {risk.impact_of_risk}
-  </Box>
-)}
-
+                            <AutoGrowTextField
+                              value={risk.impact_of_risk}
+                              onChange={(e) =>
+                                handleFieldChange(globalIndex, "impact_of_risk", e.target.value)
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.impact_of_risk}
+                            </Box>
+                          )}
                         </TableCell>
 
                         {/* Timeline */}
                         <TableCell sx={cell}>
                           {editable.isEditing && !isPrinting ? (
-  <AutoGrowTextField
-    value={risk.timeline}
-    onChange={(e) =>
-      handleFieldChange(globalIndex, "timeline", e.target.value)
-    }
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {risk.timeline}
-  </Box>
-)}
-
+                            <AutoGrowTextField
+                              value={risk.timeline}
+                              onChange={(e) =>
+                                handleFieldChange(globalIndex, "timeline", e.target.value)
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.timeline}
+                            </Box>
+                          )}
                         </TableCell>
 
                         {/* Countermeasures Taken */}
                         <TableCell sx={cell}>
                           {editable.isEditing && !isPrinting ? (
-  <AutoGrowTextField
-    value={risk.countermeasures_taken}
-    onChange={(e) =>
-      handleFieldChange(
-        globalIndex,
-        "countermeasures_taken",
-        e.target.value
-      )
-    }
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {risk.countermeasures_taken}
-  </Box>
-)}
-
+                            <AutoGrowTextField
+                              value={risk.countermeasures_taken}
+                              onChange={(e) =>
+                                handleFieldChange(
+                                  globalIndex,
+                                  "countermeasures_taken",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.countermeasures_taken}
+                            </Box>
+                          )}
                         </TableCell>
 
                         {/* Owner */}
                         <TableCell sx={cell}>
                           {editable.isEditing && !isPrinting ? (
-  <AutoGrowTextField
-    value={risk.owner}
-    onChange={(e) =>
-      handleFieldChange(globalIndex, "owner", e.target.value)
-    }
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {risk.owner}
-  </Box>
-)}
-
+                            <AutoGrowTextField
+                              value={risk.owner}
+                              onChange={(e) =>
+                                handleFieldChange(globalIndex, "owner", e.target.value)
+                              }
+                            />
+                          ) : (
+                            <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
+                              {risk.owner}
+                            </Box>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -617,10 +550,6 @@ while (initialRows.length < 5) {
             </Table>
           </TableContainer>
 
-          <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 3 }}>
-            Classification: Controlled. Copyright ©2025 Version 1. All rights
-            reserved.
-          </Typography>
         </Box>
       </Box>
       <style>

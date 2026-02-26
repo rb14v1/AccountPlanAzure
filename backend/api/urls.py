@@ -116,5 +116,29 @@ urlpatterns = [
     path("client-context-2/", views.template_payload_detail, kwargs={"template_type": "client_context_2"}),
     path("client-context-2/save/", views.template_payload_detail, kwargs={"template_type": "client_context_2"}),
 
+    # 20. Key Growth Opportunities
+    path("growth-opportunities/", views.template_payload_detail, kwargs={"template_type": "key_growth_opportunities"}),
+    path("growth-opportunities/save/", views.template_payload_detail, kwargs={"template_type": "key_growth_opportunities"}),
+
+    # 21. Opportunity Deep Dive
+    path("opportunity-deep-dive/", views.template_payload_detail, kwargs={"template_type": "opportunity_deep_dive"}),
+    path("opportunity-deep-dive/save/", views.template_payload_detail, kwargs={"template_type": "opportunity_deep_dive"}),
+
+    # 22. Critical Risk Tracking
+    path("critical-risk/", views.template_payload_detail, kwargs={"template_type": "critical_risk"}),
+    path("critical-risk/save/", views.template_payload_detail, kwargs={"template_type": "critical_risk"}),
+
+    # 23. Operational Implementation Plan
+    path("operational-implementation-plan/", views.template_payload_detail, kwargs={"template_type": "operational_implementation_plan"}),
+    path("operational-implementation-plan/save/", views.template_payload_detail, kwargs={"template_type": "operational_implementation_plan"}),
+
+    # 24. Planned Action GenAI
+    path("planned-action-genai/", views.template_payload_detail, kwargs={"template_type": "planned_action_genai"}),
+    path("planned-action-genai/save/", views.template_payload_detail, kwargs={"template_type": "planned_action_genai"}),
+ 
+    # 25. Strategic Partnerships
+    path("strategic-partnerships/", views.template_payload_detail, kwargs={"template_type": "strategic_partnerships"}),
+    path("strategic-partnerships/save/", views.template_payload_detail, kwargs={"template_type": "strategic_partnerships"}),
+ 
     path('template-payload/<str:template_type>/', views.template_payload_detail, name='template_payload_detail'),
 ]

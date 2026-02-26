@@ -3,10 +3,10 @@ import {
   Box,
   Button,
   Typography,
+  MenuItem,
   Table,
   TableBody,
   TableCell,
-  MenuItem,
   TableContainer,
   TableHead,
   TableRow,
@@ -17,14 +17,81 @@ import {
 import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
-
+ 
 const TEMPLATE_NAME = "Implementation_Plan_Operational_Excellence";
-
-// Define interfaces
-interface ImplementationAction {
+const STATUS_OPTIONS = [
+  "Completed",
+  "On-track",
+  "Critical to fast-track",
+  "Delayed",
+  "To be initiated",
+];
+ 
+const legendItems = [
+  { label: "Completed", color: "#7EAA55" },
+  { label: "On-track", color: "#0070C0" },
+  { label: "Critical to fast-track", color: "#FFC000" },
+  { label: "Delayed", color: "#C00000" },
+  { label: "To be initiated", color: "#D9D9D9" },
+];
+ 
+const getStatusColor = (status: string): string => {
+  const normalized = status.toLowerCase().trim();
+  if (normalized === "completed") return "#7EAA55";
+  if (normalized === "on-track" || normalized === "on track") return "#0070C0";
+  if (normalized === "critical to fast-track" || normalized.includes("critical")) return "#FFC000";
+  if (normalized === "delayed") return "#C00000";
+  if (normalized === "to be initiated" || normalized.includes("initiated")) return "#D9D9D9";
+  return "";
+};
+ 
+const HeaderCell = styled(TableCell)(({ theme }) => ({
+  backgroundColor: "#022D36",
+  color: "#ffffff",
+  fontWeight: 600,
+  fontSize: theme.typography.pxToRem(11),
+  border: "1px solid #ccc",
+  padding: "10px 4px",
+}));
+ 
+const BodyCell = styled(TableCell)(({ theme }) => ({
+  border: "1px solid #ccc",
+  fontSize: theme.typography.pxToRem(11),
+  padding: "6px 8px",
+  verticalAlign: "top",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+  overflow: "visible",
+  height: "auto",
+}));
+ 
+const CategoryCell = styled(TableCell)(({ theme }) => ({
+  backgroundColor: "#0B5D66",
+  color: "#ffffff",
+  fontWeight: 700,
+  textAlign: "center",
+  fontSize: theme.typography.pxToRem(12),
+  border: "1px solid #ccc",
+  verticalAlign: "top",
+  whiteSpace: "normal",
+  wordBreak: "break-word",
+}));
+ 
+const StatusCell = styled(TableCell)({
+  padding: 0,
+  border: "1px solid #ccc",
+});
+ 
+const PrintBox = ({ value }: { value: string }) => (
+  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", overflow: "visible", height: "auto", lineHeight: 1.4, fontSize: "0.75rem" }}>
+    {value || ""}
+  </Box>
+);
+ 
+interface ActionRow {
+  id: number;
   category: string;
   subcategory: string;
-  action_number: number;
   action_description: string;
   primary_owner: string;
   support_team: string;
@@ -34,687 +101,253 @@ interface ImplementationAction {
   investment_needed: string;
   impact: string;
 }
-
-interface ActionRow {
-  id: number;
-  action: string;
-  status: string;
-  primary_owner: string;
-  support_team: string;
-  timeline: string;
-  help_required: string;
-  investment_needed: string;
-  impact: string;
-}
-
-interface GroupData {
-  subCategory: string;
-  rows: ActionRow[];
-}
-
+ 
 interface PlanData {
-  planDate: string;
-  mainCategory: string;
-  groups: GroupData[];
+  plan_date: string;
+  actions: ActionRow[]; // ✅ Changed to match standard Implementation Plan
 }
-
-const STATUS_OPTIONS = [
-  "Completed",
-  "On-track",
-  "Critical",
-  "Delayed",
-  "To be initiated",
-];
-
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "Completed":
-      return "#8CC63F";
-    case "On-track":
-      return "#0070C0";
-    case "Critical to fast-track":
-    case "Critical":
-      return "#FFC000";
-    case "Delayed":
-      return "#C00000";
-    case "To be initiated":
-      return "#D9D9D9";
-    default:
-      return "transparent";
-  }
-};
-
-const HeaderCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: "#011E26",
-  color: "#ffffff",
-  fontWeight: 700,
-  fontSize: theme.typography.pxToRem(11),
-  border: "1px solid #ccc",
-  padding: "8px 4px",
-}));
-
-const BodyCell = styled(TableCell)(({ theme }) => ({
-  border: "1px solid #ccc",
-  fontSize: theme.typography.pxToRem(11),
-  padding: "6px 8px",
-  verticalAlign: "top",
-  whiteSpace: "normal",
-  wordBreak: "break-word",
-  height: "auto",       // ✅ allow growth
-}));
-
-
-const MainCategoryCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: "#011E26",
-  color: "#ffffff",
-  fontWeight: 700,
-  textAlign: "center",
-  width: 100,
-  border: "1px solid #ccc",
-  fontSize: theme.typography.pxToRem(11),
-}));
-
-const SubCategoryCell = styled(TableCell)(({ theme }) => ({
-  backgroundColor: "#177E89",
-  color: "#ffffff",
-  fontWeight: 700,
-  textAlign: "center",
-  width: 100,
-  border: "1px solid #ccc",
-  fontSize: theme.typography.pxToRem(11),
-}));
-
-const NumberCell = styled(BodyCell)({
-  textAlign: "center",
-  width: 30,
-});
-
-const StatusCell = styled(TableCell)({
-  padding: 0,
-  width: 60,
-  border: "1px solid #ccc",
-});
-
-const InvestmentCell = styled(BodyCell)({
-  backgroundColor: "#E6E6E6",
-});
-
-const multilineInputProps = {
-  style: {
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-    overflow: "hidden",
-    lineHeight: 1.4,
-  },
-};
-
+ 
 export default function OperationalImplementationPlan() {
-  const [isPrinting, setIsPrinting] = React.useState(false);
-
   const { globalData, setGlobalData } = useData();
-  const implementationData = globalData?.Implementation_Plan || null;
-
-  // Transform data into the structure needed for rendering
-  const initialPlanData = React.useMemo(() => {
-    if (!implementationData || !implementationData.data) {
-      // Return structure with 5 empty placeholder rows
-      return {
-        planDate: "xx",
-        mainCategory: "Operational Excellence",
-        groups: [
-          {
-            subCategory: "",
-            rows: Array(5)
-              .fill(null)
-              .map((_, idx) => ({
-                id: idx + 1,
-                action: "",
-                status: "",
-                primary_owner: "",
-                support_team: "",
-                timeline: "",
-                help_required: "",
-                investment_needed: "",
-                impact: "",
-              })),
-          },
-        ],
-      };
-    }
-
-    // Group by category and subcategory
-    const categoryMap: Record<string, Record<string, ImplementationAction[]>> = {};
-    implementationData.data.forEach((action: ImplementationAction) => {
-      if (!categoryMap[action.category]) {
-        categoryMap[action.category] = {};
-      }
-      if (!categoryMap[action.category][action.subcategory]) {
-        categoryMap[action.category][action.subcategory] = [];
-      }
-      categoryMap[action.category][action.subcategory].push(action);
-    });
-
-    // Get the first category as main category (usually "Operational Excellence")
-    const mainCategory = Object.keys(categoryMap)[0] || "Operational Excellence";
-
-    // Transform into groups structure
-    const groups = Object.entries(categoryMap[mainCategory] || {}).map(
-      ([subCategory, actions]) => ({
-        subCategory,
-        rows: actions.map((action) => ({
-          id: action.action_number,
-          action: action.action_description,
-          status: action.status,
-          primary_owner: action.primary_owner,
-          support_team: action.support_team,
-          timeline: action.timeline,
-          help_required: action.help_required,
-          investment_needed: action.investment_needed,
-          impact: action.impact,
-        })),
-      })
-    );
-
-    return {
-      planDate: implementationData.plan_date || "xx",
-      mainCategory,
-      groups,
-    };
-  }, [implementationData]);
-
-  // Initialize editable table hook
-  const editable = useEditableTable<PlanData>(initialPlanData);
-
-  // Handle plan date change
+  const contextData = globalData?.operational_implementation_plan || null;
+  const [isPrinting, setIsPrinting] = React.useState(false);
+ 
+  const defaultRows: ActionRow[] = [
+    { id: 1, category: "Operational Excellence", subcategory: "Process Improvement", action_description: "", primary_owner: "", support_team: "", timeline: "", status: "To be initiated", help_required: "", investment_needed: "", impact: "" },
+    { id: 2, category: "Operational Excellence", subcategory: "Process Improvement", action_description: "", primary_owner: "", support_team: "", timeline: "", status: "To be initiated", help_required: "", investment_needed: "", impact: "" },
+    { id: 3, category: "Operational Excellence", subcategory: "Team Enablement", action_description: "", primary_owner: "", support_team: "", timeline: "", status: "To be initiated", help_required: "", investment_needed: "", impact: "" },
+  ];
+ 
+  const actionsData = contextData?.actions || []; // ✅ Targeting nested actions array
+  const mappedRows: ActionRow[] =
+    actionsData.length > 0
+      ? actionsData.map((action: any, index: number) => ({
+          id: action.id || index + 1,
+          category: action.category || "Operational Excellence",
+          subcategory: action.subcategory || "General",
+          action_description: action.action_description || "",
+          primary_owner: action.primary_owner || "",
+          support_team: action.support_team || "",
+          timeline: action.timeline || "",
+          status: action.status || "To be initiated",
+          help_required: action.help_required || "",
+          investment_needed: action.investment_needed || "",
+          impact: action.impact || "",
+        }))
+      : defaultRows;
+ 
+  const initialData: PlanData = {
+    plan_date: contextData?.plan_date || "xx",
+    actions: mappedRows, // ✅ Maps to actions
+  };
+ 
+  const editable = useEditableTable(initialData);
+ 
   const handlePlanDateChange = (value: string) => {
-    editable.updateDraft({
-      ...editable.draftData,
-      planDate: value,
-    });
+    editable.updateDraft({ ...editable.draftData, plan_date: value });
   };
-
-  // Handle main category change
-  const handleMainCategoryChange = (value: string) => {
-    editable.updateDraft({
-      ...editable.draftData,
-      mainCategory: value,
-    });
+ 
+  const handleActionChange = (index: number, field: keyof ActionRow, value: string | number) => {
+    const updatedActions = [...editable.draftData.actions];
+    updatedActions[index] = { ...updatedActions[index], [field]: value };
+    editable.updateDraft({ ...editable.draftData, actions: updatedActions });
   };
-
-  // Handle subcategory change
-  const handleSubCategoryChange = (groupIndex: number, value: string) => {
-    const updatedGroups = [...editable.draftData.groups];
-    updatedGroups[groupIndex] = {
-      ...updatedGroups[groupIndex],
-      subCategory: value,
-    };
-    editable.updateDraft({
-      ...editable.draftData,
-      groups: updatedGroups,
-    });
+ 
+  // Group by SUBCATEGORY
+  const groupedActions: { [key: string]: ActionRow[] } = {};
+  editable.draftData.actions.forEach((action: ActionRow) => {
+    if (!groupedActions[action.subcategory]) groupedActions[action.subcategory] = [];
+    groupedActions[action.subcategory].push(action);
+  });
+ 
+  const pdfTableConfig = {
+    headers: [ "Subcategory", "#", "Action", "Primary Owner", "Support Team", "Timeline", "Status", "Help Required", "Investment Needed", "Impact" ],
+    rows: editable.draftData.actions.map((row: any) => [
+      row.subcategory || "", row.id, row.action_description || "", row.primary_owner || "",
+      row.support_team || "", row.timeline || "", row.status || "", row.help_required || "",
+      row.investment_needed || "", row.impact || ""
+    ]),
+    columnStyles: {
+      6: editable.draftData.actions.map((row: any) => ({ fillColor: getStatusColor(row.status) }))
+    }
   };
-
-  // Handle row field change
-  const handleRowChange = (
-    groupIndex: number,
-    rowIndex: number,
-    field: keyof ActionRow,
-    value: string | number
-  ) => {
-    const updatedGroups = [...editable.draftData.groups];
-    const updatedRows = [...updatedGroups[groupIndex].rows];
-    updatedRows[rowIndex] = {
-      ...updatedRows[rowIndex],
-      [field]: value,
-    };
-    updatedGroups[groupIndex] = {
-      ...updatedGroups[groupIndex],
-      rows: updatedRows,
-    };
-    editable.updateDraft({
-      ...editable.draftData,
-      groups: updatedGroups,
-    });
-  };
-
-  const totalRows = editable.draftData.groups.reduce((acc, g) => acc + g.rows.length, 0);
-
+ 
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            mb: 3,
-          }}
-        >
-          <Typography fontSize={35} fontWeight={700} sx={{ color: "teal" }}>
-            Implementation plan for operational excellence, delivery, and talent
-          </Typography>
-
-          <Box sx={{ display: "flex", gap: 2 }}>
-            <DownloadTemplates
-  templateName={TEMPLATE_NAME}
-  onBeforeDownload={() => setIsPrinting(true)}
-  onAfterDownload={() => setIsPrinting(false)}
-/>
-
-
-            {!editable.isEditing ? (
+        <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", mb: 2 }}>
+          <DownloadTemplates templateName={TEMPLATE_NAME} tableConfig={pdfTableConfig} />
+ 
+          {!editable.isEditing ? (
+            <Button variant="outlined" onClick={editable.startEdit} sx={{ borderColor: "#008080", color: "#008080", ml: 2, "&:hover": { borderColor: "#006d6d", backgroundColor: "#e6f4f4" } }}>
+              Edit
+            </Button>
+          ) : (
+            <>
               <Button
-                variant="outlined"
-                onClick={editable.startEdit}
-                sx={{
-                  borderColor: "#008080",
-                  color: "#008080",
-                  "&:hover": {
-                    borderColor: "#006d6d",
-                    backgroundColor: "#e6f4f4",
-                  },
-                }}
+                variant="contained"
+                onClick={() => editable.saveEdit((updatedData) => setGlobalData((prev: any) => ({ ...prev, operational_implementation_plan: updatedData })))}
+                sx={{ backgroundColor: "#008080", ml: 2, color: "#fff", "&:hover": { backgroundColor: "#006d6d" } }}
               >
-                Edit
+                Save
               </Button>
-            ) : (
-              <>
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    editable.saveEdit((data) => {
-                      const flattenedActions = data.groups.flatMap((group) =>
-                        group.rows.map((row) => ({
-                          category: data.mainCategory,
-                          subcategory: group.subCategory,
-                          action_number: row.id,
-                          action_description: row.action,
-                          primary_owner: row.primary_owner,
-                          support_team: row.support_team,
-                          timeline: row.timeline,
-                          status: row.status,
-                          help_required: row.help_required,
-                          investment_needed: row.investment_needed,
-                          impact: row.impact,
-                        }))
-                      );
-
-                      setGlobalData((prev: any) => ({
-                        ...prev,
-                        Implementation_Plan: {
-                          plan_date: data.planDate,
-                          data: flattenedActions,
-                        },
-                      }));
-                    })
-                  }
-                  sx={{
-                    backgroundColor: "#008080",
-                    color: "#fff",
-                    "&:hover": {
-                      backgroundColor: "#006d6d",
-                    },
-                  }}
-                >
-                  Save
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  onClick={editable.cancelEdit}
-                  sx={{
-                    borderColor: "#008080",
-                    color: "#008080",
-                    "&:hover": {
-                      borderColor: "#006d6d",
-                      backgroundColor: "#e6f4f4",
-                    },
-                  }}
-                >
-                  Cancel
-                </Button>
-              </>
-            )}
-          </Box>
+              <Button variant="outlined" onClick={editable.cancelEdit} sx={{ borderColor: "#008080", color: "#008080", ml: 2, "&:hover": { borderColor: "#006d6d", backgroundColor: "#e6f4f4" } }}>
+                Cancel
+              </Button>
+            </>
+          )}
         </Box>
-
+ 
         <Box id="template-to-download" className="template-section">
+          <Typography fontSize={35} fontWeight={700} sx={{ color: "teal" }}>
+            Implementation plan for Operational Excellence
+          </Typography>
+ 
           <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
             <Typography sx={{ fontSize: 14, fontWeight: 600 }}>Plan date:</Typography>
-            {editable.isEditing ? (
-              <TextField
-                size="small"
-                value={editable.draftData.planDate}
-                onChange={(e) => handlePlanDateChange(e.target.value)}
-                sx={{ width: 150 }}
-              />
+            {editable.isEditing && !isPrinting ? (
+              <TextField size="small" value={editable.draftData.plan_date} onChange={(e) => handlePlanDateChange(e.target.value)} sx={{ width: 150 }} />
             ) : (
-              <Typography sx={{ fontSize: 14 }}>
-                {editable.draftData.planDate}
-              </Typography>
+              <Typography sx={{ fontSize: 14 }}>{editable.draftData.plan_date}</Typography>
             )}
           </Box>
-
-          {/* Legend */}
-          <Box sx={{ color:"#111111",display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
-            {[
-              { l: "Completed", c: "#8CC63F" },
-              { l: "On-track", c: "#0070C0" },
-              { l: "Critical", c: "#FFC000" },
-              { l: "Delayed", c: "#C00000" },
-              { l: "To be initiated", c: "#D9D9D9" },
-            ].map((i) => (
-              <Box
-                key={i.l}
-                sx={{ display: "flex", alignItems: "center", gap: 1 }}
-              >
-                <Box
-                  sx={{
-                    width: 20,
-                    height: 20,
-                    bgcolor: i.c,
-                    border: "1px solid #ccc",
-                  }}
-                />
-                <Typography sx={{ fontSize: 12 }}>{i.l}</Typography>
+ 
+          <Box sx={{ display: "flex", gap: 2, mb: 3, flexWrap: "wrap" }}>
+            {legendItems.map((item) => (
+              <Box key={item.label} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ width: 20, height: 20, bgcolor: item.color, border: "1px solid #ccc" }} />
+                <Typography sx={{ fontSize: 12 }}>{item.label}</Typography>
               </Box>
             ))}
           </Box>
-
+ 
           <TableContainer component={Paper} sx={{ mb: 4 }}>
-            <Table
-  size="small"
-  sx={{
-    borderCollapse: "collapse",
-    tableLayout: "fixed",
-    width: "100%",
-    minWidth: 1200, // ✅ IMPORTANT for PDF
-  }}
->
-
-  <colgroup>
-  <col style={{ width: "10%" }} /> {/* Main Category */}
-  <col style={{ width: "10%" }} /> {/* Sub Category */}
-  <col style={{ width: "4%" }} />  {/* # */}
-  <col style={{ width: "16%" }} /> {/* Action */}
-  <col style={{ width: "12%" }} /> {/* Primary Owner */}
-  <col style={{ width: "12%" }} /> {/* Support Team */}
-  <col style={{ width: "10%" }} /> {/* Timeline */}
-  <col style={{ width: "8%" }} />  {/* Status */}
-  <col style={{ width: "12%" }} /> {/* Help Required */}
-  <col style={{ width: "8%" }} />  {/* Investment Needed */}
-  <col style={{ width: "8%" }} />  {/* Impact */}
-</colgroup>
-
-
-              <TableHead>
-  <TableRow>
-    <HeaderCell>Category</HeaderCell>
-    <HeaderCell>Sub Category</HeaderCell>
-    <HeaderCell>#</HeaderCell>
-    <HeaderCell>Action</HeaderCell>
-    <HeaderCell>Primary Owner</HeaderCell>
-    <HeaderCell>Support Team</HeaderCell>
-    <HeaderCell>Timeline</HeaderCell>
-    <HeaderCell>Status</HeaderCell>
-    <HeaderCell>Help Required</HeaderCell>
-    <HeaderCell>Investment Needed</HeaderCell>
-    <HeaderCell>Impact</HeaderCell>
-  </TableRow>
-</TableHead>
-
+            <Table size="small" sx={{ borderCollapse: "collapse", width: "100%", tableLayout: "fixed", pageBreakInside: "auto" }}>
+              <colgroup>
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "4%" }} />
+                <col style={{ width: "16%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "10%" }} />
+                <col style={{ width: "6%" }} />
+                <col style={{ width: "12%" }} />
+                <col style={{ width: "8%" }} />
+                <col style={{ width: "8%" }} />
+              </colgroup>
+ 
+              <TableHead sx={{ display: "table-header-group" }}>
+                <TableRow>
+                  <HeaderCell>Subcategory</HeaderCell>
+                  <HeaderCell>#</HeaderCell>
+                  <HeaderCell>Action</HeaderCell>
+                  <HeaderCell>Primary Owner</HeaderCell>
+                  <HeaderCell>Support Team</HeaderCell>
+                  <HeaderCell>Timeline</HeaderCell>
+                  <HeaderCell>Status</HeaderCell>
+                  <HeaderCell>Help Required</HeaderCell>
+                  <HeaderCell>Investment Needed</HeaderCell>
+                  <HeaderCell>Impact</HeaderCell>
+                </TableRow>
+              </TableHead>
               <TableBody>
-                {editable.draftData.groups.map((group, gi) =>
-                  group.rows.map((row, ri) => (
-                    <TableRow key={`${gi}-${ri}`}>
-                      {/* Main Category cell with rowspan */}
-                      {(!isPrinting && gi === 0 && ri === 0) && (
-  <MainCategoryCell rowSpan={totalRows}>
-
+                {Object.entries(groupedActions).map(([subcategory, actions]) =>
+                  actions.map((row, idx) => {
+                    const globalIndex = editable.draftData.actions.findIndex((a: ActionRow) => a.id === row.id);
+                    return (
+                      <TableRow key={row.id}>
+                        {idx === 0 ? (
+                          <CategoryCell rowSpan={actions.length}>
+                            {editable.isEditing && !isPrinting ? (
+                              <TextField
+                                size="small"
+                                fullWidth
+                                value={row.subcategory}
+                                onChange={(e) => handleActionChange(globalIndex, "subcategory", e.target.value)}
+                                sx={{ "& .MuiInputBase-root": { color: "white" }, "& .MuiOutlinedInput-notchedOutline": { borderColor: "rgba(255,255,255,0.3)" } }}
+                              />
+                            ) : (
+                              subcategory
+                            )}
+                          </CategoryCell>
+                        ) : isPrinting ? (
+                          <CategoryCell sx={{ backgroundColor: "transparent", border: "1px solid #ccc" }} />
+                        ) : null}
+ 
+                        <BodyCell>{row.id}</BodyCell>
+ 
+                        <BodyCell>
                           {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={editable.draftData.mainCategory}
-    onChange={(e) =>
-      handleMainCategoryChange(e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {editable.draftData.mainCategory || ""}
-  </Box>
-)}
-
-                        </MainCategoryCell>
-                      )}
-
-                      {/* SubCategory cell with rowspan */}
-                      {!isPrinting && ri === 0 && (
-  <SubCategoryCell rowSpan={group.rows.length}>
-    {editable.isEditing && !isPrinting ? (
-      <TextField
-        size="small"
-        fullWidth
-        multiline
-        minRows={1}
-        value={group.subCategory}
-        onChange={(e) =>
-          handleSubCategoryChange(gi, e.target.value)
-        }
-        InputProps={multilineInputProps}
-      />
-    ) : (
-      <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-        {group.subCategory || ""}
-      </Box>
-    )}
-  </SubCategoryCell>
-)}
-
-
-                      <NumberCell>{row.id}</NumberCell>
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.action}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "action", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.action || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.primary_owner}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "primary_owner", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.primary_owner || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.support_team}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "support_team", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.support_team || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.timeline}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "timeline", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.timeline || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-
-                      <StatusCell>
-                        {editable.isEditing ? (
-                          <TextField
-                            select
-                            size="small"
-                            fullWidth
-                            value={row.status}
-                            onChange={(e) =>
-                              handleRowChange(gi, ri, "status", e.target.value)
-                            }
-                            SelectProps={{
-                              displayEmpty: true,
-                            }}
-                          >
-                            {STATUS_OPTIONS.map((status) => (
-                              <MenuItem key={status} value={status}>
-                                {status}
-                              </MenuItem>
-                            ))}
-                          </TextField>
-                        ) : (
-                          <Box
-                            sx={{
-                              backgroundColor: getStatusColor(row.status),
-                              width: "100%",
-                              height: "100%",
-                              minHeight: 30,
-                            }}
-                          />
-                        )}
-                      </StatusCell>
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.help_required}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "help_required", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.help_required || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-
-                      <InvestmentCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.investment_needed}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "investment_needed", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.investment_needed || ""}
-  </Box>
-)}
-
-</InvestmentCell>
-
-
-                      <BodyCell>
-  {editable.isEditing && !isPrinting ? (
-  <TextField
-    size="small"
-    fullWidth
-    multiline
-    minRows={1}
-    value={row.impact}
-    onChange={(e) =>
-      handleRowChange(gi, ri, "impact", e.target.value)
-    }
-    InputProps={multilineInputProps}
-  />
-) : (
-  <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
-    {row.impact || ""}
-  </Box>
-)}
-
-</BodyCell>
-
-                    </TableRow>
-                  ))
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.action_description} onChange={(e) => handleActionChange(globalIndex, "action_description", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.action_description} /> )}
+                        </BodyCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.primary_owner} onChange={(e) => handleActionChange(globalIndex, "primary_owner", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.primary_owner} /> )}
+                        </BodyCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.support_team} onChange={(e) => handleActionChange(globalIndex, "support_team", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.support_team} /> )}
+                        </BodyCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.timeline} onChange={(e) => handleActionChange(globalIndex, "timeline", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.timeline} /> )}
+                        </BodyCell>
+ 
+                        <StatusCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField select size="small" fullWidth value={row.status} onChange={(e) => handleActionChange(globalIndex, "status", e.target.value)} SelectProps={{ displayEmpty: true }} >
+                              {STATUS_OPTIONS.map((status) => ( <MenuItem key={status} value={status}>{status}</MenuItem> ))}
+                            </TextField>
+                          ) : (
+                            row.status && <Box sx={{ backgroundColor: getStatusColor(row.status), width: "100%", height: "100%", minHeight: 35 }} />
+                          )}
+                        </StatusCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.help_required} onChange={(e) => handleActionChange(globalIndex, "help_required", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.help_required} /> )}
+                        </BodyCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.investment_needed} onChange={(e) => handleActionChange(globalIndex, "investment_needed", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.investment_needed} /> )}
+                        </BodyCell>
+ 
+                        <BodyCell>
+                          {editable.isEditing && !isPrinting ? (
+                            <TextField size="small" fullWidth multiline minRows={1} value={row.impact} onChange={(e) => handleActionChange(globalIndex, "impact", e.target.value)} sx={{ "& textarea": { overflow: "hidden" } }} />
+                          ) : ( <PrintBox value={row.impact} /> )}
+                        </BodyCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
           </TableContainer>
-
+ 
           <Typography sx={{ fontSize: 10, color: "#6b7280", mt: 2 }}>
-            Classification: Controlled. Copyright ©2025 Version 1. All rights
-            reserved.
+            Classification: Controlled. Copyright ©2026 Version 1. All rights reserved.
           </Typography>
+ 
+          <style>
+            {`
+              @media print {
+                textarea, input { display: none !important; }
+                td, th { white-space: normal !important; word-break: break-word !important; overflow: visible !important; height: auto !important; max-height: none !important; }
+                tr { page-break-inside: avoid !important; }
+              }
+            `}
+          </style>
         </Box>
       </Box>
     </Box>

@@ -1,5 +1,5 @@
 // src/Templates/PlannedActionGenAI.tsx
-import React, { useState } from "react";
+import React from "react";
 import DownloadTemplates from "../components/DownloadTemplates";
 import {
   Box,
@@ -17,6 +17,9 @@ import {
   MenuItem,
   Select,
 } from "@mui/material";
+ 
+import { useEditableTable } from "../hooks/useEditableTable";
+import { useData } from "../context/DataContext";
  
 // --- Constants & Types ---
  
@@ -51,17 +54,6 @@ const HEADER_BG = "#0D2E38";
 const TEAL_COLOR = "#0F6674";
  
 // --- Styled Components ---
- 
-const Banner = styled(Box)({
-  backgroundColor: "#FFFF00",
-  color: "#000",
-  fontWeight: "bold",
-  textAlign: "center",
-  padding: "8px",
-  fontSize: "1.2rem",
-  marginBottom: "16px",
-  textTransform: "uppercase",
-});
  
 const HeaderCell = styled(TableCell)(({ theme }) => ({
   backgroundColor: HEADER_BG,
@@ -119,6 +111,7 @@ const GenAITable: React.FC<GenAITableProps> = ({
     totalRows: number,
     focusAreaTitle: string
   ) => {
+    // 🛡️ Added fallback {} so it doesn't crash if data is missing
     const data = dataSource?.[row.key] || {};
    
     const currentStatus = STATUS_OPTIONS.find(s => s.value === data.Status);
@@ -142,23 +135,22 @@ const GenAITable: React.FC<GenAITableProps> = ({
               onChange={(e) => onChange(row.key, "Initiative_Description", e.target.value)}
             />
           ) : (
-            data.Initiative_Description || "..."
+            <Typography variant="body2">{data.Initiative_Description || ""}</Typography>
           )}
         </DataCell>
  
-        <DataCell align="center" sx={{ width: "100px" }}>
+        <DataCell align="center" sx={{ width: "130px" }}>
           {isEditing ? (
             <Select
               size="small"
               fullWidth
-              value={data.Status || ""}
+              value={data.Status || "To be initiated"}
               onChange={(e) => onChange(row.key, "Status", e.target.value)}
               sx={{ height: 40, backgroundColor: statusColor, color: "#fff" }}
             >
               {STATUS_OPTIONS.map((opt) => (
                 <MenuItem key={opt.value} value={opt.value}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Box sx={{ width: 16, height: 16, bgcolor: opt.color }} />
                     {opt.label}
                   </Box>
                 </MenuItem>
@@ -178,7 +170,7 @@ const GenAITable: React.FC<GenAITableProps> = ({
               onChange={(e) => onChange(row.key, "Owner", e.target.value)}
             />
           ) : (
-            data.Owner || "..."
+            <Typography variant="body2">{data.Owner || ""}</Typography>
           )}
         </DataCell>
  
@@ -191,7 +183,7 @@ const GenAITable: React.FC<GenAITableProps> = ({
               onChange={(e) => onChange(row.key, "Timeline", e.target.value)}
             />
           ) : (
-            data.Timeline || "..."
+            <Typography variant="body2">{data.Timeline || ""}</Typography>
           )}
         </DataCell>
  
@@ -200,11 +192,12 @@ const GenAITable: React.FC<GenAITableProps> = ({
             <TextField
               size="small"
               fullWidth
+              multiline
               value={data.Help_Required || ""}
               onChange={(e) => onChange(row.key, "Help_Required", e.target.value)}
             />
           ) : (
-            data.Help_Required || "..."
+            <Typography variant="body2">{data.Help_Required || ""}</Typography>
           )}
         </DataCell>
  
@@ -217,7 +210,7 @@ const GenAITable: React.FC<GenAITableProps> = ({
               onChange={(e) => onChange(row.key, "Investments", e.target.value)}
             />
           ) : (
-            data.Investments || "..."
+            <Typography variant="body2">{data.Investments || ""}</Typography>
           )}
         </DataCell>
  
@@ -226,11 +219,12 @@ const GenAITable: React.FC<GenAITableProps> = ({
             <TextField
               size="small"
               fullWidth
+              multiline
               value={data.Outcome || ""}
               onChange={(e) => onChange(row.key, "Outcome", e.target.value)}
             />
           ) : (
-            data.Outcome || "..."
+            <Typography variant="body2">{data.Outcome || ""}</Typography>
           )}
         </DataCell>
       </TableRow>
@@ -279,43 +273,47 @@ const Legend = () => (
  
 // --- Main Component ---
 const PlannedActionGenAI: React.FC = () => {
-  // REMOVED useData import. Using local state "savedData" to simulate global storage.
-  const [savedData, setSavedData] = useState<any>({});
+  // 🔌 WIRED UP TO GLOBAL CONTEXT HERE
+  const { globalData, setGlobalData } = useData();
+  const contextData = globalData?.planned_action_genai || null;
  
-  const [isEditing, setIsEditing] = useState(false);
-  const [draftData, setDraftData] = useState<any>({});
+  // Generate fallback empty grid so the table doesn't break if AI misses a row
+  const defaultData: Record<string, any> = {};
+  [...AI_INVESTMENT_ROWS, ...OTHER_ROWS].forEach(row => {
+    defaultData[row.key] = {
+      Initiative_Description: "", Status: "To be initiated", Owner: "",
+      Timeline: "", Help_Required: "", Investments: "", Outcome: ""
+    };
+  });
  
-  const handleStartEdit = () => {
-    setDraftData(savedData);
-    setIsEditing(true);
-  };
+  const initialData = contextData || defaultData;
  
-  const handleCancelEdit = () => {
-    setIsEditing(false);
-    setDraftData(savedData);
+  // Hooked up to your custom useEditableTable hook
+  const editable = useEditableTable(initialData);
+ 
+  const handleChange = (rowKey: string, field: string, value: string) => {
+    editable.updateDraft({
+      ...editable.draftData,
+      [rowKey]: {
+        ...(editable.draftData[rowKey] || {}),
+        [field]: value,
+      },
+    });
   };
  
   const handleSaveEdit = () => {
-    setSavedData(draftData);
-    setIsEditing(false);
-  };
- 
-  const handleChange = (rowKey: string, field: string, value: string) => {
-    setDraftData((prev: any) => ({
-      ...prev,
-      [rowKey]: {
-        ...(prev[rowKey] || {}),
-        [field]: value,
-      },
-    }));
+    editable.saveEdit((updatedData) => {
+      setGlobalData((prev: any) => ({
+        ...prev,
+        planned_action_genai: updatedData,
+      }));
+    });
   };
  
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 1, sm: 4 }, py: 2 }}>
        
-        
- 
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: "#008080" }}>
             Planned action for next 12 months: GenAI
@@ -323,10 +321,10 @@ const PlannedActionGenAI: React.FC = () => {
  
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <DownloadTemplates templateName={TEMPLATE_NAME} />
-            {!isEditing ? (
+            {!editable.isEditing ? (
               <Button
                 variant="outlined"
-                onClick={handleStartEdit}
+                onClick={() => editable.startEdit(editable.draftData)}
                 sx={{ borderColor: "#008080", color: "#008080", ml: 2, "&:hover": { bgcolor: "#e6f4f4" } }}
               >
                 Edit
@@ -342,7 +340,7 @@ const PlannedActionGenAI: React.FC = () => {
                 </Button>
                 <Button
                   variant="outlined"
-                  onClick={handleCancelEdit}
+                  onClick={editable.cancelEdit}
                   sx={{ borderColor: "#008080", color: "#008080", ml: 2, "&:hover": { bgcolor: "#e6f4f4" } }}
                 >
                   Cancel
@@ -354,8 +352,8 @@ const PlannedActionGenAI: React.FC = () => {
  
         <Box id="template-to-download">
           <GenAITable
-            dataSource={isEditing ? draftData : savedData}
-            isEditing={isEditing}
+            dataSource={editable.draftData}
+            isEditing={editable.isEditing}
             onChange={handleChange}
           />
           <Legend />

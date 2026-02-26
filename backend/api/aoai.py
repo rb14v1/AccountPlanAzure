@@ -286,11 +286,38 @@ def detect_template_type_from_query(query: str) -> str:
         "client_context_2": [
             "client_context_2", "client context 2", "business & it priorities",
             "tech landscape", "competitive intel", "wallet share", "market share"
-        ],
-        
+        ], 
         "service_line_penetration": [
             "service_line_penetration", "service line penetration", "secured order book",
             "gross order book", "expiry / run-off"
+        ],
+        "key_growth_opportunities": [
+            "key_growth_opportunities", "key growth opportunities", "growth opportunities",
+            "deal name", "deal type", "win probability", "key differentiator"
+        ],
+        "opportunity_deep_dive": [
+            "opportunity_deep_dive", "opportunity deep dive", "deal details", 
+            "win themes", "crm id"
+        ],
+        "critical_risk": [
+            "critical_risk", "critical risk", "description of risk", 
+            "impact of risk", "countermeasures taken"
+        ],
+        "strategic_partnerships": [
+            "strategic partnership", "strategic partner", "sell with revenue",
+            "key engagement", "support needed"
+        ],
+        "planned_action_genai": [
+            "planned_action_genai", "planned action", "genai",
+            "planned action for genai", "ai investment", "generative ai"
+        ],
+ 
+        "operational_implementation_plan": [
+            "operational_implementation_plan",
+            "implementation plan for operational excellence",
+            "operational implementation",
+            "delivery and talent implementation",
+            "operational plan"
         ],
 
     }

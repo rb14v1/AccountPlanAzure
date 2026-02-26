@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -12,10 +12,16 @@ import {
   Paper,
   TextField,
   styled,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import DownloadTemplates from "../components/DownloadTemplates";
 import { useEditableTable } from "../hooks/useEditableTable";
 import { useData } from "../context/DataContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api";
+const TEMPLATE_NAME = "key_growth_opportunities"; // Backend mapped name
 
 /* ---------------- TYPES ---------------- */
 type OpportunityRow = {
@@ -34,7 +40,6 @@ type OpportunityRow = {
   support: string;
 };
 
-const TEMPLATE_NAME = "Key_Growth_Opportunities";
 
 /* ---------------- STYLES ---------------- */
 const HeaderCell = styled(TableCell)({
@@ -50,7 +55,6 @@ const HeaderCell = styled(TableCell)({
   verticalAlign: "middle",     // ✅ prevents header stretching
 });
 
-
 const BodyCell = styled(TableCell)({
   fontSize: 11,
   border: "1px solid #c9c9c9",
@@ -59,7 +63,6 @@ const BodyCell = styled(TableCell)({
   whiteSpace: "normal",
   wordBreak: "break-word",
 });
-
 
 const CenterCell = styled(BodyCell)({
   textAlign: "center",
@@ -96,6 +99,49 @@ const emptyRow = (id: number): OpportunityRow => ({
   support: "",
 });
 
+// --- SAFE EXTRACTOR BRIDGES ---
+const extractData = (source: any): OpportunityRow[] => {
+  const rawArray = Array.isArray(source?.data) ? source.data : (Array.isArray(source) ? source : []);
+  
+  const mapped = rawArray.map((item: any, index: number) => ({
+    id: index + 1,
+    deal: item.deal_name || item.deal || "",
+    type: item.deal_type || item.type || "",
+    stage: item.stage || "",
+    offering: item.service_offering || item.offering || "",
+    tcv: item.tcv_eur_mn || item.tcv || "",
+    acv: item.acv_eur_mn || item.acv || "",
+    timeline: item.closure_timeline || item.timeline || "",
+    winProb: item.win_probability || item.winProb || "",
+    stakeholders: item.key_stakeholders || item.stakeholders || "",
+    competition: item.competition || "",
+    differentiator: item.key_differentiator || item.differentiator || "",
+    support: item.support_required || item.support || ""
+  }));
+
+  while (mapped.length < 5) {
+    mapped.push(emptyRow(mapped.length + 1));
+  }
+  return mapped;
+};
+
+const reverseExtractData = (uiData: OpportunityRow[]) => {
+  return uiData.map(item => ({
+    deal_name: item.deal,
+    deal_type: item.type,
+    stage: item.stage,
+    service_offering: item.offering,
+    tcv_eur_mn: item.tcv,
+    acv_eur_mn: item.acv,
+    closure_timeline: item.timeline,
+    win_probability: item.winProb,
+    key_stakeholders: item.stakeholders,
+    competition: item.competition,
+    key_differentiator: item.differentiator,
+    support_required: item.support
+  }));
+};
+
 /* ---------- PRINT FIX (PDF ONLY) ---------- */
 const printStyles = `
 @media print {
@@ -130,40 +176,112 @@ const printStyles = `
 
 /* ---------------- MAIN ---------------- */
 export default function GrowthOpportunitiesPage() {
-
-  
   const { globalData, setGlobalData } = useData();
+  const userId = globalData?.user_id || localStorage.getItem("user_id") || "101";
 
-  const backendData = globalData?.key_growth_opportunities || [];
+  const rawData = extractData(globalData?.key_growth_opportunities);
+  const editable = useEditableTable<OpportunityRow[]>(rawData);
 
-  const [isPrinting, setIsPrinting] = React.useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as any });
 
-  /* Map backend → table rows */
-  const initialRows: OpportunityRow[] =
-    backendData.length > 0
-      ? backendData.map((o: any, i: number) => ({
-        id: i + 1,
-        deal: o.deal_name || "",
-        type: o.deal_type || "",
-        stage: o.stage || "",
-        offering: o.service_offering || "",
-        tcv: o.tcv_eur_mn || "",
-        acv: o.acv_eur_mn || "",
-        timeline: o.closure_timeline || "",
-        winProb: o.win_probability || "",
-        stakeholders: o.key_stakeholders || "",
-        competition: o.competition || "",
-        differentiator: o.key_differentiator || "",
-        support: o.support_required || "",
-      }))
-      : [];
+  const dataLoadedFromDB = useRef(false);
+  const autoSaveAttempted = useRef(false);
 
-  /* Ensure minimum 5 rows */
-  while (initialRows.length < 5) {
-    initialRows.push(emptyRow(initialRows.length + 1));
-  }
+  // 1. Sync from Chatbot
+  useEffect(() => {
+    if (globalData?.key_growth_opportunities && !editable.isEditing) {
+      editable.updateDraft(extractData(globalData.key_growth_opportunities));
+    }
+  }, [globalData?.key_growth_opportunities]);
 
-  const editable = useEditableTable<OpportunityRow[]>(initialRows);
+  // 2. Load from DB
+  useEffect(() => {
+    const fetchData = async () => {
+      if (dataLoadedFromDB.current) return;
+      setInitialLoading(true);
+      try {
+        const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
+        if (res.ok) {
+          const dbData = await res.json();
+          if (Object.keys(dbData).length > 0) {
+            const parsed = extractData(dbData);
+            editable.updateDraft(parsed);
+            setGlobalData((prev: any) => ({ ...prev, key_growth_opportunities: parsed }));
+            dataLoadedFromDB.current = true;
+          }
+        }
+      } catch (e) {
+        console.error("Fetch failed", e);
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+    fetchData();
+  }, [userId, setGlobalData]);
+
+  // 3. Auto-Save
+  useEffect(() => {
+    const autoSave = async () => {
+      if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
+        const rawGlobal = globalData?.key_growth_opportunities;
+        // Verify it is fresh chatbot data (it has data array but no db id yet)
+        const isNew = rawGlobal && !rawGlobal.id && (Array.isArray(rawGlobal.data) || Array.isArray(rawGlobal)); 
+        
+        if (isNew && !autoSaveAttempted.current) {
+          autoSaveAttempted.current = true;
+          try {
+            const payload = { user_id: userId, data: reverseExtractData(rawData) };
+            const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+            if (res.ok && result.success) {
+              setGlobalData((prev: any) => ({ ...prev, key_growth_opportunities: result.data }));
+              setSnackbar({ open: true, message: "✅ Auto-saved to database", severity: "success" });
+            }
+          } catch (e) {
+            autoSaveAttempted.current = false;
+          }
+        }
+      }
+    };
+    const t = setTimeout(autoSave, 500);
+    return () => clearTimeout(t);
+  }, [rawData, userId, setGlobalData]);
+
+  // 4. Manual Save
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      // Clean empty rows from being saved if desired
+      const cleaned = editable.draftData.filter(
+        (r) => r.deal || r.stage || r.offering || r.winProb
+      );
+
+      const payload = { user_id: userId, data: reverseExtractData(cleaned) };
+      const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setGlobalData((prev: any) => ({ ...prev, key_growth_opportunities: result.data }));
+        editable.saveEdit(() => {});
+        setSnackbar({ open: true, message: "✅ Saved successfully", severity: "success" });
+      } else {
+        throw new Error("Save failed");
+      }
+    } catch (e) {
+      setSnackbar({ open: true, message: "❌ Save failed", severity: "error" });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateCell = (id: number, field: keyof OpportunityRow, value: string) => {
     editable.updateDraft(
@@ -173,41 +291,20 @@ export default function GrowthOpportunitiesPage() {
     );
   };
 
-  const handleSave = () => {
-    editable.saveEdit((rows) => {
-      const cleaned = rows.filter(
-        (r) =>
-          r.deal ||
-          r.stage ||
-          r.offering ||
-          r.winProb
-      );
-
-      setGlobalData((prev: any) => ({
-        ...prev,
-        key_growth_opportunities: cleaned.map((r: OpportunityRow) => ({
-          deal_name: r.deal,
-          deal_type: r.type,
-          stage: r.stage,
-          service_offering: r.offering,
-          tcv_eur_mn: r.tcv,
-          acv_eur_mn: r.acv,
-          closure_timeline: r.timeline,
-          win_probability: r.winProb,
-          key_stakeholders: r.stakeholders,
-          competition: r.competition,
-          key_differentiator: r.differentiator,
-          support_required: r.support,
-        })),
-      }));
-    });
-  };
-
-  /* ---------- PRINT FIX (DO NOT REMOVE) ---------- */
-
+  if (initialLoading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "400px" }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ width: "100%", minHeight: "100vh", bgcolor: "#ffffff", p: 2 }}>
+      <Snackbar open={snackbar.open} autoHideDuration={4000} onClose={() => setSnackbar({ ...snackbar, open: false })} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+        <Alert severity={snackbar.severity} onClose={() => setSnackbar({ ...snackbar, open: false })}>{snackbar.message}</Alert>
+      </Snackbar>
+
       <Box sx={{ maxWidth: 1600, mx: "auto", px: 4, py: 2 }}>
         {/* HEADER */}
         <Box
@@ -220,14 +317,13 @@ export default function GrowthOpportunitiesPage() {
         >
 
           <DownloadTemplates
-            templateName={TEMPLATE_NAME}
+            templateName="Key Growth Opportunities"
             beforeDownload={() => setIsPrinting(true)}
             afterDownload={() => setIsPrinting(false)}
           />
 
-
           {!editable.isEditing ? (
-            <Button variant="outlined" onClick={editable.startEdit} sx={{
+            <Button variant="outlined" onClick={editable.startEdit} disabled={loading} sx={{
               borderColor: "#008080",
               color: "#008080",
               ml: 2,
@@ -240,10 +336,17 @@ export default function GrowthOpportunitiesPage() {
             </Button>
           ) : (
             <>
-              <Button variant="contained" onClick={handleSave}>
-                Save
+              <Button variant="contained" onClick={handleSave} disabled={loading} sx={{
+                backgroundColor: "#008080",
+                ml: 2,
+                color: "#fff",
+                "&:hover": {
+                  backgroundColor: "#006d6d",
+                },
+              }}>
+                {loading ? <CircularProgress size={24} color="inherit" /> : "Save"}
               </Button>
-              <Button variant="outlined" onClick={editable.cancelEdit} sx={{
+              <Button variant="outlined" onClick={editable.cancelEdit} disabled={loading} sx={{
                 borderColor: "#008080",
                 color: "#008080",
                 ml: 2,
@@ -260,11 +363,30 @@ export default function GrowthOpportunitiesPage() {
       
       <Box id="template-to-download" className="template-section" sx={{ mt: 2, mx: "auto" }}>
 
-  <style>{printStyles}</style>
+        <style>{printStyles}</style>
 
-  <Typography variant="h4" fontWeight={700} color="teal">
-    Summary of key growth opportunities
-  </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", mb: 1 }}>
+          <Typography variant="h4" fontWeight={700} color="teal">
+            Summary of key growth opportunities
+          </Typography>
+
+          {/* ✅ COLOR LEGEND ADDED HERE */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {[
+              { label: "70% +", color: "#00B050" },
+              { label: "50% - 70%", color: "#92D050" },
+              { label: "30% - 50%", color: "#FFC000" },
+              { label: "<30%", color: "#F4CCCC" },
+            ].map((item, idx) => (
+              <Box key={idx} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box sx={{ width: 14, height: 14, bgcolor: item.color, border: "1px solid #ccc", borderRadius: "2px" }} />
+                <Typography sx={{ fontSize: "0.75rem", color: "#333", fontWeight: 600 }}>
+                  {item.label}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Box>
 
 
       {/* TABLE */}
@@ -276,11 +398,10 @@ export default function GrowthOpportunitiesPage() {
         <Table
           size="small"
           sx={{
-  tableLayout: "fixed",
-  width: "100%",
-  pageBreakInside: "auto",   // ✅ allow breaking only BETWEEN rows
-}}
-
+            tableLayout: "fixed",
+            width: "100%",
+            pageBreakInside: "auto",   // ✅ allow breaking only BETWEEN rows
+          }}
         >
 
           <colgroup>
@@ -302,10 +423,10 @@ export default function GrowthOpportunitiesPage() {
 
 
           <TableHead
-  sx={{
-    display: "table-header-group", // ✅ REQUIRED for repeated headers
-  }}
->
+            sx={{
+              display: "table-header-group", // ✅ REQUIRED for repeated headers
+            }}
+          >
 
             <TableRow>
               <HeaderCell>#</HeaderCell>
@@ -330,11 +451,11 @@ export default function GrowthOpportunitiesPage() {
           <TableBody>
             {editable.draftData.map((row) => (
               <TableRow
-  key={row.id}
-  sx={{
-    pageBreakInside: "avoid", // ✅ keeps full row on same page
-  }}
->
+                key={row.id}
+                sx={{
+                  pageBreakInside: "avoid", // ✅ keeps full row on same page
+                }}
+              >
 
                 <CenterCell>{row.id}</CenterCell>
 
@@ -374,16 +495,16 @@ export default function GrowthOpportunitiesPage() {
 
                       ) : (
                         <Box
-  data-pdf-value={row[field] || ""}
-  sx={{
-    whiteSpace: "pre-wrap",
-    wordBreak: "break-word",
-    fontSize: 11,
-    lineHeight: 1.4,
-  }}
->
-  {row[field] || ""}
-</Box>
+                          data-pdf-value={row[field] || ""}
+                          sx={{
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
+                            fontSize: 11,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {row[field] || ""}
+                        </Box>
 
                       )}
 
@@ -396,11 +517,8 @@ export default function GrowthOpportunitiesPage() {
         </Table>
       </TableContainer>
 
-      <Typography sx={{ fontSize: 10, mt: 1 }}>
-        Classification: Controlled. Copyright ©2025 Version 1.
-      </Typography>
     </Box>
-    </Box >
+    </Box>
     </Box>
   );
 }

@@ -53,6 +53,7 @@ import PlannedActionGenAI from "../Templates/PlannedActionGenAI";
 import MarginImprovementPlan from "../Templates/MarginImprovementPlan";
 import TalentExcellenceOverview from "../Templates/TalentExcellenceOverview";
 import AccountPerformanceAnnualPlan from "../Templates/AccountPerformanceAnnualPlan";
+import OpportunityDeepDive from "../Templates/OpportunityDeepDive";
 import profileIcon from "../assets/profileIcon.png";
 
 const EXPANDED_WIDTH = 220;
@@ -81,13 +82,13 @@ export default function MainLayout() {
     { id: "service-line-growth-actions", label: "Service Line Growth", icon: "bi-bar-chart-line" },
     { id: "org-structure-tech-view", label: "Org & Tech View", icon: "bi-diagram-2" },
     { id: "relationship-heatmap", label: "Relationship Heatmap", icon: "bi-thermometer-half" },
-    { id: "growth-opportunities", label: "Growth Opportunities", icon: "bi-lightbulb" },
+    { id: "key-growth-opportunities", label: "Growth Opportunities", icon: "bi-lightbulb" },
     { id: "implementation-plan", label: "Implementation Plan", icon: "bi-clipboard-check" },
     { id: "strategic-partnerships", label: "Strategic Partnerships", icon: "bi-people" },
     { id: "operational-excellence-strategy", label: "Operational Excellence", icon: "bi-bullseye" },
     { id: "critical-risk", label: "Critical Risk", icon: "bi-exclamation-triangle" },
     { id: "account-performance-quarterly-plan", label: "Account Performance Quarterly Plan", icon: "bi-speedometer2" },
-    { id: "operational-implementation", label: "Operational Impl. Plan", icon: "bi-file-earmark-check" },
+    { id: "operational-implementation-plan", label: "Operational Impl. Plan", icon: "bi-file-earmark-check" },
     { id: "investment-plan", label: "Investment Plan", icon: "bi-cash-stack" },
     { id: "innovation-strategy", label: "Innovation Strategy", icon: "bi-lightbulb-fill" },
     { id: "revenue-teardown", label: "Revenue Teardown", icon: "bi-graph-up-arrow" },
@@ -98,7 +99,7 @@ export default function MainLayout() {
     { id: "margin-improvement", label: "Margin Improvement", icon: "bi-graph-up-arrow" },
     { id: "talent-excellence-overview", label: "Talent Excellence", icon: "bi-people-fill" },
     { id: "account-performance-annual-plan", label: "Account Performance Annual Plan", icon: "bi-calendar-check" },
- 
+    { id: "opportunity-deep-dive", label: "Opportunity Deep Dive", icon: "bi-search" },
   ];
 
   const renderPage = () => {
@@ -111,12 +112,12 @@ export default function MainLayout() {
       case "relationship-heatmap": return <RelationshipHeatmap />;
       case "service-line-growth-actions": return <ServiceLineGrowth />;
       case "growth-strategy": return <GrowthStrategy />;
-      case "growth-opportunities": return <GrowthOpportunitiesPage />;
+      case "key-growth-opportunities": return <GrowthOpportunitiesPage />;
       case "implementation-plan": return <ImplementationPlanPage />;
       case "strategic-partnerships": return <StrategicPartnershipsPage />;
       case "operational-excellence-strategy": return <OperationalExcellencePage />;
       case "critical-risk": return <CriticalRiskPage />;
-      case "operational-implementation": return <OperationalImplementationPlan />;
+      case "operational-implementation-plan": return <OperationalImplementationPlan />;
       case "investment-plan": return <InvestmentPlan />;
       case "account-performance-quarterly-plan": return <AccountPerformanceQuarterlyPlan />;
       case "innovation-strategy": return <InnovationStrategy />;
@@ -128,6 +129,7 @@ export default function MainLayout() {
       case "margin-improvement": return <MarginImprovementPlan />;
       case "talent-excellence-overview": return <TalentExcellenceOverview />;
       case "account-performance-annual-plan": return <AccountPerformanceAnnualPlan />;
+      case "opportunity-deep-dive": return <OpportunityDeepDive />;
       default: return <AccountTeamPod />;
     }
   };

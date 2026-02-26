@@ -144,15 +144,21 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
     },
 
     # ---------------------------------------------------------
-    # Critical Risk Page
+    # Critical Risk Tracking
     # ---------------------------------------------------------
     "critical_risk": {
         "template_type": "critical_risk",
-        "data": {
-            "key_risks": [""],
-            "mitigation_plan": [""],
-            "overall_risk_rating": [""],
-        },
+        "data": [
+            {
+                "category": "",
+                "risk_number": "",
+                "description_of_risk": "",
+                "impact_of_risk": "",
+                "timeline": "",
+                "countermeasures_taken": "",
+                "owner": ""
+            }
+        ]
     },
 
     # ---------------------------------------------------------
@@ -190,36 +196,44 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
         },
     },
 
+    # ---------------------------------------------------------
+    # Operational Implementation Plan
+    # ---------------------------------------------------------
     "operational_implementation_plan": {
         "template_type": "operational_implementation_plan",
-        "plan_date": "TBD",
-        "data": [
-            {
-                "category": "Operational Excellence",
-                "subcategory": "Process Improvement",
-                "action_number": 1,
-                "action_description": "",
-                "primary_owner": "",
-                "support_team": "",
-                "timeline": "",
-                "status": "To be initiated",
-                "help_required": "",
-                "investment_needed": "",
-                "impact": ""
-            }
-        ]
+        "data": {
+            "plan_date": "TBD",
+            "actions": [
+                {
+                    "category": "Operational Excellence",
+                    "subcategory": "Process Improvement",
+                    "action_number": 1,
+                    "action_description": "",
+                    "primary_owner": "",
+                    "support_team": "",
+                    "timeline": "",
+                    "status": "To be initiated",
+                    "help_required": "",
+                    "investment_needed": "",
+                    "impact": ""
+                }
+            ]
+        }
     },
 
     # ---------------------------------------------------------
-    # Growth Opportunities
+    # Key Growth Opportunities
     # ---------------------------------------------------------
-    "growth_opportunities": {
-        "template_type": "growth_opportunities",
-        "data": {
-            "opportunity_areas": [""],
-            "priority_opportunities": [""],
-            "next_steps": [""],
-        },
+    "key_growth_opportunities": {
+        "template_type": "key_growth_opportunities",
+        "data": [
+            {
+                "deal_name": "", "deal_type": "", "stage": "", "service_offering": "",
+                "tcv_eur_mn": "", "acv_eur_mn": "", "closure_timeline": "",
+                "win_probability": "", "key_stakeholders": "", "competition": "",
+                "key_differentiator": "", "support_required": ""
+            }
+        ]
     },
 
     # ---------------------------------------------------------
@@ -660,6 +674,87 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
                     {"competitor_name": "", "wallet_share_percent": "", "depth_of_relationship": 1, "key_areas_of_engagement": ""}
                 ]
             }
+        }
+    },
+
+    # ---------------------------------------------------------
+    # Opportunity Deep Dive
+    # ---------------------------------------------------------
+    "opportunity_deep_dive": {
+        "template_type": "opportunity_deep_dive",
+        "data": {
+            "deal_details": {
+                "opportunity_name": "", "crm_id": "", "deal_type": "", "service_lines": "", "partners": ""
+            },
+            "deal_size": {
+                "tcv": "", "acv": ""
+            },
+            "deal_context": [""],
+            "deal_team": {
+                "sponsor": "", "director": "", "business_development": "", "service_line_spoc": "", "presales_lead": ""
+            },
+            "client_priorities": [""],
+            "win_themes": [""],
+            "competitors": [
+                { "name": "", "strengths": "", "weaknesses": "" }
+            ],
+            "stakeholders": [
+                { "name": "", "stance": "", "priorities": "" }
+            ],
+            "meetings": [
+                { "event": "", "status": "", "date": "", "outcomes": "" }
+            ]
+        }
+    },
+
+    # ---------------------------------------------------------
+    # Planned Action GenAI
+    # ---------------------------------------------------------
+    "planned_action_genai": {
+        "template_type": "planned_action_genai",
+        "data": {
+            "ai_investments": [
+                {
+                    "description": "",
+                    "status": "To be initiated",
+                    "owner": "",
+                    "timeline": "",
+                    "help_required": "",
+                    "investments": "",
+                    "outcome": ""
+                }
+            ],
+            "others": [
+                {
+                    "description": "",
+                    "status": "To be initiated",
+                    "owner": "",
+                    "timeline": "",
+                    "help_required": "",
+                    "investments": "",
+                    "outcome": ""
+                }
+            ]
+        }
+    },
+ 
+    # ---------------------------------------------------------
+    # Strategic Partnerships
+    # ---------------------------------------------------------
+    "strategic_partnerships": {
+        "template_type": "strategic_partnerships",
+        "data": {
+            "partnerships": [
+                {
+                    "partner_name": "",
+                    "internal_poc": "",
+                    "partner_type": "",
+                    "sell_with_revenue_fy25_actuals_forecast": "",
+                    "sell_with_revenue_fy26_target": "",
+                    "key_engagements": "",
+                    "support_needed": ""
+                }
+            ]
         }
     },
 }

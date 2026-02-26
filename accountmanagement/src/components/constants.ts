@@ -568,5 +568,158 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
 
+{
+    id: "key_growth_opportunities",
+    title: "Key Growth Opportunities",
+    description: "Generate a list of key growth opportunities and deals.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "key_growth_opportunities",
+  "data": [
+    {
+      "deal_name": "string",
+      "deal_type": "string",
+      "stage": "string",
+      "service_offering": "string",
+      "tcv_eur_mn": "string",
+      "acv_eur_mn": "string",
+      "closure_timeline": "string",
+      "win_probability": "string",
+      "key_stakeholders": "string",
+      "competition": "string",
+      "key_differentiator": "string",
+      "support_required": "string"
+    }
+  ]
+}`
+  },
+
+  {
+    id: "opportunity_deep_dive",
+    title: "Opportunity Deep Dive",
+    description: "Generate a deep dive view of a specific opportunity.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "opportunity_deep_dive",
+  "data": {
+    "deal_details": { "opportunity_name": "string", "crm_id": "string", "deal_type": "string", "service_lines": "string", "partners": "string" },
+    "deal_size": { "tcv": "string", "acv": "string" },
+    "deal_context": ["string"],
+    "deal_team": { "sponsor": "string", "director": "string", "business_development": "string", "service_line_spoc": "string", "presales_lead": "string" },
+    "client_priorities": ["string"],
+    "win_themes": ["string"],
+    "competitors": [{ "name": "string", "strengths": "string", "weaknesses": "string" }],
+    "stakeholders": [{ "name": "string", "stance": "string", "priorities": "string" }],
+    "meetings": [{ "event": "string", "status": "string", "date": "string", "outcomes": "string" }]
+  }
+}`
+  },
+
+  {
+    id: "critical_risk",
+    title: "Critical Risk Tracking",
+    description: "Generate a list of critical risks, impacts, and countermeasures.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "critical_risk",
+  "data": [
+    {
+      "category": "string",
+      "risk_number": "number",
+      "description_of_risk": "string",
+      "impact_of_risk": "string",
+      "timeline": "string",
+      "countermeasures_taken": "string",
+      "owner": "string"
+    }
+  ]
+}`
+  },
+
+{
+    id: "planned_action_genai",
+    title: "Planned Action GenAI",
+    description: "Outline planned actions and investments for GenAI over the next 12 months.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "planned_action_genai",
+  "data": {
+    "ai_investments": [
+      { "description": "string", "status": "string", "owner": "string", "timeline": "string", "help_required": "string", "investments": "string", "outcome": "string" }
+    ],
+    "others": [
+      { "description": "string", "status": "string", "owner": "string", "timeline": "string", "help_required": "string", "investments": "string", "outcome": "string" }
+    ]
+  }
+}`
+  },
+ 
+  {
+    id: "strategic_partnerships",
+    title: "Strategic Partnerships",
+    description: "Map out strategic partner relationships, revenue targets, and engagement plans.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "strategic_partnerships",
+  "data": {
+    "partnerships": [
+      {
+        "partner_name": "string",
+        "internal_poc": "string",
+        "partner_type": "string",
+        "sell_with_revenue_fy25_actuals_forecast": "string",
+        "sell_with_revenue_fy26_target": "string",
+        "key_engagements": "string",
+        "support_needed": "string"
+      }
+    ]
+  }
+}`
+  },
+ 
+  {
+    id: "operational_implementation_plan",
+    title: "Operational Implementation",
+    description: "Generate an implementation plan specifically for operational excellence.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "operational_implementation_plan",
+  "plan_date": "string",
+  "data": [
+    {
+      "category": "Operational Excellence",
+      "subcategory": "string",
+      "action_number": 1,
+      "action_description": "string",
+      "primary_owner": "string",
+      "support_team": "string",
+      "timeline": "string",
+      "status": "string",
+      "help_required": "string",
+      "investment_needed": "string",
+      "impact": "string"
+    }
+  ]
+}`
+  },
 ];
  
+  

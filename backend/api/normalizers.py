@@ -411,6 +411,7 @@ def normalize_revenue_teardown(obj: dict) -> dict:
     }
 
     return {"template_type": "revenue_teardown", "data": clean_data}
+
 def normalize_client_context_1(obj: dict) -> dict:
     raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
     
@@ -572,6 +573,217 @@ def normalize_service_line_penetration(obj: dict) -> dict:
     clean_data["insights"] = str(raw.get("insights", ""))
  
     return {"template_type": "service_line_penetration", "data": clean_data}
+
+def normalize_key_growth_opportunities(obj: dict) -> dict:
+    raw_data = obj.get("data")
+    if not isinstance(raw_data, list):
+        raw_data = [raw_data] if isinstance(raw_data, dict) else []
+    
+    clean_list = []
+    for item in raw_data:
+        if isinstance(item, dict):
+            clean_list.append({
+                "deal_name": str(item.get("deal_name", "")),
+                "deal_type": str(item.get("deal_type", "")),
+                "stage": str(item.get("stage", "")),
+                "service_offering": str(item.get("service_offering", "")),
+                "tcv_eur_mn": str(item.get("tcv_eur_mn", "")),
+                "acv_eur_mn": str(item.get("acv_eur_mn", "")),
+                "closure_timeline": str(item.get("closure_timeline", "")),
+                "win_probability": str(item.get("win_probability", "")),
+                "key_stakeholders": str(item.get("key_stakeholders", "")),
+                "competition": str(item.get("competition", "")),
+                "key_differentiator": str(item.get("key_differentiator", "")),
+                "support_required": str(item.get("support_required", ""))
+            })
+    
+    # Ensure at least 5 empty rows if none provided
+    while len(clean_list) < 5:
+        clean_list.append({
+            "deal_name": "", "deal_type": "", "stage": "", "service_offering": "",
+            "tcv_eur_mn": "", "acv_eur_mn": "", "closure_timeline": "",
+            "win_probability": "", "key_stakeholders": "", "competition": "",
+            "key_differentiator": "", "support_required": ""
+        })
+
+    return {"template_type": "key_growth_opportunities", "data": clean_list}
+
+def normalize_opportunity_deep_dive(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_str(val): return str(val) if val is not None else ""
+    def safe_list(val): return val if isinstance(val, list) else []
+    
+    dd = raw.get("deal_details", {})
+    ds = raw.get("deal_size", {})
+    dt = raw.get("deal_team", {})
+
+    clean_data = {
+        "deal_details": {
+            "opportunity_name": safe_str(dd.get("opportunity_name")),
+            "crm_id": safe_str(dd.get("crm_id")),
+            "deal_type": safe_str(dd.get("deal_type")),
+            "service_lines": safe_str(dd.get("service_lines")),
+            "partners": safe_str(dd.get("partners"))
+        },
+        "deal_size": {
+            "tcv": safe_str(ds.get("tcv")),
+            "acv": safe_str(ds.get("acv"))
+        },
+        "deal_context": [safe_str(x) for x in safe_list(raw.get("deal_context"))],
+        "deal_team": {
+            "sponsor": safe_str(dt.get("sponsor")),
+            "director": safe_str(dt.get("director")),
+            "business_development": safe_str(dt.get("business_development")),
+            "service_line_spoc": safe_str(dt.get("service_line_spoc")),
+            "presales_lead": safe_str(dt.get("presales_lead"))
+        },
+        "client_priorities": [safe_str(x) for x in safe_list(raw.get("client_priorities"))],
+        "win_themes": [safe_str(x) for x in safe_list(raw.get("win_themes"))],
+        "competitors": [{"name": safe_str(c.get("name")), "strengths": safe_str(c.get("strengths")), "weaknesses": safe_str(c.get("weaknesses"))} for c in safe_list(raw.get("competitors")) if isinstance(c, dict)],
+        "stakeholders": [{"name": safe_str(s.get("name")), "stance": safe_str(s.get("stance")), "priorities": safe_str(s.get("priorities"))} for s in safe_list(raw.get("stakeholders")) if isinstance(s, dict)],
+        "meetings": [{"event": safe_str(m.get("event")), "status": safe_str(m.get("status")), "date": safe_str(m.get("date")), "outcomes": safe_str(m.get("outcomes"))} for m in safe_list(raw.get("meetings")) if isinstance(m, dict)]
+    }
+    return {"template_type": "opportunity_deep_dive", "data": clean_data}
+
+import re
+
+def normalize_critical_risk(obj: dict) -> dict:
+    raw_data = obj.get("data")
+    if not isinstance(raw_data, list):
+        raw_data = [raw_data] if isinstance(raw_data, dict) else []
+    
+    clean_list = []
+    for i, item in enumerate(raw_data):
+        if isinstance(item, dict):
+            
+            # --- SAFE NUMBER EXTRACTION ---
+            raw_num = item.get("risk_number", i + 1)
+            if isinstance(raw_num, int):
+                risk_num = raw_num
+            else:
+                # Strips out letters like "CR-" and keeps only digits
+                digits = re.sub(r'\D', '', str(raw_num))
+                risk_num = int(digits) if digits else (i + 1)
+            # ------------------------------
+
+            clean_list.append({
+                "category": str(item.get("category", "")),
+                "risk_number": risk_num,
+                "description_of_risk": str(item.get("description_of_risk", "")),
+                "impact_of_risk": str(item.get("impact_of_risk", "")),
+                "timeline": str(item.get("timeline", "")),
+                "countermeasures_taken": str(item.get("countermeasures_taken", "")),
+                "owner": str(item.get("owner", ""))
+            })
+            
+    # Guarantee at least one empty risk so the table renders if AI fails completely
+    if not clean_list:
+        clean_list.append({
+            "category": "", "risk_number": 1, "description_of_risk": "",
+            "impact_of_risk": "", "timeline": "", "countermeasures_taken": "", "owner": ""
+        })
+
+    return {"template_type": "critical_risk", "data": clean_list}
+
+def normalize_planned_action_genai(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    clean_data = {}
+ 
+    def map_rows(data_list, prefix, max_rows=4):
+        if not isinstance(data_list, list):
+            data_list = []
+        for i in range(max_rows):
+            key = f"{prefix}_{i+1}"
+            item = data_list[i] if i < len(data_list) and isinstance(data_list[i], dict) else {}
+            clean_data[key] = {
+                "Initiative_Description": str(item.get("description", "")),
+                "Status": str(item.get("status") or "To be initiated"),
+                "Owner": str(item.get("owner", "")),
+                "Timeline": str(item.get("timeline", "")),
+                "Help_Required": str(item.get("help_required", "")),
+                "Investments": str(item.get("investments", "")),
+                "Outcome": str(item.get("outcome", ""))
+            }
+ 
+    map_rows(raw.get("ai_investments"), "AI_Inv", 4)
+    map_rows(raw.get("others"), "Other", 4)
+ 
+    return {"template_type": "planned_action_genai", "data": clean_data}
+ 
+def normalize_strategic_partnerships(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    partnerships = raw.get("partnerships", [])
+    if not isinstance(partnerships, list):
+        partnerships = []
+ 
+    clean_rows = []
+    for item in partnerships:
+        if isinstance(item, dict):
+            clean_rows.append({
+                "partner_name": str(item.get("partner_name", "")),
+                "internal_poc": str(item.get("internal_poc", "")),
+                "partner_type": str(item.get("partner_type", "")),
+                "sell_with_revenue_fy25_actuals_forecast": str(item.get("sell_with_revenue_fy25_actuals_forecast", "")),
+                "sell_with_revenue_fy26_target": str(item.get("sell_with_revenue_fy26_target", "")),
+                "key_engagements": str(item.get("key_engagements", "")),
+                "support_needed": str(item.get("support_needed", ""))
+            })
+ 
+    # Ensure at least 5 empty rows exist if data is short
+    while len(clean_rows) < 5:
+        clean_rows.append({
+            "partner_name": "", "internal_poc": "", "partner_type": "",
+            "sell_with_revenue_fy25_actuals_forecast": "", "sell_with_revenue_fy26_target": "",
+            "key_engagements": "", "support_needed": ""
+        })
+ 
+    return {"template_type": "strategic_partnerships", "data": {"partnerships": clean_rows}}
+ 
+def normalize_operational_implementation_plan(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    raw_actions = raw.get("actions", [])
+    if not isinstance(raw_actions, list):
+        raw_actions = []
+ 
+    plan_date = str(raw.get("plan_date") or "TBD")
+ 
+    clean_rows = []
+    for i, item in enumerate(raw_actions):
+        if isinstance(item, dict):
+            # Only add the row if the AI actually filled out an action description
+            desc = str(item.get("action_description", "")).strip()
+            if desc and desc.lower() not in ["tbd", "string"]:
+                clean_rows.append({
+                    "id": i + 1,
+                    "category": str(item.get("category") or "Operational Excellence"),
+                    "subcategory": str(item.get("subcategory") or "Process Improvement"),
+                    "action_description": desc,
+                    "primary_owner": str(item.get("primary_owner", "")),
+                    "support_team": str(item.get("support_team", "")),
+                    "timeline": str(item.get("timeline", "")),
+                    "status": str(item.get("status") or "To be initiated"),
+                    "help_required": str(item.get("help_required", "")),
+                    "investment_needed": str(item.get("investment_needed", "")),
+                    "impact": str(item.get("impact", ""))
+                })
+ 
+    # Safety fallback: Give the frontend at least 1 empty row if the AI failed completely
+    if not clean_rows:
+        clean_rows.append({
+            "id": 1, "category": "Operational Excellence", "subcategory": "Process Improvement",
+            "action_description": "", "primary_owner": "", "support_team": "",
+            "timeline": "", "status": "To be initiated", "help_required": "",
+            "investment_needed": "", "impact": ""
+        })
+ 
+    return {
+        "template_type": "operational_implementation_plan",
+        "data": {
+            "plan_date": plan_date,
+            "actions": clean_rows
+        }
+    }
  
 
 # Registry mapping string names to normalizer functions
@@ -595,6 +807,12 @@ NORMALIZER_REGISTRY = {
     "client_context_2": normalize_client_context_2,
     "account_performance_quarterly_plan": normalize_account_performance_quarterly,
     "service_line_penetration": normalize_service_line_penetration,
+    "key_growth_opportunities": normalize_key_growth_opportunities,
+    "opportunity_deep_dive": normalize_opportunity_deep_dive,
+    "critical_risk": normalize_critical_risk,
+    "planned_action_genai": normalize_planned_action_genai,
+    "strategic_partnerships": normalize_strategic_partnerships,
+    "operational_implementation_plan": normalize_operational_implementation_plan,
 }
 
 def get_normalized_payload(template_type: str, raw_data: dict) -> dict:

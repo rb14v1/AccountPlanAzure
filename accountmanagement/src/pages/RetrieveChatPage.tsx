@@ -29,6 +29,8 @@ const ALLOWED_TEMPLATES = [
   "account_cockpit_view",
   "org_structure_tech_view",
   "revenue_teardown",
+  "planned_action_genai",
+  "operational_implementation_plan",
 ] as const;
  
 const RetrieveChatPage: React.FC = () => {
