@@ -54,6 +54,7 @@ import MarginImprovementPlan from "../Templates/MarginImprovementPlan";
 import TalentExcellenceOverview from "../Templates/TalentExcellenceOverview";
 import AccountPerformanceAnnualPlan from "../Templates/AccountPerformanceAnnualPlan";
 import OpportunityDeepDive from "../Templates/OpportunityDeepDive";
+import MarginImprovementPlan2 from "../Templates/MarginImprovementPlan2";
 import profileIcon from "../assets/profileIcon.png";
 
 const EXPANDED_WIDTH = 220;
@@ -100,6 +101,7 @@ export default function MainLayout() {
     { id: "talent-excellence-overview", label: "Talent Excellence", icon: "bi-people-fill" },
     { id: "account-performance-annual-plan", label: "Account Performance Annual Plan", icon: "bi-calendar-check" },
     { id: "opportunity-deep-dive", label: "Opportunity Deep Dive", icon: "bi-search" },
+    { id: "margin-improvement-plan-2", label: "Margin Improvement 2", icon: "bi-graph-up-arrow" },
   ];
 
   const renderPage = () => {
@@ -130,6 +132,7 @@ export default function MainLayout() {
       case "talent-excellence-overview": return <TalentExcellenceOverview />;
       case "account-performance-annual-plan": return <AccountPerformanceAnnualPlan />;
       case "opportunity-deep-dive": return <OpportunityDeepDive />;
+      case "margin-improvement-plan-2": return <MarginImprovementPlan2 />;
       default: return <AccountTeamPod />;
     }
   };

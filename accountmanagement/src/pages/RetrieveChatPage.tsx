@@ -31,6 +31,8 @@ const ALLOWED_TEMPLATES = [
   "revenue_teardown",
   "planned_action_genai",
   "operational_implementation_plan",
+  "margin_improvement",
+  "margin_improvement_plan_2"
 ] as const;
  
 const RetrieveChatPage: React.FC = () => {
@@ -140,21 +142,21 @@ const RetrieveChatPage: React.FC = () => {
 const handleDeleteChat = async (id: number) => {
   try {
     console.log("Deleting chat:", id);
-
+ 
     // Call backend API
     await api.delete(`/chats/${id}/delete`);
-
-
+ 
+ 
     // Remove from UI
     setChatList((prev) => prev.filter((chat) => chat.id !== id));
-
+ 
     // If current chat is deleted → reset
     if (currentChatId === id) {
       setCurrentChatId(null);
       setMessages([]);
       localStorage.removeItem("activeChatId");
     }
-
+ 
   } catch (err) {
     console.error("Error deleting chat", err);
   }
@@ -301,12 +303,12 @@ const response = await api.post("/chat", {
           const rawType = respData.template_type || respData.payload?.template_type;
           if (rawType) {
             let routeName = rawType.toLowerCase().replace(/_/g, "-");
-            
+           
             // 🚀 FIX: Map backend names to your exact frontend MainLayout tab IDs
             if (routeName === "tech-spend-view") routeName = "tech-spend";
             // Add other fixes here if needed, e.g.:
             // if (routeName === "relationship-heatmap-view") routeName = "relationship-heatmap";
-
+ 
             localStorage.setItem("last_detected_template", routeName);
           }
  
@@ -430,41 +432,31 @@ const response = await api.post("/chat", {
   };
  
   return (
+  <>
     <Box sx={{ display: "flex", flexDirection: "column", height: "100vh", bgcolor: "#f5f5f5" }}>
+     
+      {/* HEADER */}
       <Header
         onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}
         onNewChat={handleNewChat}
       />
  
+      {/* MAIN CONTENT */}
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
+       
+        {/* SIDEBAR */}
         <Sidebar
-  open={isSidebarOpen}
-  chatList={chatList}
-  activeChatId={currentChatId}   // ⭐ REQUIRED
-  onOpenChat={openChat}
-  onNewChat={handleNewChat}
-  onDeleteChat={handleDeleteChat}   // ⭐ REQUIRED
-/>
+          open={isSidebarOpen}
+          chatList={chatList}
+          activeChatId={currentChatId}
+          onOpenChat={openChat}
+          onNewChat={handleNewChat}
+          onDeleteChat={handleDeleteChat}
+        />
  
-
- 
- 
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", position: "relative" }}>
-          <Box sx={{ position: "absolute", top: 16, right: 16, zIndex: 10 }}>
-            <Button
-              variant="contained"
-              onClick={handleTopRightAction}
-              sx={{
-                bgcolor: PRIMARY_TEAL,
-                "&:hover": { bgcolor: "#006b30" },
-                borderRadius: 2,
-                px: 3,
-              }}
-            >
-              Data
-            </Button>
-          </Box>
- 
+        {/* CHAT AREA */}
+        <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+         
           <ChatArea
             messages={messages}
             isTyping={isTyping}
@@ -476,104 +468,45 @@ const response = await api.post("/chat", {
                 setOpenModal(true);
               }
             }}
+            onDataClick={handleTopRightAction}
+ 
+            input={input}
+            setInput={setInput}
+            handleSend={handleSend}
+            handleKeyPress={handleKeyPress}
+            textInputRef={textInputRef}
           />
  
-          <Box sx={{ p: 2, bgcolor: "#fff", borderTop: "1px solid #ddd" }}>
-            <Box sx={{ maxWidth: 900, mx: "auto", display: "flex", gap: 1, alignItems: "center" }}>
-              <input
-                type="file"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={(e) => e.target.files && setSelectedFile(e.target.files[0])}
-              />
- 
-             
- 
-              <TextField
-  fullWidth
-  multiline
-  maxRows={4}
-  placeholder="Type your query..."
-  value={input}
-  onChange={(e) => setInput(e.target.value)}
-  onKeyDown={handleKeyPress}
-  inputRef={textInputRef}
-  sx={{
-    "& .MuiInputBase-root": {
-      maxHeight: "120px",   // ensures scroll appears
-      overflowY: "auto",
-
-      /* ===== SCROLLBAR ===== */
-
-      /* Chrome, Edge, Safari */
-      "&::-webkit-scrollbar": {
-        width: "6px",
-      },
-      "&::-webkit-scrollbar-track": {
-        background: "transparent",
-      },
-      "&::-webkit-scrollbar-thumb": {
-        background: "transparent",
-        borderRadius: "10px",
-      },
-      "&:hover::-webkit-scrollbar-thumb": {
-        background: "rgba(0,0,0,0.2)",
-      },
-
-      /* Firefox */
-      scrollbarWidth: "thin",
-      scrollbarColor: "transparent transparent",
-    },
-  }}
-/>
-
- 
-              <Button
-                onClick={() => handleSend()}
-                sx={{
-  background: "linear-gradient(135deg, #14b8a6, #0f766e)",
-  color: "#ffffff",
-  borderRadius: "50%",
-  minWidth: "42px",
-  width: "42px",
-  height: "42px",
-  p: 0,
-  boxShadow: "0 2px 6px rgba(20,184,166,0.4)",
- 
-  "&:hover": {
-    background: "linear-gradient(135deg, #0f766e, #115e59)",
-  },
- 
-  "&:active": {
-    transform: "scale(0.95)",
-  },
-}}
- 
-              >
-                ➤
-              </Button>
-            </Box>
- 
-            <Box sx={{ textAlign: "center", mt: 1, fontSize: "0.75rem", color: "#999" }}>
-              © 2025 Sales App. All rights reserved. @Version1
-            </Box>
+          {/* FOOTER */}
+          <Box
+            sx={{
+              textAlign: "center",
+              py: 1,
+              fontSize: "0.75rem",
+              color: "#999",
+              bgcolor: "#fff",
+            }}
+          >
+            © 2025 Sales App. All rights reserved. @Version1
           </Box>
+ 
         </Box>
       </Box>
- 
-      <PromptModal
-        open={openModal}
-        activePrompt={activePrompt}
-        onClose={() => setOpenModal(false)}
-        onSubmit={(finalText) => {
-          setOpenModal(false);
-          handleSend(finalText);
-        }}
-      />
     </Box>
-  );
+ 
+    {/* PROMPT MODAL */}
+    <PromptModal
+      open={openModal}
+      activePrompt={activePrompt}
+      onClose={() => setOpenModal(false)}
+      onSubmit={(finalText) => {
+        setOpenModal(false);
+        handleSend(finalText);
+      }}
+    />
+  </>
+);
 };
  
 export default RetrieveChatPage;
- 
  

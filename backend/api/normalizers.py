@@ -784,6 +784,96 @@ def normalize_operational_implementation_plan(obj: dict) -> dict:
             "actions": clean_rows
         }
     }
+
+def normalize_margin_improvement(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_str(val): return str(val) if val is not None else ""
+    def safe_list(val): return val if isinstance(val, list) else []
+
+    clean_data = {
+        "gross_profit_chart": [
+            {"quarter": safe_str(x.get("quarter")), "actuals_projections": safe_str(x.get("actuals_projections")), "target": safe_str(x.get("target"))}
+            for x in safe_list(raw.get("gross_profit_chart")) if isinstance(x, dict)
+        ],
+        "key_metrics": [
+            {
+                "key_metrics": safe_str(x.get("key_metrics")), "fy24": safe_str(x.get("fy24")), "q4_24": safe_str(x.get("q4_24")),
+                "q1_25": safe_str(x.get("q1_25")), "q2_25_a": safe_str(x.get("q2_25_a")), "q3_25_c": safe_str(x.get("q3_25_c")),
+                "q3_25_p": safe_str(x.get("q3_25_p")), "q4_25_c": safe_str(x.get("q4_25_c")), "q4_25_p": safe_str(x.get("q4_25_p")),
+                "fy25_c": safe_str(x.get("fy25_c")), "fy25_p": safe_str(x.get("fy25_p")), "q1_26_p": safe_str(x.get("q1_26_p")),
+                "q2_26_p": safe_str(x.get("q2_26_p")), "q3_26_p": safe_str(x.get("q3_26_p")), "q4_26_p": safe_str(x.get("q4_26_p")),
+                "fy26_p": safe_str(x.get("fy26_p"))
+            }
+            for x in safe_list(raw.get("key_metrics")) if isinstance(x, dict)
+        ],
+        "gp_waterfall_opex": [
+            {"item": safe_str(x.get("item")), "q323": safe_str(x.get("q323")), "q423": safe_str(x.get("q423")), "q124": safe_str(x.get("q124")), "q224": safe_str(x.get("q224"))}
+            for x in safe_list(raw.get("gp_waterfall_opex")) if isinstance(x, dict)
+        ],
+        "gp_waterfall_sales": [
+            {"item": safe_str(x.get("item")), "q323": safe_str(x.get("q323")), "q423": safe_str(x.get("q423")), "q124": safe_str(x.get("q124")), "q224": safe_str(x.get("q224"))}
+            for x in safe_list(raw.get("gp_waterfall_sales")) if isinstance(x, dict)
+        ],
+        "drainers": [
+            {"item": safe_str(x.get("item")), "q323": safe_str(x.get("q323")), "q423": safe_str(x.get("q423")), "q124": safe_str(x.get("q124")), "q224": safe_str(x.get("q224"))}
+            for x in safe_list(raw.get("drainers")) if isinstance(x, dict)
+        ],
+        "pyramid_improvement_plan": safe_str(raw.get("pyramid_improvement_plan"))
+    }
+    
+    # Basic padding to ensure table rendering doesn't crash if AI sends empty lists
+    if not clean_data["key_metrics"]:
+        clean_data["key_metrics"].append({"key_metrics": "", "fy24": "", "q4_24": "", "q1_25": "", "q2_25_a": "", "q3_25_c": "", "q3_25_p": "", "q4_25_c": "", "q4_25_p": "", "fy25_c": "", "fy25_p": "", "q1_26_p": "", "q2_26_p": "", "q3_26_p": "", "q4_26_p": "", "fy26_p": ""})
+    for w_key in ["gp_waterfall_opex", "gp_waterfall_sales", "drainers"]:
+        if not clean_data[w_key]:
+            clean_data[w_key].append({"item": "", "q323": "", "q423": "", "q124": "", "q224": ""})
+
+    return {"template_type": "margin_improvement", "data": clean_data}
+
+def normalize_margin_improvement_plan_2(obj: dict) -> dict:
+    raw = obj.get("data") if isinstance(obj.get("data"), dict) else {}
+    
+    def safe_str(val): return str(val) if val is not None else ""
+    def safe_list(val): return val if isinstance(val, list) else []
+
+    default_quarters = ["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25", "Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"]
+    raw_chart = safe_list(raw.get("gross_profit_chart"))
+    clean_chart = []
+    for i, q in enumerate(default_quarters):
+        match = raw_chart[i] if i < len(raw_chart) and isinstance(raw_chart[i], dict) else {}
+        clean_chart.append({
+            "quarter": q,
+            "actuals_projections": safe_str(match.get("actuals_projections")),
+            "target": safe_str(match.get("target"))
+        })
+
+    default_pyramid = [
+        ("Offshore", "L1"), ("Offshore", "L2"), ("Offshore", "L3"), ("Offshore", "L4"), ("Offshore", "L5"), ("Offshore", "Sub-con"),
+        ("Onsite", "L1"), ("Onsite", "L2"), ("Onsite", "L3"), ("Onsite", "L4"), ("Onsite", "L5"), ("Onsite", "Sub-con")
+    ]
+    raw_pyramid = safe_list(raw.get("pyramid_teardown"))
+    clean_pyramid = []
+    
+    for i, (cat, lab) in enumerate(default_pyramid):
+        match = raw_pyramid[i] if i < len(raw_pyramid) and isinstance(raw_pyramid[i], dict) else {}
+        clean_pyramid.append({
+            "category": cat, "label": lab,
+            "fy24": safe_str(match.get("fy24")), "q424": safe_str(match.get("q424")),
+            "q125": safe_str(match.get("q125")), "q225A": safe_str(match.get("q225A")),
+            "q325C": safe_str(match.get("q325C")), "q325P": safe_str(match.get("q325P")),
+            "q425C": safe_str(match.get("q425C")), "q425P": safe_str(match.get("q425P")),
+            "fy25C": safe_str(match.get("fy25C")), "fy25P": safe_str(match.get("fy25P"))
+        })
+
+    return {
+        "template_type": "margin_improvement_plan_2",
+        "data": {
+            "gross_profit_chart": clean_chart,
+            "pyramid_teardown": clean_pyramid,
+            "pyramid_improvement_plan": safe_str(raw.get("pyramid_improvement_plan"))
+        }
+    }
  
 
 # Registry mapping string names to normalizer functions
@@ -813,6 +903,8 @@ NORMALIZER_REGISTRY = {
     "planned_action_genai": normalize_planned_action_genai,
     "strategic_partnerships": normalize_strategic_partnerships,
     "operational_implementation_plan": normalize_operational_implementation_plan,
+    "margin_improvement": normalize_margin_improvement,
+    "margin_improvement_plan_2": normalize_margin_improvement_plan_2,
 }
 
 def get_normalized_payload(template_type: str, raw_data: dict) -> dict:

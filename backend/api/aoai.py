@@ -102,6 +102,10 @@ def detect_template_type_from_query(query: str) -> str:
     """
     Auto-detect which template the user is asking about
     """
+    match = re.search(r'"template_type"\s*:\s*"([^"]+)"', query, re.IGNORECASE)
+    if match:
+        return match.group(1)
+
     query_lower = query.lower()
 
     template_keywords = {
@@ -319,7 +323,14 @@ def detect_template_type_from_query(query: str) -> str:
             "delivery and talent implementation",
             "operational plan"
         ],
-
+        "margin_improvement_plan_2": [
+            "margin_improvement_plan_2", "margin improvement 2", "pyramid_teardown", 
+            "pyramid teardown", "l1", "l2", "sub-con"
+        ],
+        "margin_improvement": [
+            "margin_improvement", "margin improvement", "gross_profit_chart", 
+            "gp_waterfall", "drainers"
+        ],
     }
 
     

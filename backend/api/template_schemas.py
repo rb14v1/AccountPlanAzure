@@ -757,6 +757,70 @@ TEMPLATE_SCHEMAS: Dict[str, Dict[str, Any]] = {
             ]
         }
     },
+
+    # ---------------------------------------------------------
+    # Margin Improvement
+    # ---------------------------------------------------------
+    "margin_improvement": {
+        "template_type": "margin_improvement",
+        "data": {
+            "gross_profit_chart": [
+                { "quarter": "", "actuals_projections": "", "target": "" }
+            ],
+            "key_metrics": [
+                {
+                    "key_metrics": "", "fy24": "", "q4_24": "", "q1_25": "", "q2_25_a": "",
+                    "q3_25_c": "", "q3_25_p": "", "q4_25_c": "", "q4_25_p": "",
+                    "fy25_c": "", "fy25_p": "", "q1_26_p": "", "q2_26_p": "",
+                    "q3_26_p": "", "q4_26_p": "", "fy26_p": ""
+                }
+            ],
+            "gp_waterfall_opex": [
+                { "item": "", "q323": "", "q423": "", "q124": "", "q224": "" }
+            ],
+            "gp_waterfall_sales": [
+                { "item": "", "q323": "", "q423": "", "q124": "", "q224": "" }
+            ],
+            "drainers": [
+                { "item": "", "q323": "", "q423": "", "q124": "", "q224": "" }
+            ],
+            "pyramid_improvement_plan": ""
+        }
+    },
+
+    # ---------------------------------------------------------
+    # Margin Improvement Plan 2
+    # ---------------------------------------------------------
+    "margin_improvement_plan_2": {
+        "template_type": "margin_improvement_plan_2",
+        "data": {
+            "gross_profit_chart": [
+                { "quarter": "Q1 FY25", "actuals_projections": "", "target": "" },
+                { "quarter": "Q2 FY25", "actuals_projections": "", "target": "" },
+                { "quarter": "Q3 FY25", "actuals_projections": "", "target": "" },
+                { "quarter": "Q4 FY25", "actuals_projections": "", "target": "" },
+                { "quarter": "Q1 FY26", "actuals_projections": "", "target": "" },
+                { "quarter": "Q2 FY26", "actuals_projections": "", "target": "" },
+                { "quarter": "Q3 FY26", "actuals_projections": "", "target": "" },
+                { "quarter": "Q4 FY26", "actuals_projections": "", "target": "" }
+            ],
+            "pyramid_teardown": [
+                {"category": "Offshore", "label": "L1", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Offshore", "label": "L2", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Offshore", "label": "L3", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Offshore", "label": "L4", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Offshore", "label": "L5", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Offshore", "label": "Sub-con", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "L1", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "L2", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "L3", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "L4", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "L5", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""},
+                {"category": "Onsite", "label": "Sub-con", "fy24": "", "q424": "", "q125": "", "q225A": "", "q325C": "", "q325P": "", "q425C": "", "q425P": "", "fy25C": "", "fy25P": ""}
+            ],
+            "pyramid_improvement_plan": ""
+        }
+    },
 }
 
 

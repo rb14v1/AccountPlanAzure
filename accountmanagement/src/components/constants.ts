@@ -720,6 +720,83 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   ]
 }`
   },
+
+  {
+    id: "margin_improvement",
+    title: "Margin Improvement",
+    description: "Generate the margin improvement and gross profit waterfall data.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "margin_improvement",
+  "data": {
+    "gross_profit_chart": [
+      { "quarter": "string", "actuals_projections": "string", "target": "string" }
+    ],
+    "key_metrics": [
+      {
+        "key_metrics": "string",
+        "fy24": "string", "q4_24": "string", "q1_25": "string", "q2_25_a": "string",
+        "q3_25_c": "string", "q3_25_p": "string", "q4_25_c": "string", "q4_25_p": "string",
+        "fy25_c": "string", "fy25_p": "string", "q1_26_p": "string", "q2_26_p": "string",
+        "q3_26_p": "string", "q4_26_p": "string", "fy26_p": "string"
+      }
+    ],
+    "gp_waterfall_opex": [
+      { "item": "string", "q323": "string", "q423": "string", "q124": "string", "q224": "string" }
+    ],
+    "gp_waterfall_sales": [
+      { "item": "string", "q323": "string", "q423": "string", "q124": "string", "q224": "string" }
+    ],
+    "drainers": [
+      { "item": "string", "q323": "string", "q423": "string", "q124": "string", "q224": "string" }
+    ],
+    "pyramid_improvement_plan": "string"
+  }
+}`
+  },
+
+  {
+    id: "margin_improvement_plan_2",
+    title: "Margin Improvement Plan 2",
+    description: "Generate the margin improvement pyramid teardown and gross profit chart.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "margin_improvement_plan_2",
+  "data": {
+    "gross_profit_chart": [
+      { "quarter": "Q1 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q2 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q3 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q4 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q1 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q2 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q3 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q4 FY26", "actuals_projections": "string", "target": "string" }
+    ],
+    "pyramid_teardown": [
+      { "category": "Offshore", "label": "L1", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Offshore", "label": "L2", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Offshore", "label": "L3", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Offshore", "label": "L4", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Offshore", "label": "L5", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Offshore", "label": "Sub-con", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "L1", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "L2", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "L3", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "L4", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "L5", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" },
+      { "category": "Onsite", "label": "Sub-con", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" }
+    ],
+    "pyramid_improvement_plan": "string"
+  }
+}`
+  },
 ];
  
   

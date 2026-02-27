@@ -139,6 +139,14 @@ urlpatterns = [
     # 25. Strategic Partnerships
     path("strategic-partnerships/", views.template_payload_detail, kwargs={"template_type": "strategic_partnerships"}),
     path("strategic-partnerships/save/", views.template_payload_detail, kwargs={"template_type": "strategic_partnerships"}),
+
+    # 26. Margin Improvement
+    path("margin-improvement/", views.template_payload_detail, kwargs={"template_type": "margin_improvement"}),
+    path("margin-improvement/save/", views.template_payload_detail, kwargs={"template_type": "margin_improvement"}),
+
+    # 27. Margin Improvement Plan 2
+    path("margin-improvement-plan-2/", views.template_payload_detail, kwargs={"template_type": "margin_improvement_plan_2"}),
+    path("margin-improvement-plan-2/save/", views.template_payload_detail, kwargs={"template_type": "margin_improvement_plan_2"}),
  
     path('template-payload/<str:template_type>/', views.template_payload_detail, name='template_payload_detail'),
 ]
