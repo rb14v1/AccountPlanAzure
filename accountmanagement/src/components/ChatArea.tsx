@@ -270,3 +270,4 @@ const ChatArea: React.FC<ChatAreaProps> = ({
 };
  
 export default ChatArea;
+ 

@@ -218,7 +218,7 @@ export default function MarginImprovementPlan2() {
             if (dataLoadedFromDB.current) return;
             setInitialLoading(true);
             try {
-                const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/?user_id=${userId}`);
+                const res = await fetch(`${API_BASE_URL}/margin-improvement-plan-2/?user_id=${userId}`);
                 if (res.ok) {
                     const dbData = await res.json();
                     if (Object.keys(dbData).length > 0) {
@@ -249,7 +249,7 @@ export default function MarginImprovementPlan2() {
                     autoSaveAttempted.current = true;
                     try {
                         const payload = { user_id: userId, data: rawData };
-                        const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+                        const res = await fetch(`${API_BASE_URL}/margin-improvement-plan-2/`, {
                             method: "POST", headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(payload)
                         });
@@ -278,7 +278,7 @@ export default function MarginImprovementPlan2() {
                 pyramid_improvement_plan: improvementPlanText
             };
 
-            const res = await fetch(`${API_BASE_URL}/template-payload/${TEMPLATE_NAME}/`, {
+            const res = await fetch(`${API_BASE_URL}/margin-improvement-plan-2/`, {
                 method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ user_id: userId, data: payloadData })
             });
@@ -388,7 +388,8 @@ export default function MarginImprovementPlan2() {
                             </Box>
                         </Box>
 
-                        <Box sx={{ display: "flex", gap: 1, height: 60, alignItems: 'flex-end', mb: 4 }}>
+                        {/* ✅ FIX: CHANGED height: 60 TO minHeight: 80 SO IT EXPANDS DOWNWARD WITHOUT OVERLAPPING */}
+                        <Box sx={{ display: "flex", gap: 1, minHeight: 80, alignItems: 'flex-end', mb: 4 }}>
                             {chartEditable.draftData.map((data: any, index: number) => {
                                 const bgColor = index < 4 ? "#00BCD4" : "#C49000";
                                 const field = index < 4 ? "actuals_projections" : "target";
@@ -399,6 +400,7 @@ export default function MarginImprovementPlan2() {
                                         <Box sx={{ backgroundColor: bgColor, color: "#fff", fontSize: 10, py: 1, fontWeight: 700 }}>
                                             {isEditing ? (
                                                 <TextField 
+                                                    multiline  // ✅ FIX: ALLOWS TEXT TO GROW VERTICALLY
                                                     value={val} 
                                                     onChange={(e) => {
                                                         const newChart = [...chartEditable.draftData];
@@ -409,7 +411,10 @@ export default function MarginImprovementPlan2() {
                                                     InputProps={{ disableUnderline: true, style: { fontSize: 10, textAlign: 'center', color: '#fff', fontWeight: 700 } }}
                                                 />
                                             ) : (
-                                                val || "10"
+                                                // ✅ FIX: PREVENTS TEXT FROM SPILLING HORIZONTALLY
+                                                <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", px: 0.5 }}>
+                                                    {val || "10"}
+                                                </Box>
                                             )}
                                         </Box>
                                         <Typography sx={{ fontSize: 9, fontWeight: 700, mt: 0.5 }}>{data.quarter}</Typography>
@@ -499,7 +504,9 @@ export default function MarginImprovementPlan2() {
                 </Box>
             </Box>
 
-            
+            <Box sx={{ display: "flex", justifyContent: "space-between", mt: 4, alignItems: 'center' }}>
+                <Typography sx={{ fontSize: 9, color: "#666" }}>Classification: Controlled. Copyright ©2025 Version 1. All rights reserved.</Typography>
+            </Box>
         </PageContainer>
     );
 }
