@@ -733,7 +733,14 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   "template_type": "margin_improvement",
   "data": {
     "gross_profit_chart": [
-      { "quarter": "string", "actuals_projections": "string", "target": "string" }
+      { "quarter": "Q1 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q2 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q3 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q4 FY25", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q1 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q2 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q3 FY26", "actuals_projections": "string", "target": "string" },
+      { "quarter": "Q4 FY26", "actuals_projections": "string", "target": "string" }
     ],
     "key_metrics": [
       {

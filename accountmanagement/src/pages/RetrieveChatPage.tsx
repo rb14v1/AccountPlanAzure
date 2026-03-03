@@ -76,36 +76,31 @@ const RetrieveChatPage: React.FC = () => {
  
  
  
-  useEffect(() => {
+useEffect(() => {
     const user = getUser();
     if (!user) return;
- 
-    const storedChatId = localStorage.getItem("activeChatId");
- 
-    // Load chat list
+
+    // Load the initial chat list
     api.get("/chats", {
       params: { user_id: user.id },
     }).then(res => {
       setChatList(res.data);
     });
- 
-    // 🔥 Restore last active chat
-    if (storedChatId) {
-      const chatIdNum = Number(storedChatId);
-      setCurrentChatId(chatIdNum);
- 
- 
-      api.get(`/chats/${chatIdNum}`).then(res => {
-        setMessages(
-          res.data.map((m: any) => ({
-            id: m.id,
-            sender: m.sender,
-            text: m.text,
-            timestamp: new Date(m.timestamp).toLocaleTimeString(),
-          }))
-        );
-      });
-    }
+
+    // 🔥 Start a brand new chat every time the page loads instead of restoring the old one
+    api.post("/chats/new", { user_id: user.id })
+      .then(res => {
+        const newChat = res.data;
+        setCurrentChatId(newChat.id);
+        localStorage.setItem("activeChatId", newChat.id.toString());
+        setMessages([]);
+        
+        // Re-fetch the chat list so this new chat is registered in the history
+        api.get("/chats", { params: { user_id: user.id } })
+          .then(listRes => setChatList(listRes.data));
+      })
+      .catch(err => console.error("Error creating new chat on load", err));
+
   }, []);
  
   // Modal State
@@ -445,14 +440,14 @@ const response = await api.post("/chat", {
       <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
        
         {/* SIDEBAR */}
-        <Sidebar
+        {/* <Sidebar
           open={isSidebarOpen}
           chatList={chatList}
           activeChatId={currentChatId}
           onOpenChat={openChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
-        />
+        /> */}
  
         {/* CHAT AREA */}
         <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>

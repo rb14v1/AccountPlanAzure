@@ -113,12 +113,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         display: "flex",
         gap: 1,
         alignItems: "center",
-        mb: 4,   // space before cards
+        mb: 0,   // space before cards
       }}
     >
       <input type="file" style={{ display: "none" }} />
  
-      <TextField
+      {/* <TextField
         fullWidth
         multiline
         maxRows={4}
@@ -146,7 +146,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
         }}
       >
         ➤
-      </Button>
+      </Button> */}
     </Box>
   </Box>
 ) : (
@@ -216,22 +216,24 @@ const ChatArea: React.FC<ChatAreaProps> = ({
  
       {/* ✅ DATA BUTTON ONLY FOR BOT */}
       {msg.sender === "bot" && onDataClick && (
-        <Box sx={{ mt: 1 }}>
+        <Box sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
           <Button
             variant="contained"
-            size="small"
+            size="large"
             onClick={onDataClick}
             sx={{
               bgcolor: PRIMARY_TEAL,
               "&:hover": { bgcolor: "#006b30" },
-              borderRadius: "20px",
-              px: 2,
-              py: 0.5,
-              fontSize: "12px",
+              borderRadius: "24px",
+              px: 4, // Makes the button wider
+              py: 1, // Makes the button taller
+              fontSize: "16px", // Larger text
+              fontWeight: "bold",
               textTransform: "none",
+              boxShadow: "0 4px 10px rgba(0,0,0,0.15)", // Adds a nice little shadow
             }}
           >
-            Data
+            View Dashboard
           </Button>
         </Box>
       )}

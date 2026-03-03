@@ -97,7 +97,7 @@ export default function Header() {
         </Box>
 
         <Box display="flex" alignItems="center" gap={3}>
-          <Typography
+          {/* <Typography
             sx={{
               cursor: "pointer",
               fontWeight: isUpload ? 700 : 500,
@@ -107,7 +107,7 @@ export default function Header() {
             onClick={() => navigate("/upload")}
           >
             Upload
-          </Typography>
+          </Typography> */}
 
           <Typography
             sx={{
@@ -118,7 +118,7 @@ export default function Header() {
             }}
             onClick={() => navigate("/chat")}
           >
-            Chatbot
+            Home
           </Typography>
 
           {showProfile && (

@@ -43,6 +43,14 @@ const PromptModal: React.FC<PromptModalProps> = ({
   useEffect(() => {
     if (open && activePrompt) {
       setFieldValues({});
+
+      // ✅ Set the actual editable value of the text boxes right when the modal opens
+      const initialValues: Record<string, string> = {};
+      activePrompt.placeholders.forEach((placeholder) => {
+        initialValues[placeholder.key] = "NatWest Group"; 
+      });
+      setFieldValues(initialValues);
+      
       inputRefs.current = {};
 
       // 1. Create Markers
