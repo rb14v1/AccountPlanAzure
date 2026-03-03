@@ -111,24 +111,24 @@ const DataCell = styled(TableCell)<{ boldright?: string }>(({ boldright }) => ({
 }));
 
 const InputField = styled(TextField)({
-  width: '100%',
-  '& .MuiInputBase-input': {
-    fontSize: "0.75rem",
-    padding: "8px",
-    color: "#333",
-    lineHeight: 1.4,
-  },
-  '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-  backgroundColor: 'transparent'
+    width: '100%',
+    '& .MuiInputBase-input': {
+        fontSize: "0.75rem",
+        padding: "8px",
+        color: "#333",
+        lineHeight: 1.4,
+    },
+    '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+    backgroundColor: 'transparent'
 });
 
 /* ---------------- HELPERS & EXTRACTORS ---------------- */
 const defaultData = {
     gross_profit_chart: [
-      { quarter: "Q1 FY25", actuals_projections: "", target: "" }, { quarter: "Q2 FY25", actuals_projections: "", target: "" },
-      { quarter: "Q3 FY25", actuals_projections: "", target: "" }, { quarter: "Q4 FY25", actuals_projections: "", target: "" },
-      { quarter: "Q1 FY26", actuals_projections: "", target: "" }, { quarter: "Q2 FY26", actuals_projections: "", target: "" },
-      { quarter: "Q3 FY26", actuals_projections: "", target: "" }, { quarter: "Q4 FY26", actuals_projections: "", target: "" }
+        { quarter: "Q1 FY25", actuals_projections: "", target: "" }, { quarter: "Q2 FY25", actuals_projections: "", target: "" },
+        { quarter: "Q3 FY25", actuals_projections: "", target: "" }, { quarter: "Q4 FY25", actuals_projections: "", target: "" },
+        { quarter: "Q1 FY26", actuals_projections: "", target: "" }, { quarter: "Q2 FY26", actuals_projections: "", target: "" },
+        { quarter: "Q3 FY26", actuals_projections: "", target: "" }, { quarter: "Q4 FY26", actuals_projections: "", target: "" }
     ],
     pyramid_teardown: [
         { id: 1, category: "Offshore" as const, label: "L1", fy24: "", q424: "", q125: "", q225A: "", q325C: "", q325P: "", q425C: "", q425P: "", fy25C: "", fy25P: "" },
@@ -153,9 +153,9 @@ const extractData = (source: any) => {
     const mappedChart = defaultData.gross_profit_chart.map((defRow, i) => {
         const srcRow = Array.isArray(d.gross_profit_chart) && d.gross_profit_chart[i] ? d.gross_profit_chart[i] : {};
         return {
-          quarter: srcRow?.quarter || defRow.quarter,
-          actuals_projections: srcRow?.actuals_projections || defRow.actuals_projections,
-          target: srcRow?.target || defRow.target,
+            quarter: srcRow?.quarter || defRow.quarter,
+            actuals_projections: srcRow?.actuals_projections || defRow.actuals_projections,
+            target: srcRow?.target || defRow.target,
         };
     });
 
@@ -202,7 +202,6 @@ export default function MarginImprovementPlan2() {
     const dataLoadedFromDB = useRef(false);
     const autoSaveAttempted = useRef(false);
 
-    // 1. Sync from Chatbot
     useEffect(() => {
         if (globalData?.margin_improvement_plan_2 && !pyramidEditable.isEditing && !chartEditable.isEditing) {
             const parsed = extractData(globalData.margin_improvement_plan_2);
@@ -212,7 +211,6 @@ export default function MarginImprovementPlan2() {
         }
     }, [globalData?.margin_improvement_plan_2]);
 
-    // 2. Load from DB
     useEffect(() => {
         const fetchData = async () => {
             if (dataLoadedFromDB.current) return;
@@ -239,7 +237,6 @@ export default function MarginImprovementPlan2() {
         fetchData();
     }, [userId, setGlobalData]);
 
-    // 3. Auto-Save
     useEffect(() => {
         const autoSave = async () => {
             if (dataLoadedFromDB.current && !autoSaveAttempted.current) {
@@ -268,7 +265,6 @@ export default function MarginImprovementPlan2() {
         return () => clearTimeout(t);
     }, [rawData, userId, setGlobalData]);
 
-    // 4. Manual Save
     const handleSave = async () => {
         setLoading(true);
         try {
@@ -313,7 +309,6 @@ export default function MarginImprovementPlan2() {
                 <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
             </Snackbar>
 
-            {/* BUTTONS PUSHED TO RIGHT */}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mb: 2 }}>
                 <DownloadTemplates templateName="Margin Improvement Plan 2" />
                 {!isEditing ? (
@@ -356,14 +351,11 @@ export default function MarginImprovementPlan2() {
                 )}
             </Box>
 
-            {/* DOWNLOAD WRAPPER START */}
             <Box id="template-to-download">
-                {/* PDF SECTION 1: TITLE */}
                 <Box className="pdf-section">
                     <PageTitle>Margin improvement plan 2</PageTitle>
                 </Box>
 
-                {/* PDF SECTION 2: GRID ROW (SIDE-BY-SIDE) */}
                 <Box className="pdf-section" sx={{
                     display: 'grid',
                     gridTemplateColumns: '3fr 1fr',
@@ -371,7 +363,6 @@ export default function MarginImprovementPlan2() {
                     width: '100%',
                     bgcolor: '#fff'
                 }}>
-                    {/* LEFT COLUMN */}
                     <Box>
                         <Typography sx={{ backgroundColor: "#022D36", color: "#fff", p: "6px 12px", fontSize: 13, fontWeight: 700, mb: 1 }}>
                             Gross Profit, (%)
@@ -388,7 +379,7 @@ export default function MarginImprovementPlan2() {
                             </Box>
                         </Box>
 
-                        {/* ✅ FIX: CHANGED height: 60 TO minHeight: 80 SO IT EXPANDS DOWNWARD WITHOUT OVERLAPPING */}
+                        {/* Updated Section for Vertical Expansion */}
                         <Box sx={{ display: "flex", gap: 1, minHeight: 80, alignItems: 'flex-end', mb: 4 }}>
                             {chartEditable.draftData.map((data: any, index: number) => {
                                 const bgColor = index < 4 ? "#00BCD4" : "#C49000";
@@ -397,10 +388,10 @@ export default function MarginImprovementPlan2() {
 
                                 return (
                                     <Box key={data.quarter} sx={{ flex: 1, textAlign: 'center' }}>
-                                        <Box sx={{ backgroundColor: bgColor, color: "#fff", fontSize: 10, py: 1, fontWeight: 700 }}>
+                                        <Box sx={{ backgroundColor: bgColor, color: "#fff", fontSize: 10, py: 1, fontWeight: 700, minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             {isEditing ? (
                                                 <TextField 
-                                                    multiline  // ✅ FIX: ALLOWS TEXT TO GROW VERTICALLY
+                                                    multiline
                                                     value={val} 
                                                     onChange={(e) => {
                                                         const newChart = [...chartEditable.draftData];
@@ -408,10 +399,9 @@ export default function MarginImprovementPlan2() {
                                                         chartEditable.updateDraft(newChart);
                                                     }}
                                                     variant="standard"
-                                                    InputProps={{ disableUnderline: true, style: { fontSize: 10, textAlign: 'center', color: '#fff', fontWeight: 700 } }}
+                                                    InputProps={{ disableUnderline: true, style: { fontSize: 10, textAlign: 'center', color: '#fff', fontWeight: 700, padding: '0 4px' } }}
                                                 />
                                             ) : (
-                                                // ✅ FIX: PREVENTS TEXT FROM SPILLING HORIZONTALLY
                                                 <Box sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word", px: 0.5 }}>
                                                     {val || "10"}
                                                 </Box>
@@ -474,7 +464,6 @@ export default function MarginImprovementPlan2() {
                         </TableContainer>
                     </Box>
 
-                    {/* RIGHT COLUMN */}
                     <Box sx={{
                         display: 'flex',
                         flexDirection: 'column',

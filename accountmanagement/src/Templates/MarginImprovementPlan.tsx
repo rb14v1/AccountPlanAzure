@@ -53,6 +53,12 @@ type WaterfallRow = {
   q224: string;
 };
 
+type ChartRow = {
+  quarter: string;
+  actuals_projections: string;
+  target: string;
+};
+
 /* ---------------- STYLES ---------------- */
 const PageContainer = styled(Box)({
   padding: "24px",
@@ -170,31 +176,46 @@ const emptyMarginRow = (id: number, keyMetrics: string = ""): MarginRow => ({
 });
 
 const defaultData = {
+  gross_profit_chart: [
+    { quarter: "Q1 FY25", actuals_projections: "", target: "" }, { quarter: "Q2 FY25", actuals_projections: "", target: "" },
+    { quarter: "Q3 FY25", actuals_projections: "", target: "" }, { quarter: "Q4 FY25", actuals_projections: "", target: "" },
+    { quarter: "Q1 FY26", actuals_projections: "", target: "" }, { quarter: "Q2 FY26", actuals_projections: "", target: "" },
+    { quarter: "Q3 FY26", actuals_projections: "", target: "" }, { quarter: "Q4 FY26", actuals_projections: "", target: "" }
+  ],
   key_metrics: [
     emptyMarginRow(1, "Revenue (€ Mn)"), emptyMarginRow(2, "Onsite (%)"), emptyMarginRow(3, "Offshore (%)"),
     emptyMarginRow(4, "GM (%)"), emptyMarginRow(5, "EBITDA (%)"), emptyMarginRow(6, "Cost / FTE - ONS (€)"),
     emptyMarginRow(7, "Cost / FTE - OFS (€)")
   ],
   gp_waterfall_opex: [
-    { id: 1, item: "Subcon reduction", q323: "0.0%", q423: "0.2%", q124: "0.2%", q224: "0.2%" },
-    { id: 2, item: "Pyramid optimisation", q323: "0.4%", q423: "0.3%", q124: "0.3%", q224: "0.5%" },
-    { id: 3, item: "Lean & Automation", q323: "0.2%", q423: "0.2%", q124: "0.2%", q224: "0.2%" },
-    { id: 4, item: "Bill Utilisation", q323: "0.2%", q423: "0.2%", q124: "0.2%", q224: "0.2%" }
+    { id: 1, item: "Subcon reduction", q323: "", q423: "", q124: "", q224: "" },
+    { id: 2, item: "Pyramid optimisation", q323: "", q423: "", q124: "", q224: "" },
+    { id: 3, item: "Lean & Automation", q323: "", q423: "", q124: "", q224: "" },
+    { id: 4, item: "Bill Utilisation", q323: "", q423: "", q124: "", q224: "" }
   ],
   gp_waterfall_sales: [
-    { id: 5, item: "Pricing", q323: "", q423: "", q124: "0.2%", q224: "0.3%" },
-    { id: 6, item: "FP - New deals & CRs", q323: "1.0%", q423: "1.2%", q124: "1.5%", q224: "1.6%" }
+    { id: 5, item: "Pricing", q323: "", q423: "", q124: "", q224: "" },
+    { id: 6, item: "FP - New deals & CRs", q323: "", q423: "", q124: "", q224: "" }
   ],
   drainers: [
-    { id: 1, item: "Higher Cost Hiring", q323: "-0.0%", q423: "-0.2%", q124: "-0.2%", q224: "-0.2%" },
-    { id: 2, item: "Increments", q323: "-0.4%", q423: "-0.3%", q124: "-0.3%", q224: "-0.5%" },
-    { id: 3, item: "Inv. Deals & Onsite Hiring", q323: "-0.2%", q423: "-0.2%", q124: "-0.2%", q224: "-0.2%" },
-    { id: 4, item: "Healthcare SME at Onsite", q323: "-0.2%", q423: "-0.2%", q124: "-0.2%", q224: "-0.2%" }
+    { id: 1, item: "Higher Cost Hiring", q323: "", q423: "", q124: "", q224: "" },
+    { id: 2, item: "Increments", q323: "", q423: "", q124: "", q224: "" },
+    { id: 3, item: "Inv. Deals & Onsite Hiring", q323: "", q423: "", q124: "", q224: "" },
+    { id: 4, item: "Healthcare SME at Onsite", q323: "", q423: "", q124: "", q224: "" }
   ]
 };
 
 const extractData = (source: any) => {
   const d = source?.data || source || {};
+
+  const mappedChart = defaultData.gross_profit_chart.map((defRow, i) => {
+    const srcRow = Array.isArray(d.gross_profit_chart) && d.gross_profit_chart[i] ? d.gross_profit_chart[i] : {};
+    return {
+      quarter: srcRow?.quarter || defRow.quarter,
+      actuals_projections: srcRow?.actuals_projections !== undefined ? srcRow.actuals_projections : defRow.actuals_projections,
+      target: srcRow?.target !== undefined ? srcRow.target : defRow.target,
+    };
+  });
 
   const mapMetrics = (m: any, i: number) => ({
     id: i + 1, keyMetrics: m.key_metrics || m.keyMetrics || "",
@@ -210,6 +231,7 @@ const extractData = (source: any) => {
   });
 
   return {
+    gross_profit_chart: mappedChart,
     key_metrics: Array.isArray(d.key_metrics) && d.key_metrics.length > 0 ? d.key_metrics.map(mapMetrics) : defaultData.key_metrics,
     gp_waterfall_opex: Array.isArray(d.gp_waterfall_opex) && d.gp_waterfall_opex.length > 0 ? d.gp_waterfall_opex.map((x:any, i:number) => mapWaterfall(x,i,1)) : defaultData.gp_waterfall_opex,
     gp_waterfall_sales: Array.isArray(d.gp_waterfall_sales) && d.gp_waterfall_sales.length > 0 ? d.gp_waterfall_sales.map((x:any, i:number) => mapWaterfall(x,i,5)) : defaultData.gp_waterfall_sales,
@@ -225,6 +247,7 @@ export default function MarginImprovementPage() {
 
   const rawData = extractData(globalData?.margin_improvement);
 
+  const chartEditable = useEditableTable(rawData.gross_profit_chart);
   const metricsEditable = useEditableTable(rawData.key_metrics);
   const opexEditable = useEditableTable(rawData.gp_waterfall_opex);
   const salesEditable = useEditableTable(rawData.gp_waterfall_sales);
@@ -239,8 +262,9 @@ export default function MarginImprovementPage() {
 
   // 1. Sync from Chatbot
   useEffect(() => {
-    if (globalData?.margin_improvement && !metricsEditable.isEditing && !opexEditable.isEditing && !salesEditable.isEditing && !drainersEditable.isEditing) {
+    if (globalData?.margin_improvement && !metricsEditable.isEditing && !opexEditable.isEditing && !salesEditable.isEditing && !drainersEditable.isEditing && !chartEditable.isEditing) {
       const parsed = extractData(globalData.margin_improvement);
+      chartEditable.updateDraft(parsed.gross_profit_chart);
       metricsEditable.updateDraft(parsed.key_metrics);
       opexEditable.updateDraft(parsed.gp_waterfall_opex);
       salesEditable.updateDraft(parsed.gp_waterfall_sales);
@@ -259,6 +283,7 @@ export default function MarginImprovementPage() {
           const dbData = await res.json();
           if (Object.keys(dbData).length > 0) {
             const parsed = extractData(dbData);
+            chartEditable.updateDraft(parsed.gross_profit_chart);
             metricsEditable.updateDraft(parsed.key_metrics);
             opexEditable.updateDraft(parsed.gp_waterfall_opex);
             salesEditable.updateDraft(parsed.gp_waterfall_sales);
@@ -310,6 +335,7 @@ export default function MarginImprovementPage() {
     setLoading(true);
     try {
       const payloadData = {
+        gross_profit_chart: chartEditable.draftData,
         key_metrics: metricsEditable.draftData.map((r: MarginRow) => ({
           key_metrics: r.keyMetrics,
           fy24: r.fy24, q4_24: r.q424, q1_25: r.q125, q2_25_a: r.q225A,
@@ -329,6 +355,7 @@ export default function MarginImprovementPage() {
       const result = await res.json();
       if (res.ok && result.success) {
         setGlobalData((prev: any) => ({ ...prev, margin_improvement: extractData(result.data) }));
+        chartEditable.saveEdit(() => {});
         metricsEditable.saveEdit(() => {});
         opexEditable.saveEdit(() => {});
         salesEditable.saveEdit(() => {});
@@ -350,7 +377,7 @@ export default function MarginImprovementPage() {
     editable.updateDraft(editable.draftData.map((r: WaterfallRow) => (r.id === id ? { ...r, [field]: value } : r)));
   };
 
-  const isEditing = metricsEditable.isEditing || opexEditable.isEditing || salesEditable.isEditing || drainersEditable.isEditing;
+  const isEditing = metricsEditable.isEditing || opexEditable.isEditing || salesEditable.isEditing || drainersEditable.isEditing || chartEditable.isEditing;
 
   if (initialLoading) {
     return (
@@ -375,6 +402,7 @@ export default function MarginImprovementPage() {
             <Button variant="contained" size="small" onClick={() => {
               metricsEditable.startEdit(); opexEditable.startEdit();
               salesEditable.startEdit(); drainersEditable.startEdit();
+              chartEditable.startEdit();
             }}>Edit</Button>
           ) : (
             <Box sx={{ display: 'flex', gap: 1 }}>
@@ -384,6 +412,7 @@ export default function MarginImprovementPage() {
               <Button variant="outlined" size="small" disabled={loading} onClick={() => {
                 metricsEditable.cancelEdit(); opexEditable.cancelEdit();
                 salesEditable.cancelEdit(); drainersEditable.cancelEdit();
+                chartEditable.cancelEdit();
               }}>Cancel</Button>
             </Box>
           )}
@@ -405,25 +434,39 @@ export default function MarginImprovementPage() {
         </Box>
 
         <Box sx={{ display: "flex", gap: 1, mb: 4, height: 80, alignItems: 'flex-end' }}>
-          {["Q1 FY25", "Q2 FY25", "Q3 FY25", "Q4 FY25"].map((q) => (
-            <Box key={q} sx={{ flex: 1, textAlign: 'center' }}>
-              <Box sx={{ backgroundColor: "#00BCD4", color: "#fff", py: 1, fontWeight: 700, mb: 0.5 }}>10</Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{q}</Typography>
-            </Box>
-          ))}
-          {["Q1 FY26", "Q2 FY26", "Q3 FY26", "Q4 FY26"].map((q) => (
-            <Box key={q} sx={{ flex: 1, textAlign: 'center' }}>
-              <Box sx={{ backgroundColor: "#C49000", color: "#fff", py: 1, fontWeight: 700, mb: 0.5 }}>10</Box>
-              <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{q}</Typography>
-            </Box>
-          ))}
+          {chartEditable.draftData.map((data: ChartRow, index: number) => {
+              const bgColor = index < 4 ? "#00BCD4" : "#C49000";
+              const field = index < 4 ? "actuals_projections" : "target";
+              const val = data[field as keyof ChartRow];
+              // Explicit TBD logic
+              const displayVal = (val === "" || val === null || val === undefined) ? "TBD" : val;
+
+              return (
+                <Box key={data.quarter} sx={{ flex: 1, textAlign: 'center' }}>
+                  <Box sx={{ backgroundColor: bgColor, color: "#fff", py: 1, fontWeight: 700, mb: 0.5 }}>
+                    {isEditing ? (
+                        <TextField 
+                            value={val} 
+                            onChange={(e) => {
+                                const newChart = [...chartEditable.draftData];
+                                newChart[index] = { ...newChart[index], [field]: e.target.value };
+                                chartEditable.updateDraft(newChart);
+                            }}
+                            variant="standard"
+                            InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#fff', fontWeight: 700 } }}
+                        />
+                    ) : displayVal}
+                  </Box>
+                  <Typography sx={{ fontSize: 11, fontWeight: 700 }}>{data.quarter}</Typography>
+                </Box>
+              )
+          })}
         </Box>
 
         {/* KEY METRICS TABLE */}
         <TableContainer component={Paper} sx={{ boxShadow: "none", mb: 4 }}>
           <Table size="small" sx={{ borderCollapse: 'collapse' }}>
             <TableHead>
-              {/* Merged Header Row 1 */}
               <TableRow>
                 <HeaderCell rowSpan={2}>Key Metrics</HeaderCell>
                 <HeaderCell colSpan={4}>System View</HeaderCell>
@@ -432,7 +475,6 @@ export default function MarginImprovementPage() {
                 <HeaderCell colSpan={2}>Latest Projection</HeaderCell>
                 <HeaderCell colSpan={5}>Plan for FY26</HeaderCell>
               </TableRow>
-              {/* Sub Header Row 2 */}
               <TableRow>
                 {["FY'24", "Q4'24", "Q1'25", "Q2'25 (A)", "Q3'25 (C)", "Q3'25 (P)", "Q4'25 (C)", "Q4'25 (P)", "FY25 (C)", "FY25 (P)", "Q1'26 (P)", "Q2'26 (P)", "Q3'26 (P)", "Q4'26 (P)", "FY26 (P)"].map((h) => (
                   <SubHeaderCell key={h}>{h}</SubHeaderCell>
@@ -447,18 +489,22 @@ export default function MarginImprovementPage() {
                     "fy24", "q424", "q125", "q225A", "q325C", "q325P",
                     "q425C", "q425P", "fy25C", "fy25P",
                     "q126P", "q226P", "q326P", "q426P", "fy26P"
-                  ].map((field) => (
-                    <BodyCell key={field}>
-                      {isEditing ? (
-                        <TextField
-                          value={row[field as keyof MarginRow]}
-                          onChange={(e) => updateMetricsCell(row.id, field as keyof MarginRow, e.target.value)}
-                          variant="standard"
-                          InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center' } }}
-                        />
-                      ) : row[field as keyof MarginRow]}
-                    </BodyCell>
-                  ))}
+                  ].map((field) => {
+                    const cellVal = row[field as keyof MarginRow];
+                    const displayCellVal = (cellVal === "" || cellVal === null || cellVal === undefined) ? "TBD" : cellVal;
+                    return (
+                      <BodyCell key={field}>
+                        {isEditing ? (
+                          <TextField
+                            value={cellVal}
+                            onChange={(e) => updateMetricsCell(row.id, field as keyof MarginRow, e.target.value)}
+                            variant="standard"
+                            InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center' } }}
+                          />
+                        ) : displayCellVal}
+                      </BodyCell>
+                    );
+                  })}
                 </TableRow>
               ))}
             </TableBody>
@@ -481,22 +527,30 @@ export default function MarginImprovementPage() {
                   <TableRow key={row.id}>
                     {idx === 0 && <CategoryCell rowSpan={opexEditable.draftData.length} sx={{ backgroundColor: "#00838F" }}>Ops / Delivery levers</CategoryCell>}
                     <WaterfallItemCell>{row.item}</WaterfallItemCell>
-                    {["q323", "q423", "q124", "q224"].map(f => (
-                      <WaterfallDataCell key={f} sx={{ color: "#D4A017", fontWeight: 600 }}>
-                        {isEditing ? <TextField value={row[f as keyof WaterfallRow]} onChange={(e) => updateWaterfallCell(opexEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#D4A017' } }} /> : row[f as keyof WaterfallRow]}
-                      </WaterfallDataCell>
-                    ))}
+                    {["q323", "q423", "q124", "q224"].map(f => {
+                      const val = row[f as keyof WaterfallRow];
+                      const display = (val === "" || val === null || val === undefined) ? "TBD" : val;
+                      return (
+                        <WaterfallDataCell key={f} sx={{ color: "#D4A017", fontWeight: 600 }}>
+                          {isEditing ? <TextField value={val} onChange={(e) => updateWaterfallCell(opexEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#D4A017' } }} /> : display}
+                        </WaterfallDataCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
                 {salesEditable.draftData.map((row, idx) => (
                   <TableRow key={row.id}>
                     {idx === 0 && <CategoryCell rowSpan={salesEditable.draftData.length} sx={{ backgroundColor: "#00897B" }}>Sales levers</CategoryCell>}
                     <WaterfallItemCell>{row.item}</WaterfallItemCell>
-                    {["q323", "q423", "q124", "q224"].map(f => (
-                      <WaterfallDataCell key={f} sx={{ color: "#4CAF50", fontWeight: 600 }}>
-                        {isEditing ? <TextField value={row[f as keyof WaterfallRow]} onChange={(e) => updateWaterfallCell(salesEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#4CAF50' } }} /> : row[f as keyof WaterfallRow]}
-                      </WaterfallDataCell>
-                    ))}
+                    {["q323", "q423", "q124", "q224"].map(f => {
+                      const val = row[f as keyof WaterfallRow];
+                      const display = (val === "" || val === null || val === undefined) ? "TBD" : val;
+                      return (
+                        <WaterfallDataCell key={f} sx={{ color: "#4CAF50", fontWeight: 600 }}>
+                          {isEditing ? <TextField value={val} onChange={(e) => updateWaterfallCell(salesEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#4CAF50' } }} /> : display}
+                        </WaterfallDataCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
@@ -516,11 +570,15 @@ export default function MarginImprovementPage() {
                   <TableRow key={row.id}>
                     {idx === 0 && <CategoryCell rowSpan={drainersEditable.draftData.length} sx={{ backgroundColor: "#9E9E9E" }}>Drainers</CategoryCell>}
                     <WaterfallItemCell>{row.item}</WaterfallItemCell>
-                    {["q323", "q423", "q124", "q224"].map(f => (
-                      <WaterfallDataCell key={f} sx={{ color: "#D32F2F", fontWeight: 600 }}>
-                        {isEditing ? <TextField value={row[f as keyof WaterfallRow]} onChange={(e) => updateWaterfallCell(drainersEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#D32F2F' } }} /> : row[f as keyof WaterfallRow]}
-                      </WaterfallDataCell>
-                    ))}
+                    {["q323", "q423", "q124", "q224"].map(f => {
+                       const val = row[f as keyof WaterfallRow];
+                       const display = (val === "" || val === null || val === undefined) ? "TBD" : val;
+                       return (
+                        <WaterfallDataCell key={f} sx={{ color: "#D32F2F", fontWeight: 600 }}>
+                          {isEditing ? <TextField value={val} onChange={(e) => updateWaterfallCell(drainersEditable, row.id, f as keyof WaterfallRow, e.target.value)} variant="standard" InputProps={{ disableUnderline: true, style: { fontSize: 11, textAlign: 'center', color: '#D32F2F' } }} /> : display}
+                        </WaterfallDataCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
