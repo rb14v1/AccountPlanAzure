@@ -36,273 +36,7 @@ export interface PromptDefinition {
  
 export const STARTER_PROMPTS: PromptDefinition[] = [
   {
-    id: "growth_strategy",
-    title: "Growth Strategy",
-    description: "Generate a strategic growth plan payload.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "growth_strategy",
-  "data": {
-    "growth_aspiration": ["string"],
-    "key_vectors_for_driving_growth": ["string"],
-    "improve_quality_sustainability_revenues": ["string"],
-    "potential_inorganic_opportunities": ["string"]
-  }
-}`
-  },
-  {
-    id: "customer_profile",
-    title: "Customer Profile",
-    description: "Generate a detailed customer profile.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "customer_profile",
-  "data": {
-    "customer_name": "",
-    "headquarter_location": "",
-    "csat": "",
-    "version_1_vertical": "",
-    "current_work": [],
-    "service_lines": [],
-    "customer_perception": []
-  }
-}`
-  },
-  {
-    id: "relationship_heatmap",
-    title: "Relationship Heatmap",
-    description: "Map out key stakeholder relationships.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "relationship_heatmap",
-  "data": {
-        "client_stakeholder": "string",
-        "role": "string",
-        "reports_to": "string",
-        "level": "string",
-        "client_relationship": "string",
-        "engagement_plan_next_action": "string"
-  }
-}`
-  },
-  {
-    id: "implementation_plan",
-    title: "Implementation Plan",
-    description: "Create a detailed implementation timeline.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "implementation_plan",
-  "data": {
-    "actions": [
-      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
-      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
-      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" }
-    ]
-  }
-}`
-  },
-
-  {
-    id: "operational_excellence_strategy",
-    title: "Operational Excellence",
-    description: "Generate an operational excellence strategy.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "operational_excellence_strategy",
-  "data": {
-    "current_gp_percentage": "string",
-    "gp_percentage_ambition": "string",
-    "priority_levers_to_drive_margin_uplift": [
-      "string"
-    ],
-    "plan_for_commercial_model_transformation": [
-      "string"
-    ]
-  }
-}`
-  },
-  {
-    id: "investment_plan",
-    title: "Investment Plan",
-    description: "Generate an investment plan overview.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "investment_plan",
-  "data": {
-    "investments": [
-      { "investment_number": 1, "investment_type": "Billing investment", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
-      { "investment_number": 2, "investment_type": "Buffers", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
-      { "investment_number": 3, "investment_type": "Innovation", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
-      { "investment_number": 4, "investment_type": "Free resources", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
-      { "investment_number": 5, "investment_type": "Marketing investments / relationship building", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
-      { "investment_number": 6, "investment_type": "Travel investments", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" }
-    ],
-    "total_investment_value": "string"
-  }
-}`
-  },
-
-    {
-    id: "innovation_strategy",
-    title: "Innovation Strategy",
-    description: "Outline the innovation and GenAI strategy.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "innovation_strategy",
-  "data": {
-    "current_outlook_on_ai": "string",
-    "top_motivations_for_genai": "string",
-    "top_genai_projects": "string",
-    "other_innovation_projects": "string",
-    "high_value_use_cases": "string"
-  }
-}`
-  },
-  {
-    id: "tech_spend_view",
-    title: "Tech Spend View",
-    description: "Map out the technology spend and priorities.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "tech_spend_view",
-  "data": {
-    "rows": [
-      { "id": 1, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
-      { "id": 2, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
-      { "id": 3, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
-      { "id": 4, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
-      { "id": 5, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
-      { "id": 6, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" }
-    ],
-    "geoRevenue": [
-      { "l": "Americas", "v": "string" },
-      { "l": "EMEA", "v": "string" },
-      { "l": "APAC", "v": "string" },
-      { "l": "Others", "v": "string" }
-    ],
-    "geoTalent": [
-      { "geo": "Americas", "val": "string" },
-      { "geo": "EMEA", "val": "string" },
-      { "geo": "APAC", "val": "string" }
-    ],
-    "geoPriorities": [
-      { "geo": "Americas", "val": "string" },
-      { "geo": "EMEA", "val": "string" },
-      { "geo": "APAC", "val": "string" }
-    ]
-  }
-}`
-  },
-  {
-    id: "talent_excellence_overview",
-    title: "Talent Excellence",
-    description: "Generate a talent excellence overview.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-   "template_type": "talent_excellence_overview",
-   "data": {
-    "overviewRows": [
-      { "id": 1, "metric": "Overall headcount", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 2, "metric": "% gender representation", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 3, "metric": "Attrition % LTM", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 4, "metric": "Average tenure (no. of years)", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 5, "metric": "# of associates with tenure >18 months", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 6, "metric": "ESAT", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
-    ],
-    "demandRows": [
-      { "id": 1, "metric": "Total open demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 2, "metric": "Overdue demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 3, "metric": "Fulfilment % ONS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 4, "metric": "Fulfilment % OFS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 5, "metric": "% external fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 6, "metric": "Fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 7, "metric": "Delivery on time %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 8, "metric": "SLA %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 9, "metric": "Average time to billability", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
-      { "id": 10, "metric": "Client interview %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
-    ],
-    "insights": "string"
-   }
-}`
-  },
-  {
-    id: "account_performance_annual_plan",
-    title: "Account Performance - Annual Plan",
-    description: "Generate an account performance annual plan.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "account_performance_annual_plan",
-  "data": {
-    "financials": [
-      { "metric": "Revenue", "unit": "£m", "fy24": "string", "fy25": "string", "fy26": "string" },
-      { "metric": "GM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" },
-      { "metric": "CM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
-    ],
-    "delivery": [
-      { "metric": "Utilization", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
-    ],
-    "talent": [
-      { "metric": "Attrition", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
-    ]
-  }
-}`
-  },
-  {
-    id: "service_line_growth_actions",
-    title: "Service Line Growth",
-    description: "Map out service line growth actions and objectives.",
-    placeholders: [
-      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
-    ],
-    template: (data) => `Company="${data.company}"
-{
-  "template_type": "service_line_growth_actions",
-  "data": {
-    "Cloud_Transformation": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "Data": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "AI": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "SRG_Managed_Services": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "EA": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "Strategy_Design_and_Change": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
-    "SAM_and_Licensing": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" }
-  }
-}`
-  },
-
-  // Add these to the STARTER_PROMPTS array in constants.ts
-
-  {
-    id: "Account_Team_POD",
+    id: "account_team_pod",
     title: "Account Team POD",
     description: "Define the core sales and delivery leads.",
     placeholders: [
@@ -310,7 +44,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "Account_Team_POD",
+  "template_type": "account_team_pod",
   "data": {
     "Sales_and_Delivery_Leads": {
       "Client_Partner": { "Accountable_POC": "string", "Time_Commitment": "string" },
@@ -332,9 +66,10 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
+
   {
     id: "account_cockpit_view",
-    title: "Account Cockpit",
+    title: "Account Cockpit View",
     description: "Generate a high-level performance cockpit overview.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -377,9 +112,36 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
+
+  {
+    id: "account_performance_annual_plan",
+    title: "Account Performance : Annual Plan",
+    description: "Generate an account performance annual plan.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "account_performance_annual_plan",
+  "data": {
+    "financials": [
+      { "metric": "Revenue", "unit": "£m", "fy24": "string", "fy25": "string", "fy26": "string" },
+      { "metric": "GM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" },
+      { "metric": "CM", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ],
+    "delivery": [
+      { "metric": "Utilization", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ],
+    "talent": [
+      { "metric": "Attrition", "unit": "%", "fy24": "string", "fy25": "string", "fy26": "string" }
+    ]
+  }
+}`
+  },
+  
   {
     id: "account_performance_quarterly_plan",
-    title: "Account Performance - Quarterly Plan",
+    title: "Account Performance : Quarterly Plan",
     description: "Detailed quarterly metrics for the account.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -406,6 +168,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
+
   {
     id: "Client_Context_1",
     title: "Client Context 1",
@@ -482,9 +245,112 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
+
+  {
+    id: "customer_profile",
+    title: "Customer & Version 1",
+    description: "Generate a detailed customer profile.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "customer_profile",
+  "data": {
+    "customer_name": "",
+    "headquarter_location": "",
+    "csat": "",
+    "version_1_vertical": "",
+    "current_work": [],
+    "service_lines": [],
+    "customer_perception": []
+  }
+}`
+  },
+
+  {
+    id: "tech_spend_view",
+    title: "Tech spend breakdown by client BU and Geography",
+    description: "Map out the technology spend and priorities.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "tech_spend_view",
+  "data": {
+    "rows": [
+      { "id": 1, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 2, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 3, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 4, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 5, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" },
+      { "id": 6, "name": "string", "desc": "string", "size": "string", "growth": "string", "spend": "string", "priorities": "string", "presence": "string", "incumbent": "string" }
+    ],
+    "geoRevenue": [
+      { "l": "Americas", "v": "string" },
+      { "l": "EMEA", "v": "string" },
+      { "l": "APAC", "v": "string" },
+      { "l": "Others", "v": "string" }
+    ],
+    "geoTalent": [
+      { "geo": "Americas", "val": "string" },
+      { "geo": "EMEA", "val": "string" },
+      { "geo": "APAC", "val": "string" }
+    ],
+    "geoPriorities": [
+      { "geo": "Americas", "val": "string" },
+      { "geo": "EMEA", "val": "string" },
+      { "geo": "APAC", "val": "string" }
+    ]
+  }
+}`
+  },
+
+  {
+    id: "growth_strategy",
+    title: "Growth Strategy",
+    description: "Generate a strategic growth plan payload.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "growth_strategy",
+  "data": {
+    "growth_aspiration": ["string"],
+    "key_vectors_for_driving_growth": ["string"],
+    "improve_quality_sustainability_revenues": ["string"],
+    "potential_inorganic_opportunities": ["string"]
+  }
+}`
+  },
+
+  {
+    id: "service_line_growth_actions",
+    title: "Service Line Growth Actions",
+    description: "Map out service line growth actions and objectives.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "service_line_growth_actions",
+  "data": {
+    "Cloud_Transformation": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "Data": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "AI": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "SRG_Managed_Services": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "EA": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "Strategy_Design_and_Change": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" },
+    "SAM_and_Licensing": { "Objective": "", "Target_Buying_Centres": "", "Current_Status": "", "Next_Action_and_Responsible_Person": "" }
+  }
+}`
+  },
+
   {
     id: "org_structure_tech_view",
-    title: "Org Structure (Tech View)",
+    title: "Org structure: Tech view",
     description: "Map out the key technology leaders and structure.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -512,9 +378,31 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
+  
+  {
+    id: "relationship_heatmap",
+    title: "Relationship Heatmap",
+    description: "Map out key stakeholder relationships.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "relationship_heatmap",
+  "data": {
+        "client_stakeholder": "string",
+        "role": "string",
+        "reports_to": "string",
+        "level": "string",
+        "client_relationship": "string",
+        "engagement_plan_next_action": "string"
+  }
+}`
+  },
+
   {
     id: "revenue_teardown",
-    title: "Revenue Teardown",
+    title: "Revenue Teardown: EE vs. EN  & Geo teardown",
     description: "Detailed teardown of revenue by geography and EE/EN.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -542,7 +430,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 
   {
     id: "service_line_penetration",
-    title: "Service Line Penetration",
+    title: "Revenue teardown: Service Line Penetration",
     description: "Generate a revenue teardown and service line penetration view.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -568,9 +456,9 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 }`
   },
 
-{
+  {
     id: "key_growth_opportunities",
-    title: "Key Growth Opportunities",
+    title: "Summary of key growth opportunities in the account ",
     description: "Generate a list of key growth opportunities and deals.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -599,7 +487,7 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
 
   {
     id: "opportunity_deep_dive",
-    title: "Opportunity Deep Dive",
+    title: "Deep dive: OPPORTUNITY NAME",
     description: "Generate a deep dive view of a specific opportunity.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -622,32 +510,48 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   },
 
   {
-    id: "critical_risk",
-    title: "Critical Risk Tracking",
-    description: "Generate a list of critical risks, impacts, and countermeasures.",
+    id: "implementation_plan",
+    title: "Implementation plan for growth",
+    description: "Create a detailed implementation timeline.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "critical_risk",
-  "data": [
-    {
-      "category": "string",
-      "risk_number": "number",
-      "description_of_risk": "string",
-      "impact_of_risk": "string",
-      "timeline": "string",
-      "countermeasures_taken": "string",
-      "owner": "string"
-    }
-  ]
+  "template_type": "implementation_plan",
+  "data": {
+    "actions": [
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" },
+      { "category": "string", "action": "string", "primary_owner": "string", "support_team": "string", "timeline": "string", "owner": "string", "status": "string", "investment_needed": "string", "impact": "string" }
+    ]
+  }
 }`
   },
 
+  {
+    id: "innovation_strategy",
+    title: "Innovation excellence overview: Our understanding of client’s AI strategy ",
+    description: "Outline the innovation and GenAI strategy.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
 {
+  "template_type": "innovation_strategy",
+  "data": {
+    "current_outlook_on_ai": "string",
+    "top_motivations_for_genai": "string",
+    "top_genai_projects": "string",
+    "other_innovation_projects": "string",
+    "high_value_use_cases": "string"
+  }
+}`
+  },
+
+  {
     id: "planned_action_genai",
-    title: "Planned Action GenAI",
+    title: "Planned action for next 12 months: GenAI",
     description: "Outline planned actions and investments for GenAI over the next 12 months.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -691,39 +595,33 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
   }
 }`
   },
- 
+
   {
-    id: "operational_implementation_plan",
-    title: "Operational Implementation",
-    description: "Generate an implementation plan specifically for operational excellence.",
+    id: "operational_excellence_strategy",
+    title: "Operational Excellence Strategy",
+    description: "Generate an operational excellence strategy.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
     ],
     template: (data) => `Company="${data.company}"
 {
-  "template_type": "operational_implementation_plan",
-  "plan_date": "string",
-  "data": [
-    {
-      "category": "Operational Excellence",
-      "subcategory": "string",
-      "action_number": 1,
-      "action_description": "string",
-      "primary_owner": "string",
-      "support_team": "string",
-      "timeline": "string",
-      "status": "string",
-      "help_required": "string",
-      "investment_needed": "string",
-      "impact": "string"
-    }
-  ]
+  "template_type": "operational_excellence_strategy",
+  "data": {
+    "current_gp_percentage": "string",
+    "gp_percentage_ambition": "string",
+    "priority_levers_to_drive_margin_uplift": [
+      "string"
+    ],
+    "plan_for_commercial_model_transformation": [
+      "string"
+    ]
+  }
 }`
   },
 
   {
     id: "margin_improvement",
-    title: "Margin Improvement",
+    title: "Margin Improvement Plan 1",
     description: "Generate the margin improvement and gross profit waterfall data.",
     placeholders: [
       { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
@@ -801,6 +699,119 @@ export const STARTER_PROMPTS: PromptDefinition[] = [
       { "category": "Onsite", "label": "Sub-con", "fy24": "string", "q424": "string", "q125": "string", "q225A": "string", "q325C": "string", "q325P": "string", "q425C": "string", "q425P": "string", "fy25C": "string", "fy25P": "string" }
     ],
     "pyramid_improvement_plan": "string"
+  }
+}`
+  },
+
+  {
+    id: "critical_risk",
+    title: "Critical Risk Tracking",
+    description: "Generate a list of critical risks, impacts, and countermeasures.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "critical_risk",
+  "data": [
+    {
+      "category": "string",
+      "risk_number": "number",
+      "description_of_risk": "string",
+      "impact_of_risk": "string",
+      "timeline": "string",
+      "countermeasures_taken": "string",
+      "owner": "string"
+    }
+  ]
+}`
+  },
+
+  {
+    id: "talent_excellence_overview",
+    title: "Talent Excellence Overview",
+    description: "Generate a talent excellence overview.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+   "template_type": "talent_excellence_overview",
+   "data": {
+    "overviewRows": [
+      { "id": 1, "metric": "Overall headcount", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 2, "metric": "% gender representation", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 3, "metric": "Attrition % LTM", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 4, "metric": "Average tenure (no. of years)", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 5, "metric": "# of associates with tenure >18 months", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 6, "metric": "ESAT", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
+    ],
+    "demandRows": [
+      { "id": 1, "metric": "Total open demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 2, "metric": "Overdue demand", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 3, "metric": "Fulfilment % ONS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 4, "metric": "Fulfilment % OFS", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 5, "metric": "% external fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 6, "metric": "Fulfilment", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 7, "metric": "Delivery on time %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 8, "metric": "SLA %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 9, "metric": "Average time to billability", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" },
+      { "id": 10, "metric": "Client interview %", "target": "string", "q1": "string", "q2": "string", "q3": "string", "q4": "string", "q1Status": "Above target | Meets Target | Below Target", "q2Status": "Above target | Meets Target | Below Target", "q3Status": "Above target | Meets Target | Below Target", "q4Status": "Above target | Meets Target | Below Target" }
+    ],
+    "insights": "string"
+   }
+}`
+  },
+ 
+  {
+    id: "operational_implementation_plan",
+    title: "Implementation plan for operational excellence, delivery, and talent",
+    description: "Generate an implementation plan specifically for operational excellence.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "operational_implementation_plan",
+  "plan_date": "string",
+  "data": [
+    {
+      "category": "Operational Excellence",
+      "subcategory": "string",
+      "action_number": 1,
+      "action_description": "string",
+      "primary_owner": "string",
+      "support_team": "string",
+      "timeline": "string",
+      "status": "string",
+      "help_required": "string",
+      "investment_needed": "string",
+      "impact": "string"
+    }
+  ]
+}`
+  },
+
+  {
+    id: "investment_plan",
+    title: "Investment plan for next 12 months ",
+    description: "Generate an investment plan overview.",
+    placeholders: [
+      { key: "company", label: "Company Name", type: "text", placeholder: "e.g. NatWest Group" }
+    ],
+    template: (data) => `Company="${data.company}"
+{
+  "template_type": "investment_plan",
+  "data": {
+    "investments": [
+      { "investment_number": 1, "investment_type": "Billing investment", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 2, "investment_type": "Buffers", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 3, "investment_type": "Innovation", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 4, "investment_type": "Free resources", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 5, "investment_type": "Marketing investments / relationship building", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" },
+      { "investment_number": 6, "investment_type": "Travel investments", "investment_description": "string", "investment_value_eur": "string", "targeted_outcome": "string", "primary_owner": "string", "timeline_status": "string", "remarks": "string" }
+    ],
+    "total_investment_value": "string"
   }
 }`
   },
